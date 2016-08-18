@@ -7,13 +7,17 @@ import (
 	"github.com/garyburd/redigo/redis"
 )
 
+// WaitFunc to be executed occasionally by something that is waiting. Should return an error to cancel the waiting
+type WaitFunc func(time.Time) error
+
 // WaitForAvailability of the redis server located at the provided url, timeout if the Duration passes before being able to connect
-func WaitForAvailability(url string, d time.Duration) (bool, error) {
+func WaitForAvailability(url string, d time.Duration, f WaitFunc) (bool, error) {
 	h, _, err := ParseURL(url)
 	if err != nil {
 		return false, err
 	}
 	conn := make(chan struct{})
+	errs := make(chan error)
 	go func() {
 		for {
 			c, err := redis.Dial("tcp", h)
@@ -22,10 +26,19 @@ func WaitForAvailability(url string, d time.Duration) (bool, error) {
 				conn <- struct{}{}
 				return
 			}
+			if f != nil {
+				err := f(time.Now())
+				if err != nil {
+					errs <- err
+					return
+				}
+			}
 			time.Sleep(d / 100)
 		}
 	}()
 	select {
+	case err := <-errs:
+		return false, err
 	case <-conn:
 		return true, nil
 	case <-time.After(d):
