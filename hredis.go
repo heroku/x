@@ -27,6 +27,9 @@ func RedissURL(s string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	if p == "" {
+		return "", errors.New("missing port")
+	}
 	port, err := strconv.Atoi(p)
 	if err != nil {
 		return "", err
