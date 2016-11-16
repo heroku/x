@@ -1,4 +1,4 @@
-package redis
+package redigo
 
 import (
 	"time"
@@ -20,7 +20,7 @@ func WaitForAvailability(url string, d time.Duration, f WaitFunc) (bool, error) 
 			c, err := redis.DialURL(url)
 			if err == nil {
 				c.Close()
-				conn <- struct{}{}
+				close(conn)
 				return
 			}
 			if f != nil {
