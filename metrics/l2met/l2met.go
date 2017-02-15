@@ -35,16 +35,13 @@ type L2met struct {
 	counters   map[string]*Counter
 	gauges     map[string]*Gauge
 	histograms map[string]*Histogram
-	logger     logrus.FieldLogger
+	logger     *logrus.Logger
 }
 
 // New returns a L2met object that may be used to create metrics. Prefix is
 // applied to all created metrics. Callers must ensure that regular calls to
 // WriteTo are performed, either manually or with one of the helper methods.
-//
-// The provided logger is used to log errors encountered while writing metrics
-// in WriteLoop.
-func New(prefix string, logger logrus.FieldLogger) *L2met {
+func New(prefix string, logger *logrus.Logger) *L2met {
 	return &L2met{
 		prefix:     prefix,
 		counters:   map[string]*Counter{},
@@ -142,8 +139,8 @@ func (l *L2met) WriteTo(w io.Writer) (count int64, err error) {
 	return count, err
 }
 
-// formatFloat formats f as an exponentless value with 9 decimal points of
-// precision.
+// formatFloat formats f as an exponentless value with the minimum precision
+// necessary to identify the value uniquely.
 func formatFloat(f float64) string {
 	return strconv.FormatFloat(f, 'f', 9, 64)
 }
