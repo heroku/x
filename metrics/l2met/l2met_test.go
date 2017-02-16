@@ -25,7 +25,7 @@ func TestCounter(t *testing.T) {
 func TestGauge(t *testing.T) {
 	prefix, name := "ghi.", "jkl"
 	label, value := "xyz", "abc" // ignored for l2met
-	regex := `^sample#` + prefix + name + `=([0-9\.]+)[0-9]+$`
+	regex := `^measure#` + prefix + name + `=([0-9\.]+)[0-9]+$`
 	g := New(prefix, logrus.New())
 	gauge := g.NewGauge(name).With(label, value)
 	valuef := teststat.LastLine(g, regex)
@@ -38,12 +38,13 @@ func TestHistogram(t *testing.T) {
 	// The histogram test is actually like 4 gauge tests.
 	prefix, name := "l2met.", "histogram_test"
 	label, value := "abc", "def" // ignored for l2met
-	re50 := regexp.MustCompile(`sample#` + prefix + name + `.perc50=([0-9\.]+)[0-9]+`)
-	re90 := regexp.MustCompile(`sample#` + prefix + name + `.perc90=([0-9\.]+)[0-9]+`)
-	re95 := regexp.MustCompile(`sample#` + prefix + name + `.perc95=([0-9\.]+)[0-9]+`)
-	re99 := regexp.MustCompile(`sample#` + prefix + name + `.perc99=([0-9\.]+)[0-9]+`)
+	re50 := regexp.MustCompile(`measure#` + prefix + name + `.perc50=([0-9\.]+)[0-9]+`)
+	re90 := regexp.MustCompile(`measure#` + prefix + name + `.perc90=([0-9\.]+)[0-9]+`)
+	re95 := regexp.MustCompile(`measure#` + prefix + name + `.perc95=([0-9\.]+)[0-9]+`)
+	re99 := regexp.MustCompile(`measure#` + prefix + name + `.perc99=([0-9\.]+)[0-9]+`)
 	g := New(prefix, logrus.New())
-	histogram := g.NewHistogram(name, 50).With(label, value)
+	oh := g.NewHistogram(name, 50)
+	histogram := oh.With(label, value)
 	quantiles := func() (float64, float64, float64, float64) {
 		var buf bytes.Buffer
 		g.WriteTo(&buf)
@@ -59,6 +60,26 @@ func TestHistogram(t *testing.T) {
 	}
 	if err := teststat.TestHistogram(histogram, quantiles, 0.01); err != nil {
 		t.Fatal(err)
+	}
+
+	if got, want := oh.Quantile(0.99), -1.0; got != want {
+		t.Fatalf("got post-write Quantile(0.99) = %f, want %f", got, want)
+	}
+
+	if err := teststat.TestHistogram(histogram, quantiles, 0.01); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestHistogram_NoData(t *testing.T) {
+	g := New("", logrus.New())
+	g.NewHistogram("test-hist", 50)
+
+	var buf bytes.Buffer
+	g.WriteTo(&buf)
+
+	if got, want := buf.Len(), 0; got != want {
+		t.Fatalf("got buf.Len()=%d, want %d\nbytes: %s", got, want, string(buf.Bytes()))
 	}
 }
 

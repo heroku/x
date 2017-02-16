@@ -35,13 +35,16 @@ type L2met struct {
 	counters   map[string]*Counter
 	gauges     map[string]*Gauge
 	histograms map[string]*Histogram
-	logger     *logrus.Logger
+	logger     logrus.FieldLogger
 }
 
 // New returns a L2met object that may be used to create metrics. Prefix is
 // applied to all created metrics. Callers must ensure that regular calls to
 // WriteTo are performed, either manually or with one of the helper methods.
-func New(prefix string, logger *logrus.Logger) *L2met {
+//
+// The provided logger is used to log errors encountered while writing metrics
+// in WriteLoop.
+func New(prefix string, logger logrus.FieldLogger) *L2met {
 	return &L2met{
 		prefix:     prefix,
 		counters:   map[string]*Counter{},
@@ -111,7 +114,7 @@ func (l *L2met) WriteTo(w io.Writer) (count int64, err error) {
 	}
 
 	for name, g := range l.gauges {
-		n, err := fmt.Fprintf(w, "sample#%s=%s\n", name, formatFloat(g.g.Value()))
+		n, err := fmt.Fprintf(w, "measure#%s=%s\n", name, formatFloat(g.g.Value()))
 		if err != nil {
 			return count, err
 		}
@@ -119,6 +122,8 @@ func (l *L2met) WriteTo(w io.Writer) (count int64, err error) {
 	}
 
 	for name, h := range l.histograms {
+		oh := h.reset()
+
 		for _, p := range []struct {
 			s string
 			f float64
@@ -128,7 +133,13 @@ func (l *L2met) WriteTo(w io.Writer) (count int64, err error) {
 			{"95", 0.95},
 			{"99", 0.99},
 		} {
-			n, err := fmt.Fprintf(w, "sample#%s.perc%s=%s\n", name, p.s, formatFloat(h.h.Quantile(p.f)))
+			v := oh.Quantile(p.f)
+			// no measurement to report
+			if v < 0 {
+				continue
+			}
+
+			n, err := fmt.Fprintf(w, "measure#%s.perc%s=%s\n", name, p.s, formatFloat(v))
 			if err != nil {
 				return count, err
 			}
@@ -139,8 +150,8 @@ func (l *L2met) WriteTo(w io.Writer) (count int64, err error) {
 	return count, err
 }
 
-// formatFloat formats f as an exponentless value with the minimum precision
-// necessary to identify the value uniquely.
+// formatFloat formats f as an exponentless value with 9 decimal points of
+// precision.
 func formatFloat(f float64) string {
 	return strconv.FormatFloat(f, 'f', 9, 64)
 }
@@ -193,12 +204,31 @@ func (g *Gauge) Add(delta float64) {
 // Histogram is a l2met histogram metric. Observations are bucketed into
 // per-quantile gauges.
 type Histogram struct {
-	h *generic.Histogram
+	name    string
+	buckets int
+
+	mu sync.RWMutex
+	h  *generic.Histogram
 }
 
 // NewHistogram returns a new usable Histogram metric.
 func NewHistogram(name string, buckets int) *Histogram {
-	return &Histogram{generic.NewHistogram(name, buckets)}
+	h := &Histogram{
+		name:    name,
+		buckets: buckets,
+	}
+	h.reset()
+	return h
+}
+
+// reset creates a new generic.Histogram and replaces the underlying
+// histogram with it. It returns the previous histogram.
+func (h *Histogram) reset() *generic.Histogram {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	oh := h.h
+	h.h = generic.NewHistogram(h.name, h.buckets)
+	return oh
 }
 
 // With is a no-op.
@@ -208,5 +238,14 @@ func (h *Histogram) With(...string) metrics.Histogram {
 
 // Observe implements histogram.
 func (h *Histogram) Observe(value float64) {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
 	h.h.Observe(value)
+}
+
+// Quantile returns the value of the quantile q, 0.0 < q < 1.0.
+func (h *Histogram) Quantile(q float64) float64 {
+	h.mu.RLock()
+	defer h.mu.RUnlock()
+	return h.h.Quantile(q)
 }
