@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/go-kit/kit/metrics/teststat"
 )
 
@@ -14,7 +13,7 @@ func TestCounter(t *testing.T) {
 	prefix, name := "abc.", "def"
 	label, value := "label", "value" // ignored for l2met
 	regex := `^count#` + prefix + name + `=([0-9\.]+)[0-9]+$`
-	g := New(prefix, logrus.New())
+	g := New(prefix)
 	counter := g.NewCounter(name).With(label, value)
 	valuef := teststat.SumLines(g, regex)
 	if err := teststat.TestCounter(counter, valuef); err != nil {
@@ -26,7 +25,7 @@ func TestGauge(t *testing.T) {
 	prefix, name := "ghi.", "jkl"
 	label, value := "xyz", "abc" // ignored for l2met
 	regex := `^measure#` + prefix + name + `=([0-9\.]+)[0-9]+$`
-	g := New(prefix, logrus.New())
+	g := New(prefix)
 	gauge := g.NewGauge(name).With(label, value)
 	valuef := teststat.LastLine(g, regex)
 	if err := teststat.TestGauge(gauge, valuef); err != nil {
@@ -42,7 +41,7 @@ func TestHistogram(t *testing.T) {
 	re90 := regexp.MustCompile(`measure#` + prefix + name + `.perc90=([0-9\.]+)[0-9]+`)
 	re95 := regexp.MustCompile(`measure#` + prefix + name + `.perc95=([0-9\.]+)[0-9]+`)
 	re99 := regexp.MustCompile(`measure#` + prefix + name + `.perc99=([0-9\.]+)[0-9]+`)
-	g := New(prefix, logrus.New())
+	g := New(prefix)
 	oh := g.NewHistogram(name, 50)
 	histogram := oh.With(label, value)
 	quantiles := func() (float64, float64, float64, float64) {
@@ -72,7 +71,7 @@ func TestHistogram(t *testing.T) {
 }
 
 func TestHistogram_NoData(t *testing.T) {
-	g := New("", logrus.New())
+	g := New("")
 	g.NewHistogram("test-hist", 50)
 
 	var buf bytes.Buffer

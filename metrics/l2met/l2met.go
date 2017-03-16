@@ -12,12 +12,15 @@ import (
 	"io"
 	"strconv"
 	"sync"
-	"time"
 
 	"github.com/Sirupsen/logrus"
 	"github.com/go-kit/kit/metrics"
 	"github.com/go-kit/kit/metrics/generic"
 )
+
+// DefaultProvider is the default l2met provider with no prefix. It's
+// meant to be used as a global registry.
+var DefaultProvider = New("")
 
 // L2met receives metrics observations and writes them to the log. Create a
 // L2met object, use it to create metrics, and pass those metrics as
@@ -44,13 +47,12 @@ type L2met struct {
 //
 // The provided logger is used to log errors encountered while writing metrics
 // in WriteLoop.
-func New(prefix string, logger logrus.FieldLogger) *L2met {
+func New(prefix string) *L2met {
 	return &L2met{
 		prefix:     prefix,
 		counters:   map[string]*Counter{},
 		gauges:     map[string]*Gauge{},
 		histograms: map[string]*Histogram{},
-		logger:     logger,
 	}
 }
 
@@ -83,18 +85,6 @@ func (l *L2met) NewHistogram(name string, buckets int) *Histogram {
 	l.histograms[l.prefix+name] = h
 	l.mu.Unlock()
 	return h
-}
-
-// WriteLoop is a helper method that invokes WriteTo to the passed writer every
-// time the passed channel fires. This method blocks until the channel is
-// closed, so clients probably want to run it in its own goroutine. For typical
-// usage, create a time.Ticker and pass its C channel to this method.
-func (l *L2met) WriteLoop(c <-chan time.Time, w io.Writer) {
-	for range c {
-		if _, err := l.WriteTo(w); err != nil {
-			l.logger.WithError(err).Error()
-		}
-	}
 }
 
 // WriteTo flushes the buffered content of the metrics to the writer, in
