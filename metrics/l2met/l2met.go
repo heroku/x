@@ -58,32 +58,53 @@ func New(prefix string) *L2met {
 
 // NewCounter returns a counter. Observations are aggregated and emitted once
 // per write invocation.
-func (l *L2met) NewCounter(name string) *Counter {
-	c := NewCounter(l.prefix + name)
+func (l *L2met) NewCounter(name string) metrics.Counter {
+	fullName := l.prefix + name
+
 	l.mu.Lock()
-	l.counters[l.prefix+name] = c
-	l.mu.Unlock()
+	defer l.mu.Unlock()
+
+	if c, ok := l.counters[fullName]; ok {
+		return c
+	}
+
+	c := NewCounter(fullName)
+	l.counters[fullName] = c
 	return c
 }
 
 // NewGauge returns a gauge. Observations are aggregated and emitted once per
 // write invocation.
-func (l *L2met) NewGauge(name string) *Gauge {
-	ga := NewGauge(l.prefix + name)
+func (l *L2met) NewGauge(name string) metrics.Gauge {
+	fullName := l.prefix + name
+
 	l.mu.Lock()
-	l.gauges[l.prefix+name] = ga
-	l.mu.Unlock()
-	return ga
+	defer l.mu.Unlock()
+
+	if g, ok := l.gauges[fullName]; ok {
+		return g
+	}
+
+	g := NewGauge(fullName)
+	l.gauges[fullName] = g
+	return g
 }
 
 // NewHistogram returns a histogram. Observations are aggregated and emitted
 // as per-quantile gauges, once per write invocation. 50 is a good default
 // value for buckets.
-func (l *L2met) NewHistogram(name string, buckets int) *Histogram {
-	h := NewHistogram(l.prefix+name, buckets)
+func (l *L2met) NewHistogram(name string, buckets int) metrics.Histogram {
+	fullName := l.prefix + name
+
 	l.mu.Lock()
-	l.histograms[l.prefix+name] = h
-	l.mu.Unlock()
+	defer l.mu.Unlock()
+
+	if h, ok := l.histograms[fullName]; ok {
+		return h
+	}
+
+	h := NewHistogram(fullName, buckets)
+	l.histograms[fullName] = h
 	return h
 }
 
@@ -228,8 +249,8 @@ func (h *Histogram) With(...string) metrics.Histogram {
 
 // Observe implements histogram.
 func (h *Histogram) Observe(value float64) {
-	h.mu.RLock()
-	defer h.mu.RUnlock()
+	h.mu.Lock()
+	defer h.mu.Unlock()
 	h.h.Observe(value)
 }
 

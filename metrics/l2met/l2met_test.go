@@ -61,7 +61,7 @@ func TestHistogram(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if got, want := oh.Quantile(0.99), -1.0; got != want {
+	if got, want := oh.(*Histogram).Quantile(0.99), -1.0; got != want {
 		t.Fatalf("got post-write Quantile(0.99) = %f, want %f", got, want)
 	}
 
@@ -98,5 +98,27 @@ func TestFormatFloat(t *testing.T) {
 		if have != tt.want {
 			t.Fatalf("have %s, want %s", have, tt.want)
 		}
+	}
+}
+
+func TestNewMetricIdempotence(t *testing.T) {
+	registry := New("")
+
+	c1 := registry.NewCounter("requests")
+	c2 := registry.NewCounter("requests")
+	if c1 != c2 {
+		t.Fatal("want NewCounter to return the same counter")
+	}
+
+	g1 := registry.NewGauge("connected")
+	g2 := registry.NewGauge("connected")
+	if g1 != g2 {
+		t.Fatal("want NewGauge to return the same gauge")
+	}
+
+	h1 := registry.NewHistogram("duration", 10)
+	h2 := registry.NewHistogram("duration", 10)
+	if h1 != h2 {
+		t.Fatal("want NewHistogram to return the same histogram")
 	}
 }
