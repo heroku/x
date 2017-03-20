@@ -18,10 +18,6 @@ import (
 	"github.com/go-kit/kit/metrics/generic"
 )
 
-// DefaultProvider is the default l2met provider with no prefix. It's
-// meant to be used as a global registry.
-var DefaultProvider = New("")
-
 // L2met receives metrics observations and writes them to the log. Create a
 // L2met object, use it to create metrics, and pass those metrics as
 // dependencies to the components that will use them.
