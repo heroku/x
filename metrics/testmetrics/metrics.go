@@ -11,6 +11,18 @@ func (c *Counter) Add(delta float64) { c.value += delta }
 // With implements the metrics.Counter interface.
 func (c *Counter) With(...string) metrics.Counter { return c }
 
+// Gauge stores a value based on Add/Set calls.
+type Gauge struct{ value float64 }
+
+// Add implements the metrics.Gauge interface.
+func (g *Gauge) Add(delta float64) { g.value += delta }
+
+// Set implements the metrics.Gauge interface.
+func (g *Gauge) Set(v float64) { g.value = v }
+
+// With implements the metrics.Gauge interface.
+func (g *Gauge) With(...string) metrics.Gauge { return g }
+
 // Histogram collects observations without computing quantiles
 // so the observations can be checked by tests.
 type Histogram struct{ observations []float64 }

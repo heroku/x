@@ -12,6 +12,7 @@ type Provider struct {
 	t *testing.T
 
 	counters   map[string]*Counter
+	gauges     map[string]*Gauge
 	histograms map[string]*Histogram
 }
 
@@ -35,6 +36,17 @@ func (p *Provider) NewCounter(name string) metrics.Counter {
 	return c
 }
 
+// NewGauge implements go-kit's Provider interface.
+func (p *Provider) NewGauge(name string) metrics.Gauge {
+	if g, ok := p.gauges[name]; ok {
+		return g
+	}
+
+	g := &Gauge{}
+	p.gauges[name] = g
+	return g
+}
+
 // NewHistogram implements go-kit's Provider interface.
 func (p *Provider) NewHistogram(name string, _ int) metrics.Histogram {
 	if h, ok := p.histograms[name]; ok {
@@ -56,6 +68,21 @@ func (p *Provider) CheckCounter(name string, v float64) {
 
 	if c.value != v {
 		p.t.Fatalf("%v = %v, want %v", name, c.value, v)
+	}
+}
+
+// CheckObservationsMinMax checks that there is a histogram
+// with the name and that the values all fall within the min/max range.
+func (p *Provider) CheckObservationsMinMax(name string, min, max float64) {
+	h, ok := p.histograms[name]
+	if !ok {
+		p.t.Fatalf("no histogram named %v", name)
+	}
+
+	for _, o := range h.observations {
+		if o < min || o > max {
+			p.t.Fatalf("Got %f want %f..%f ", o, min, max)
+		}
 	}
 }
 
