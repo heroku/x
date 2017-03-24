@@ -36,11 +36,17 @@ func TestUnaryServerInterceptor(t *testing.T) {
 		t.Fatal("expected an error")
 	}
 
-	p.CheckCounter("grpc.server.hello.ping.requests", 2)
+	_, err = usi(context.Background(), "ping", info, handler(nil, context.Canceled))
+	if err == nil {
+		t.Fatal("expected an error")
+	}
+
+	p.CheckCounter("grpc.server.hello.ping.requests", 3)
 	p.CheckCounter("grpc.server.hello.ping.response-codes.ok", 1)
-	p.CheckCounter("grpc.server.hello.ping.response-codes.unknown", 1)
+	p.CheckCounter("grpc.server.hello.ping.response-codes.unknown", 2)
 	p.CheckCounter("grpc.server.hello.ping.errors", 1)
-	p.CheckObservationCount("grpc.server.hello.ping.request-duration.ms", 2)
+	p.CheckCounter("grpc.server.hello.ping.context-canceled-errors", 1)
+	p.CheckObservationCount("grpc.server.hello.ping.request-duration.ms", 3)
 }
 
 func TestStreamServerInterceptor(t *testing.T) {

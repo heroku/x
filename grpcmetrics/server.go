@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
@@ -67,7 +68,13 @@ func instrumentMethod(p Provider, duration time.Duration, err error) {
 	p.NewCounter("requests").Add(1)
 	p.NewCounter(fmt.Sprintf("response-codes.%s", code(err))).Add(1)
 	if err != nil {
-		p.NewCounter("errors").Add(1)
+		if errors.Cause(err) == context.Canceled {
+			// Count cancelations differently from other errors to avoid
+			// introducing too much noise into the error count.
+			p.NewCounter("context-canceled-errors").Add(1)
+		} else {
+			p.NewCounter("errors").Add(1)
+		}
 	}
 }
 

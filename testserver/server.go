@@ -21,9 +21,9 @@ type GRPCTestServer struct {
 
 // New returns a new GRPCTestServer, configured to listen on a random local
 // port.
-func New() (*GRPCTestServer, error) {
+func New(opt ...grpc.ServerOption) (*GRPCTestServer, error) {
 	return &GRPCTestServer{
-		Server:   grpc.NewServer(),
+		Server:   grpc.NewServer(opt...),
 		listener: memlistener.NewMemoryListener(),
 	}, nil
 }
