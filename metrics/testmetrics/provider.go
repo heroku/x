@@ -1,6 +1,7 @@
 package testmetrics
 
 import (
+	"math"
 	"reflect"
 	"testing"
 
@@ -14,6 +15,7 @@ type Provider struct {
 	counters   map[string]*Counter
 	gauges     map[string]*Gauge
 	histograms map[string]*Histogram
+	gauge      map[string]*Gauge
 }
 
 // NewProvider constructs a test provider which can later be checked.
@@ -22,6 +24,7 @@ func NewProvider(t *testing.T) *Provider {
 		t:          t,
 		counters:   make(map[string]*Counter),
 		histograms: make(map[string]*Histogram),
+		gauge:      make(map[string]*Gauge),
 	}
 }
 
@@ -109,5 +112,34 @@ func (p *Provider) CheckObservationCount(name string, n int) {
 
 	if len(h.observations) != n {
 		p.t.Fatalf("len(%v) = %v, want %v", name, len(h.observations), n)
+	}
+}
+
+// CheckObservationAlmostEqual is used to compare a specific element in a histogram.
+// An epsilon is used because exactly matching floating point numbers is usually quite difficult.
+func (p *Provider) CheckObservationAlmostEqual(name string, n int, value, epsilon float64) {
+	h, ok := p.histograms[name]
+	if !ok {
+		p.t.Fatalf("no histogram named %v", name)
+	}
+	if len(h.observations) <= n {
+		p.t.Fatalf("len(%v) = %v, want < %v", name, len(h.observations), n)
+	}
+
+	if math.Abs(h.observations[n]-value) >= epsilon {
+		p.t.Fatalf("%v = %v, want %v", name, h.observations[n], value)
+	}
+}
+
+// CheckGauge checks that there is a registered counter
+// with the name and value provided.
+func (p *Provider) CheckGauge(name string, v float64) {
+	g, ok := p.gauge[name]
+	if !ok {
+		p.t.Fatalf("no counter named %v", name)
+	}
+
+	if g.value != v {
+		p.t.Fatalf("%v = %v, want %v", name, g.value, v)
 	}
 }
