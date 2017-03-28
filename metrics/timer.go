@@ -50,3 +50,44 @@ func measureSince(h kitmetrics.Histogram, t0 time.Time, unit float64) {
 	}
 	h.Observe(float64(d) / unit)
 }
+
+// MonotonicTimer emits metrics periodically until it is stopped.
+type MonotonicTimer struct {
+	DurationTimer
+	cancel chan interface{}
+	ticker *time.Ticker
+}
+
+// NewMonotonicTimer takes a histogram and units like Duration Timer, as well as a frequency to report statistics on
+func NewMonotonicTimer(h kitmetrics.Histogram, d, frequency time.Duration) *MonotonicTimer {
+	t := &MonotonicTimer{
+		DurationTimer: DurationTimer{
+			h: h,
+			t: time.Now(),
+			d: float64(d),
+		},
+		cancel: make(chan interface{}),
+		ticker: time.NewTicker(frequency),
+	}
+
+	go func(t *MonotonicTimer) {
+		for {
+			select {
+			case <-t.cancel:
+				t.ticker.Stop()
+				return
+			case <-t.ticker.C:
+				t.ObserveDuration()
+			}
+
+		}
+
+	}(t)
+	return t
+}
+
+// Finish stops the ongoing reports of duration and makes one final Observation
+func (t *MonotonicTimer) Finish() {
+	t.cancel <- nil
+	t.ObserveDuration()
+}
