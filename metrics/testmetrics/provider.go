@@ -82,7 +82,7 @@ func (p *Provider) CheckObservationsMinMax(name string, min, max float64) {
 		p.t.Fatalf("no histogram named %v", name)
 	}
 
-	for _, o := range h.observations {
+	for _, o := range h.getObservations() {
 		if o < min || o > max {
 			p.t.Fatalf("Got %f want %f..%f ", o, min, max)
 		}

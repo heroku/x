@@ -1,6 +1,10 @@
 package testmetrics
 
-import "github.com/go-kit/kit/metrics"
+import (
+	"sync"
+
+	"github.com/go-kit/kit/metrics"
+)
 
 // Counter accumulates a value based on Add calls.
 type Counter struct{ value float64 }
@@ -25,10 +29,25 @@ func (g *Gauge) With(...string) metrics.Gauge { return g }
 
 // Histogram collects observations without computing quantiles
 // so the observations can be checked by tests.
-type Histogram struct{ observations []float64 }
+type Histogram struct {
+	observations []float64
+	sync.RWMutex
+}
+
+func (h *Histogram) getObservations() []float64 {
+	h.RLock()
+	defer h.RUnlock()
+
+	o := h.observations
+	return o
+}
 
 // Observe implements the metrics.Histogram interface.
-func (h *Histogram) Observe(v float64) { h.observations = append(h.observations, v) }
+func (h *Histogram) Observe(v float64) {
+	h.Lock()
+	defer h.Unlock()
+	h.observations = append(h.observations, v)
+}
 
 // With implements the metrics.Histogram interface.
 func (h *Histogram) With(...string) metrics.Histogram { return h }
