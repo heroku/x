@@ -15,7 +15,6 @@ type Provider struct {
 	counters   map[string]*Counter
 	gauges     map[string]*Gauge
 	histograms map[string]*Histogram
-	gauge      map[string]*Gauge
 }
 
 // NewProvider constructs a test provider which can later be checked.
@@ -24,7 +23,7 @@ func NewProvider(t *testing.T) *Provider {
 		t:          t,
 		counters:   make(map[string]*Counter),
 		histograms: make(map[string]*Histogram),
-		gauge:      make(map[string]*Gauge),
+		gauges:     make(map[string]*Gauge),
 	}
 }
 
@@ -134,9 +133,9 @@ func (p *Provider) CheckObservationAlmostEqual(name string, n int, value, epsilo
 // CheckGauge checks that there is a registered counter
 // with the name and value provided.
 func (p *Provider) CheckGauge(name string, v float64) {
-	g, ok := p.gauge[name]
+	g, ok := p.gauges[name]
 	if !ok {
-		p.t.Fatalf("no counter named %v", name)
+		p.t.Fatalf("no gauge named %v", name)
 	}
 
 	if g.value != v {
