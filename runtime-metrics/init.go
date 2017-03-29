@@ -57,7 +57,7 @@ func gatherMetrics() *Payload {
 
 	result.Counters["go.gc.collections"] = float64(stats.NumGC)
 
-	result.Gauges["go.gc.total-stw-pause"] = float64(stats.PauseTotalNs)
+	result.Gauges["go.gc.pause.total.ns"] = float64(stats.PauseTotalNs)
 	result.Gauges["go.memory.heap.bytes"] = float64(stats.Alloc)
 	result.Gauges["go.memory.stack.bytes"] = float64(stats.StackInuse)
 
