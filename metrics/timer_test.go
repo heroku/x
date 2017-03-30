@@ -50,27 +50,29 @@ func TestMeasureSince(t *testing.T) {
 	p := testmetrics.NewProvider(t)
 	h := p.NewHistogram("timer", 50)
 
-	done := make(chan struct{})
-	go func() {
-		defer MeasureSince(h, time.Now())
-		time.Sleep(10 * time.Millisecond)
-		close(done)
-	}()
+	t0 := time.Now().Add(-1 * time.Second)
+	t1 := time.Now()
+	measureSince(h, t0, t1, float64(defaultTimingUnit))
 
-	<-done
-	p.CheckObservationsMinMax("timer", 0, 11)
+	p.CheckObservations("timer", float64(t1.Sub(t0))/float64(defaultTimingUnit))
 }
 
 func TestMonotonicTimer(t *testing.T) {
 	name := "monotonic-test"
 	provider := testmetrics.NewProvider(t)
 	h := provider.NewHistogram(name, 50)
-	timer := NewMonotonicTimer(h, time.Millisecond, 5*time.Millisecond)
-	time.Sleep(28 * time.Millisecond)
+	timer := newUnstartedMonotonicTimer(h, time.Millisecond)
+
+	done := make(chan struct{})
+	tick := make(chan time.Time)
+
+	go timer.start(func() { close(done) }, tick)
+
+	tick <- time.Now()
+	tick <- time.Now()
 	timer.Finish()
-	provider.CheckObservationCount(name, 6)
-	for i := 0; i < 5; i++ {
-		provider.CheckObservationAlmostEqual(name, i, float64((i+1)*5), 1)
-	}
-	provider.CheckObservationAlmostEqual(name, 5, 28, 1)
+
+	<-done
+
+	provider.CheckObservationCount(name, 3)
 }

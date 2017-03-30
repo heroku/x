@@ -31,20 +31,20 @@ func NewDurationTimer(h kitmetrics.Histogram) *DurationTimer {
 // ObserveDuration captures the number of time units since the timer was
 // constructed, and forwards that observation to the histogram.
 func (t *DurationTimer) ObserveDuration() {
-	measureSince(t.h, t.t, t.d)
+	measureSince(t.h, t.t, time.Now(), t.d)
 }
 
 // MeasureSince takes a Histogram and initial time and generates
 // an observation for the total duration of the operation. It's
 // intended to be called via defer, e.g. defer MeasureSince(h, time.Now()).
 func MeasureSince(h kitmetrics.Histogram, t0 time.Time) {
-	measureSince(h, t0, float64(defaultTimingUnit))
+	measureSince(h, t0, time.Now(), float64(defaultTimingUnit))
 }
 
 // measureSince is the underlying code for supporting both MeasureSince
 // and DurationTimer.ObserveDuration.
-func measureSince(h kitmetrics.Histogram, t0 time.Time, unit float64) {
-	d := time.Since(t0)
+func measureSince(h kitmetrics.Histogram, t0, t1 time.Time, unit float64) {
+	d := t1.Sub(t0)
 	if d < 0 {
 		d = 0
 	}
@@ -54,40 +54,45 @@ func measureSince(h kitmetrics.Histogram, t0 time.Time, unit float64) {
 // MonotonicTimer emits metrics periodically until it is stopped.
 type MonotonicTimer struct {
 	DurationTimer
-	cancel chan interface{}
-	ticker *time.Ticker
+	cancel chan struct{}
 }
 
 // NewMonotonicTimer takes a histogram and units like Duration Timer, as well as a frequency to report statistics on
 func NewMonotonicTimer(h kitmetrics.Histogram, d, frequency time.Duration) *MonotonicTimer {
-	t := &MonotonicTimer{
+	t := newUnstartedMonotonicTimer(h, d)
+
+	ticker := time.NewTicker(frequency)
+	go t.start(ticker.Stop, ticker.C)
+
+	return t
+}
+
+func newUnstartedMonotonicTimer(h kitmetrics.Histogram, d time.Duration) *MonotonicTimer {
+	return &MonotonicTimer{
 		DurationTimer: DurationTimer{
 			h: h,
 			t: time.Now(),
 			d: float64(d),
 		},
-		cancel: make(chan interface{}),
-		ticker: time.NewTicker(frequency),
+		cancel: make(chan struct{}),
 	}
+}
 
-	go func(t *MonotonicTimer) {
-		for {
-			select {
-			case <-t.cancel:
-				t.ticker.Stop()
-				return
-			case <-t.ticker.C:
-				t.ObserveDuration()
-			}
+func (t *MonotonicTimer) start(stop func(), nowc <-chan time.Time) {
+	defer stop()
 
+	for {
+		select {
+		case <-t.cancel:
+			return
+		case <-nowc:
+			t.ObserveDuration()
 		}
-
-	}(t)
-	return t
+	}
 }
 
 // Finish stops the ongoing reports of duration and makes one final Observation
 func (t *MonotonicTimer) Finish() {
-	t.cancel <- nil
+	close(t.cancel)
 	t.ObserveDuration()
 }
