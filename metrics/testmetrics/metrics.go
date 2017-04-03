@@ -16,16 +16,33 @@ func (c *Counter) Add(delta float64) { c.value += delta }
 func (c *Counter) With(...string) metrics.Counter { return c }
 
 // Gauge stores a value based on Add/Set calls.
-type Gauge struct{ value float64 }
+type Gauge struct {
+	value float64
+	sync.RWMutex
+}
 
 // Add implements the metrics.Gauge interface.
-func (g *Gauge) Add(delta float64) { g.value += delta }
+func (g *Gauge) Add(delta float64) {
+	g.Lock()
+	defer g.Unlock()
+	g.value += delta
+}
 
 // Set implements the metrics.Gauge interface.
-func (g *Gauge) Set(v float64) { g.value = v }
+func (g *Gauge) Set(v float64) {
+	g.Lock()
+	defer g.Unlock()
+	g.value = v
+}
 
 // With implements the metrics.Gauge interface.
 func (g *Gauge) With(...string) metrics.Gauge { return g }
+
+func (g *Gauge) getValue() float64 {
+	g.RLock()
+	defer g.RUnlock()
+	return g.value
+}
 
 // Histogram collects observations without computing quantiles
 // so the observations can be checked by tests.

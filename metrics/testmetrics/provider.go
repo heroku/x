@@ -137,8 +137,8 @@ func (p *Provider) CheckGauge(name string, v float64) {
 	if !ok {
 		p.t.Fatalf("no gauge named %v", name)
 	}
-
-	if g.value != v {
-		p.t.Fatalf("%v = %v, want %v", name, g.value, v)
+	actualV := g.getValue()
+	if actualV != v {
+		p.t.Fatalf("%v = %v, want %v", name, actualV, v)
 	}
 }
