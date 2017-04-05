@@ -44,6 +44,8 @@ func init() {
 	}()
 }
 
+var lastGCPause uint64
+
 func gatherMetrics() *Payload {
 	result := &Payload{
 		Counters: map[string]float64{},
@@ -55,9 +57,12 @@ func gatherMetrics() *Payload {
 
 	// cribbed from https://github.com/codahale/metrics/blob/master/runtime/memstats.go
 
-	result.Counters["go.gc.collections"] = float64(stats.NumGC)
+	pauseNS := stats.PauseTotalNs - lastGCPause
+	lastGCPause = stats.PauseTotalNs
 
-	result.Gauges["go.gc.pause.total.ns"] = float64(stats.PauseTotalNs)
+	result.Counters["go.gc.collections"] = float64(stats.NumGC)
+	result.Counters["go.gc.pause.ns"] = float64(pauseNS)
+
 	result.Gauges["go.memory.heap.bytes"] = float64(stats.Alloc)
 	result.Gauges["go.memory.stack.bytes"] = float64(stats.StackInuse)
 
