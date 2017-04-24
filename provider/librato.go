@@ -3,16 +3,13 @@ package provider
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"sync"
 	"time"
-
-	"encoding/json"
-
-	"strconv"
 
 	"github.com/VividCortex/gohistogram"
 	kmetrics "github.com/go-kit/kit/metrics"
@@ -75,8 +72,9 @@ type Librato struct {
 // the context to stop reporting. The returned channel can be used to monitor
 // errors, of which there will be a max of 1 every interval. If Librato responds
 // with a non 2XX response code a LibratoError is returned. Callers need to
-// drain the error channel or it will block reporting. Callers should ensure
-// there is only one Report operating at a time.
+// drain the error channel or it will block reporting. The error channel is
+// closed after a final report is sent. Callers should ensure there is only one
+// Report operating at a time.
 func (l *Librato) Report(ctx context.Context, url *url.URL, interval time.Duration, source string) <-chan error {
 	errors := make(chan error)
 	go func() {
@@ -94,6 +92,7 @@ func (l *Librato) Report(ctx context.Context, url *url.URL, interval time.Durati
 				if err != nil {
 					errors <- err
 				}
+				close(errors)
 				return
 			}
 		}
@@ -134,6 +133,25 @@ func (l *Librato) NewHistogram(name string, buckets int) kmetrics.Histogram {
 	return &h
 }
 
+// librato counter and gauge structs for json Marshaling
+type lc struct {
+	Name   string  `json:"name"`
+	Period float64 `json:"period"`
+	Value  float64 `json:"value"`
+}
+
+// extended librato gauge format is used for all gauges in order to keep the coe
+// base simple
+type lg struct {
+	Name   string  `json:"name"`
+	Period float64 `json:"period"`
+	Count  int64   `json:"count"`
+	Sum    float64 `json:"sum"`
+	Min    float64 `json:"min"`
+	Max    float64 `json:"max"`
+	SumSq  float64 `json:"sum_squares"`
+}
+
 // report the metrics to the url, every interval, with the provided source
 func (l *Librato) report(u *url.URL, interval time.Duration, source string) error {
 	l.mu.Lock()
@@ -146,10 +164,10 @@ func (l *Librato) report(u *url.URL, interval time.Duration, source string) erro
 	var buf bytes.Buffer
 	e := json.NewEncoder(&buf)
 	r := struct {
-		Source      string           `json:"source"`
-		MeasureTime int64            `json:"measure_time"`
-		Counters    []json.Marshaler `json:"counters"`
-		Gauges      []json.Marshaler `json:"gauges"`
+		Source      string `json:"source"`
+		MeasureTime int64  `json:"measure_time"`
+		Counters    []lc   `json:"counters"`
+		Gauges      []lg   `json:"gauges"`
 	}{}
 	r.Source = source
 	ivSec := int64(interval / time.Second)
@@ -157,14 +175,14 @@ func (l *Librato) report(u *url.URL, interval time.Duration, source string) erro
 	period := interval.Seconds()
 
 	for _, c := range l.counters {
-		r.Counters = append(r.Counters, marshalGeneric(c.Name, c.Value(), period))
+		r.Counters = append(r.Counters, lc{Name: c.Name, Period: period, Value: c.Value()})
 	}
 	for _, g := range l.gauges {
-		r.Gauges = append(r.Gauges, marshalGeneric(g.Name, g.Value(), period))
+		v := g.Value()
+		r.Gauges = append(r.Gauges, lg{Name: g.Name, Period: period, Count: 1, Sum: v, Min: v, Max: v, SumSq: v * v})
 	}
-	for i := range l.histograms {
-		parts := l.histograms[i].jsonMarshalers(period)
-		r.Gauges = append(r.Gauges, parts...)
+	for _, h := range l.histograms {
+		r.Gauges = append(r.Gauges, h.measures(period)...)
 	}
 
 	if err := e.Encode(r); err != nil {
@@ -188,22 +206,9 @@ func (l *Librato) report(u *url.URL, interval time.Duration, source string) erro
 	return nil
 }
 
-// Create a raw json metrics object with the provided name, value and period.
-func marshalGeneric(name string, value, period float64) json.RawMessage {
-	b := make([]byte, 0, 100)
-	b = append(b, `{"name":"`...)
-	b = append(b, name...)
-	b = append(b, `","value":`...)
-	b = strconv.AppendFloat(b, value, 'f', 6, 64)
-	b = append(b, `,"period":`...)
-	b = strconv.AppendFloat(b, period, 'f', 3, 64)
-	b = append(b, '}')
-	return json.RawMessage(b)
-}
-
 // LibratoHistogram adapts go-kit/Heroku/Librato's ideas of histograms. It
-// reports p99, p95 and p50 values as seperate simple gauges as well as a single
-// complex gauge.
+// reports p99, p95 and p50 values as gauges in addition to a gauge for the
+// histogram itself.
 type LibratoHistogram struct {
 	buckets int
 	name    string
@@ -217,45 +222,38 @@ type LibratoHistogram struct {
 }
 
 // the json marshalers for the histograms 4 different gauges
-func (h *LibratoHistogram) jsonMarshalers(period float64) []json.Marshaler {
+func (h *LibratoHistogram) measures(period float64) []lg {
 	h.mu.Lock()
+	if h.count == 0 {
+		h.mu.Unlock()
+		return nil
+	}
 	count := h.count
 	sum := h.sum
 	min := h.min
 	max := h.max
 	sumsq := h.sumsq
+	name := h.name
 	percs := []struct {
-		p string
+		n string
 		v float64
 	}{
-		{"p99", h.h.Quantile(.99)},
-		{"p95", h.h.Quantile(.95)},
-		{"p50", h.h.Quantile(.50)},
+		{name + ".p99", h.h.Quantile(.99)},
+		{name + ".p95", h.h.Quantile(.95)},
+		{name + ".p50", h.h.Quantile(.50)},
 	}
 	h.reset()
 	h.mu.Unlock()
 
-	msg := make([]byte, 0, 200)
-	msg = append(msg, `{"name":"`...)
-	msg = append(msg, h.name...)
-	msg = append(msg, `","count":`...)
-	msg = strconv.AppendInt(msg, count, 10)
-	msg = append(msg, `,"sum":`...)
-	msg = strconv.AppendFloat(msg, sum, 'f', 6, 64)
-	msg = append(msg, `,"min":`...)
-	msg = strconv.AppendFloat(msg, min, 'f', 6, 64)
-	msg = append(msg, `,"max":`...)
-	msg = strconv.AppendFloat(msg, max, 'f', 6, 64)
-	msg = append(msg, `,"sum_squares":`...)
-	msg = strconv.AppendFloat(msg, sumsq, 'f', 6, 64)
-	msg = append(msg, '}')
+	m := make([]lg, 0, 4)
+	m = append(m,
+		lg{Name: name, Period: period, Count: count, Sum: sum, Min: min, Max: max, SumSq: sumsq},
+	)
 
-	msgs := []json.Marshaler{json.RawMessage(msg)}
 	for _, perc := range percs {
-		msgs = append(msgs, json.RawMessage(marshalGeneric(h.name+"."+perc.p, perc.v, period)))
+		m = append(m, lg{Name: perc.n, Period: period, Count: 1, Sum: perc.v, Min: perc.v, Max: perc.v, SumSq: perc.v * perc.v})
 	}
-
-	return msgs
+	return m
 }
 
 // Observe some data for the histogram
