@@ -85,7 +85,7 @@ func gaugeExpectations(t *testing.T, gJSON []byte, eJSON, eName string, eCount i
 		t.Errorf("got %q\nexpected %q", gJSON, eJSON)
 	}
 
-	var tg lg
+	var tg gauge
 	err := json.Unmarshal(gJSON, &tg)
 	if err != nil {
 		t.Fatalf("got %q, expected nil", err)
@@ -119,7 +119,7 @@ func counterExpectations(t *testing.T, gJSON []byte, eJSON, eName string, ePerio
 		t.Errorf("got %q\nexpected %q", gJSON, eJSON)
 	}
 
-	var tc lc
+	var tc counter
 	err := json.Unmarshal(gJSON, &tc)
 	if err != nil {
 		t.Fatalf("got %q, expected nil", err)
@@ -157,7 +157,7 @@ func TestLibratoHistogramJSONMarshalers(t *testing.T) {
 	}
 
 	// Double check our expectations.
-	var tg lg
+	var tg gauge
 	err = json.Unmarshal(p1, &tg)
 	if err != nil {
 		t.Fatalf("got %q, expected nil", err)

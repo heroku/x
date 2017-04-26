@@ -134,7 +134,7 @@ func (l *Librato) NewHistogram(name string, buckets int) kmetrics.Histogram {
 }
 
 // librato counter and gauge structs for json Marshaling
-type lc struct {
+type counter struct {
 	Name   string  `json:"name"`
 	Period float64 `json:"period"`
 	Value  float64 `json:"value"`
@@ -142,7 +142,7 @@ type lc struct {
 
 // extended librato gauge format is used for all gauges in order to keep the coe
 // base simple
-type lg struct {
+type gauge struct {
 	Name   string  `json:"name"`
 	Period float64 `json:"period"`
 	Count  int64   `json:"count"`
@@ -164,10 +164,10 @@ func (l *Librato) report(u *url.URL, interval time.Duration, source string) erro
 	var buf bytes.Buffer
 	e := json.NewEncoder(&buf)
 	r := struct {
-		Source      string `json:"source"`
-		MeasureTime int64  `json:"measure_time"`
-		Counters    []lc   `json:"counters"`
-		Gauges      []lg   `json:"gauges"`
+		Source      string    `json:"source"`
+		MeasureTime int64     `json:"measure_time"`
+		Counters    []counter `json:"counters"`
+		Gauges      []gauge   `json:"gauges"`
 	}{}
 	r.Source = source
 	ivSec := int64(interval / time.Second)
@@ -175,11 +175,11 @@ func (l *Librato) report(u *url.URL, interval time.Duration, source string) erro
 	period := interval.Seconds()
 
 	for _, c := range l.counters {
-		r.Counters = append(r.Counters, lc{Name: c.Name, Period: period, Value: c.Value()})
+		r.Counters = append(r.Counters, counter{Name: c.Name, Period: period, Value: c.Value()})
 	}
 	for _, g := range l.gauges {
 		v := g.Value()
-		r.Gauges = append(r.Gauges, lg{Name: g.Name, Period: period, Count: 1, Sum: v, Min: v, Max: v, SumSq: v * v})
+		r.Gauges = append(r.Gauges, gauge{Name: g.Name, Period: period, Count: 1, Sum: v, Min: v, Max: v, SumSq: v * v})
 	}
 	for _, h := range l.histograms {
 		r.Gauges = append(r.Gauges, h.measures(period)...)
@@ -222,7 +222,7 @@ type LibratoHistogram struct {
 }
 
 // the json marshalers for the histograms 4 different gauges
-func (h *LibratoHistogram) measures(period float64) []lg {
+func (h *LibratoHistogram) measures(period float64) []gauge {
 	h.mu.Lock()
 	if h.count == 0 {
 		h.mu.Unlock()
@@ -245,13 +245,13 @@ func (h *LibratoHistogram) measures(period float64) []lg {
 	h.reset()
 	h.mu.Unlock()
 
-	m := make([]lg, 0, 4)
+	m := make([]gauge, 0, 4)
 	m = append(m,
-		lg{Name: name, Period: period, Count: count, Sum: sum, Min: min, Max: max, SumSq: sumsq},
+		gauge{Name: name, Period: period, Count: count, Sum: sum, Min: min, Max: max, SumSq: sumsq},
 	)
 
 	for _, perc := range percs {
-		m = append(m, lg{Name: perc.n, Period: period, Count: 1, Sum: perc.v, Min: perc.v, Max: perc.v, SumSq: perc.v * perc.v})
+		m = append(m, gauge{Name: perc.n, Period: period, Count: 1, Sum: perc.v, Min: perc.v, Max: perc.v, SumSq: perc.v * perc.v})
 	}
 	return m
 }
