@@ -69,7 +69,7 @@ func (p *Provider) CheckCounter(name string, v float64) {
 		p.t.Fatalf("no counter named %v", name)
 	}
 
-	if c.value != v {
+	if c.getValue() != v {
 		p.t.Fatalf("%v = %v, want %v", name, c.value, v)
 	}
 }

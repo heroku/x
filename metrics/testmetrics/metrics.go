@@ -7,13 +7,26 @@ import (
 )
 
 // Counter accumulates a value based on Add calls.
-type Counter struct{ value float64 }
+type Counter struct {
+	value float64
+	sync.RWMutex
+}
 
 // Add implements the metrics.Counter interface.
-func (c *Counter) Add(delta float64) { c.value += delta }
+func (c *Counter) Add(delta float64) {
+	c.Lock()
+	defer c.Unlock()
+	c.value += delta
+}
 
 // With implements the metrics.Counter interface.
 func (c *Counter) With(...string) metrics.Counter { return c }
+
+func (c *Counter) getValue() float64 {
+	c.RLock()
+	defer c.RUnlock()
+	return c.value
+}
 
 // Gauge stores a value based on Add/Set calls.
 type Gauge struct {
