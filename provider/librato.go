@@ -2,7 +2,6 @@ package provider
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -62,6 +61,12 @@ func (e LibratoError) Error() string {
 // metrics, but are otherwise noops as the LabelValues are not applied in any
 // meaningful way.
 type Librato struct {
+	errors chan error
+	prefix string
+
+	once sync.Once
+	done chan struct{}
+
 	mu         sync.Mutex
 	counters   []*generic.Counter
 	gauges     []*generic.Gauge
@@ -75,39 +80,51 @@ type Librato struct {
 // drain the error channel or it will block reporting. The error channel is
 // closed after a final report is sent. Callers should ensure there is only one
 // Report operating at a time.
-func (l *Librato) Report(ctx context.Context, url *url.URL, interval time.Duration, source string) <-chan error {
-	errors := make(chan error)
+func NewLibrato(URL *url.URL, interval time.Duration, source, prefix string) *Librato {
+	l := &Librato{
+		prefix: prefix,
+		errors: make(chan error),
+		done:   make(chan struct{}),
+	}
+
 	go func() {
 		t := time.NewTicker(interval)
 		for {
 			select {
 			case <-t.C:
-				err := l.report(url, interval, source)
+				err := l.report(URL, interval, source)
 				if err != nil {
-					errors <- err
+					l.errors <- err
 				}
-			case <-ctx.Done():
+			case <-l.done:
 				t.Stop()
-				err := l.report(url, interval, source)
+				err := l.report(URL, interval, source)
 				if err != nil {
-					errors <- err
+					l.errors <- err
 				}
-				close(errors)
+				close(l.errors)
 				return
 			}
 		}
 	}()
 
-	return errors
+	return l
 }
 
-// Stop does nothing for this provider, cancel the context passed to the Report
-// method to stop the reporter.
-func (l *Librato) Stop() {}
+func (l *Librato) Errors() chan error {
+	return l.errors
+}
+
+// Stop reporting metrics
+func (l *Librato) Stop() {
+	l.once.Do(func() {
+		close(l.done)
+	})
+}
 
 // NewCounter for this librato provider.
 func (l *Librato) NewCounter(name string) kmetrics.Counter {
-	c := generic.NewCounter(name)
+	c := generic.NewCounter(l.prefix + "." + name)
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.counters = append(l.counters, c)
@@ -116,7 +133,7 @@ func (l *Librato) NewCounter(name string) kmetrics.Counter {
 
 // NewGauge for this librato provider.
 func (l *Librato) NewGauge(name string) kmetrics.Gauge {
-	g := generic.NewGauge(name)
+	g := generic.NewGauge(l.prefix + "." + name)
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.gauges = append(l.gauges, g)
@@ -125,7 +142,7 @@ func (l *Librato) NewGauge(name string) kmetrics.Gauge {
 
 // NewHistogram for this librato provider.
 func (l *Librato) NewHistogram(name string, buckets int) kmetrics.Histogram {
-	h := LibratoHistogram{name: name, buckets: buckets}
+	h := LibratoHistogram{name: l.prefix + "." + name, buckets: buckets}
 	h.reset()
 	l.mu.Lock()
 	defer l.mu.Unlock()
