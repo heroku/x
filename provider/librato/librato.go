@@ -1,4 +1,4 @@
-package provider
+package librato
 
 import (
 	"bytes"
@@ -24,45 +24,44 @@ const (
 )
 
 var (
-	_ metrics.Provider   = &Librato{}
-	_ kmetrics.Histogram = &LibratoHistogram{}
+	_ kmetrics.Histogram = &Histogram{}
 )
 
-// LibratoError is used to report information from a non 200 error returned by Librato.
-type LibratoError struct {
+// Error is used to report information from a non 200 error returned by Librato.
+type Error struct {
 	code                             int
 	body, rateLimitAgg, rateLimitStd string
 }
 
 // Code returned by librato
-func (e LibratoError) Code() int {
+func (e Error) Code() int {
 	return e.code
 }
 
 // RateLimit info returned by librato in the X-Librato-RateLimit-Agg and
 // X-Librato-RateLimit-Std headers
-func (e LibratoError) RateLimit() (string, string) {
+func (e Error) RateLimit() (string, string) {
 	return e.rateLimitAgg, e.rateLimitStd
 }
 
 // Body returned by librato.
-func (e LibratoError) Body() string {
+func (e Error) Body() string {
 	return e.body
 }
 
 // Error interface
-func (e LibratoError) Error() string {
+func (e Error) Error() string {
 	return fmt.Sprintf("code: %d, body: %s, rate-limit-agg: %s, rate-limit-std: %s", e.code, e.body, e.rateLimitAgg, e.rateLimitStd)
 }
 
-// Librato go-kit metrics provider. Works with Librato's older source based
+// Provider works with Librato's older source based
 // metrics (http://api-docs-archive.librato.com/?shell#create-a-metric, not the
 // new tag based metrcis). The generated metric's With methods return new
 // metrics, but are otherwise noops as the LabelValues are not applied in any
 // meaningful way.
-type Librato struct {
-	errors chan error
-	prefix string
+type Provider struct {
+	errorHandler   func(err error)
+	source, prefix string
 
 	once sync.Once
 	done chan struct{}
@@ -70,83 +69,116 @@ type Librato struct {
 	mu         sync.Mutex
 	counters   []*generic.Counter
 	gauges     []*generic.Gauge
-	histograms []*LibratoHistogram
+	histograms []*Histogram
 }
 
-// Report the metrics to the url every interval with the given source. Cancel
+// with the given source. If the prefix is != "" then it is prefixed to each
+// reported metric.
 // the context to stop reporting. The returned channel can be used to monitor
 // errors, of which there will be a max of 1 every interval. If Librato responds
 // with a non 2XX response code a LibratoError is returned. Callers need to
 // drain the error channel or it will block reporting. The error channel is
 // closed after a final report is sent. Callers should ensure there is only one
 // Report operating at a time.
-func NewLibrato(URL *url.URL, interval time.Duration, source, prefix string) *Librato {
-	l := &Librato{
-		prefix: prefix,
-		errors: make(chan error),
-		done:   make(chan struct{}),
+
+// OptionFunc used to set options on a librato provider
+type OptionFunc func(*Provider)
+
+// WithSource sets the optional provided source for the librato provider
+func WithSource(source string) OptionFunc {
+	return func(p *Provider) {
+		p.source = source
+	}
+}
+
+// WithPrefix sets the optional metrics prefix for the librato provider
+func WithPrefix(prefix string) OptionFunc {
+	return func(p *Provider) {
+		p.prefix = prefix
+	}
+}
+
+// WithErrorHandler sets the optional error handler used to report errors. Use
+// this to log, or otherwise handle reporting errors in your application.
+func WithErrorHandler(eh func(err error)) OptionFunc {
+	return func(p *Provider) {
+		p.errorHandler = eh
+
+	}
+}
+
+// New metrics provider that reports metrics to the URL every interval.
+func New(URL *url.URL, interval time.Duration, opts ...OptionFunc) metrics.Provider {
+	p := Provider{
+		done: make(chan struct{}),
+	}
+
+	for _, opt := range opts {
+		opt(&p)
 	}
 
 	go func() {
 		t := time.NewTicker(interval)
+		defer t.Stop()
 		for {
 			select {
 			case <-t.C:
-				err := l.report(URL, interval, source)
-				if err != nil {
-					l.errors <- err
+				err := p.report(URL, interval)
+				if err != nil && p.errorHandler != nil {
+					p.errorHandler(err)
 				}
-			case <-l.done:
-				t.Stop()
-				err := l.report(URL, interval, source)
-				if err != nil {
-					l.errors <- err
+			case <-p.done:
+				err := p.report(URL, interval)
+				if err != nil && p.errorHandler != nil {
+					p.errorHandler(err)
 				}
-				close(l.errors)
 				return
 			}
 		}
 	}()
 
-	return l
-}
-
-func (l *Librato) Errors() chan error {
-	return l.errors
+	return &p
 }
 
 // Stop reporting metrics
-func (l *Librato) Stop() {
-	l.once.Do(func() {
-		close(l.done)
+func (p *Provider) Stop() {
+	p.once.Do(func() {
+		close(p.done)
 	})
 }
 
+func prefixName(prefix, name string) string {
+	if prefix == "" {
+		return name
+	}
+	return prefix + "." + name
+}
+
 // NewCounter for this librato provider.
-func (l *Librato) NewCounter(name string) kmetrics.Counter {
-	c := generic.NewCounter(l.prefix + "." + name)
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	l.counters = append(l.counters, c)
+func (p *Provider) NewCounter(name string) kmetrics.Counter {
+	c := generic.NewCounter(prefixName(p.prefix, name))
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.counters = append(p.counters, c)
 	return c
 }
 
 // NewGauge for this librato provider.
-func (l *Librato) NewGauge(name string) kmetrics.Gauge {
-	g := generic.NewGauge(l.prefix + "." + name)
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	l.gauges = append(l.gauges, g)
+func (p *Provider) NewGauge(name string) kmetrics.Gauge {
+	g := generic.NewGauge(prefixName(p.prefix, name))
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.gauges = append(p.gauges, g)
 	return g
 }
 
 // NewHistogram for this librato provider.
-func (l *Librato) NewHistogram(name string, buckets int) kmetrics.Histogram {
-	h := LibratoHistogram{name: l.prefix + "." + name, buckets: buckets}
+func (p *Provider) NewHistogram(name string, buckets int) kmetrics.Histogram {
+	h := Histogram{name: prefixName(p.prefix, name), buckets: buckets}
 	h.reset()
-	l.mu.Lock()
-	defer l.mu.Unlock()
-	l.histograms = append(l.histograms, &h)
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.histograms = append(p.histograms, &h)
 	return &h
 }
 
@@ -169,36 +201,37 @@ type gauge struct {
 	SumSq  float64 `json:"sum_squares"`
 }
 
-// report the metrics to the url, every interval, with the provided source
-func (l *Librato) report(u *url.URL, interval time.Duration, source string) error {
-	l.mu.Lock()
-	defer l.mu.Unlock() // should only block New{Histogram,Counter,Gauge}
+// report the metrics to the url, every interval
+func (p *Provider) report(u *url.URL, interval time.Duration) error {
+	p.mu.Lock()
+	defer p.mu.Unlock() // should only block New{Histogram,Counter,Gauge}
 
-	if len(l.counters) == 0 || len(l.histograms) == 0 || len(l.gauges) == 0 {
+	if len(p.counters) == 0 || len(p.histograms) == 0 || len(p.gauges) == 0 {
 		return nil
 	}
 
 	var buf bytes.Buffer
 	e := json.NewEncoder(&buf)
 	r := struct {
-		Source      string    `json:"source"`
+		Source      string    `json:"source,omitempty"`
 		MeasureTime int64     `json:"measure_time"`
 		Counters    []counter `json:"counters"`
 		Gauges      []gauge   `json:"gauges"`
 	}{}
-	r.Source = source
+
+	r.Source = p.source
 	ivSec := int64(interval / time.Second)
 	r.MeasureTime = (time.Now().Unix() / ivSec) * ivSec
 	period := interval.Seconds()
 
-	for _, c := range l.counters {
+	for _, c := range p.counters {
 		r.Counters = append(r.Counters, counter{Name: c.Name, Period: period, Value: c.Value()})
 	}
-	for _, g := range l.gauges {
+	for _, g := range p.gauges {
 		v := g.Value()
 		r.Gauges = append(r.Gauges, gauge{Name: g.Name, Period: period, Count: 1, Sum: v, Min: v, Max: v, SumSq: v * v})
 	}
-	for _, h := range l.histograms {
+	for _, h := range p.histograms {
 		r.Gauges = append(r.Gauges, h.measures(period)...)
 	}
 
@@ -213,7 +246,7 @@ func (l *Librato) report(u *url.URL, interval time.Duration, source string) erro
 
 	if resp.StatusCode/100 != 2 {
 		b, _ := ioutil.ReadAll(resp.Body)
-		return LibratoError{
+		return Error{
 			resp.StatusCode,
 			string(b),
 			resp.Header.Get("X-Librato-RateLimit-Agg"),
@@ -223,10 +256,10 @@ func (l *Librato) report(u *url.URL, interval time.Duration, source string) erro
 	return nil
 }
 
-// LibratoHistogram adapts go-kit/Heroku/Librato's ideas of histograms. It
+// Histogram adapts go-kit/Heroku/Librato's ideas of histograms. It
 // reports p99, p95 and p50 values as gauges in addition to a gauge for the
 // histogram itself.
-type LibratoHistogram struct {
+type Histogram struct {
 	buckets int
 	name    string
 
@@ -239,7 +272,7 @@ type LibratoHistogram struct {
 }
 
 // the json marshalers for the histograms 4 different gauges
-func (h *LibratoHistogram) measures(period float64) []gauge {
+func (h *Histogram) measures(period float64) []gauge {
 	h.mu.Lock()
 	if h.count == 0 {
 		h.mu.Unlock()
@@ -274,7 +307,7 @@ func (h *LibratoHistogram) measures(period float64) []gauge {
 }
 
 // Observe some data for the histogram
-func (h *LibratoHistogram) Observe(value float64) {
+func (h *Histogram) Observe(value float64) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.count++
@@ -291,13 +324,13 @@ func (h *LibratoHistogram) Observe(value float64) {
 
 // With returns a new LibratoHistogram with the same name / buckets but it is
 // otherwise a noop
-func (h *LibratoHistogram) With(lv ...string) kmetrics.Histogram {
-	n := LibratoHistogram{name: h.name, buckets: h.buckets}
+func (h *Histogram) With(lv ...string) kmetrics.Histogram {
+	n := Histogram{name: h.name, buckets: h.buckets}
 	n.reset()
 	return &n
 }
 
-func (h *LibratoHistogram) reset() {
+func (h *Histogram) reset() {
 	// Not happy with this, but the existing histogram doesn't have a Reset.
 	h.h = gohistogram.NewHistogram(h.buckets)
 	h.count = 0
@@ -308,42 +341,42 @@ func (h *LibratoHistogram) reset() {
 }
 
 // Quantile percentage of reported Observations
-func (h *LibratoHistogram) Quantile(q float64) float64 {
+func (h *Histogram) Quantile(q float64) float64 {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	return h.h.Quantile(q)
 }
 
 // Count of Observations
-func (h *LibratoHistogram) Count() int64 {
+func (h *Histogram) Count() int64 {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	return h.count
 }
 
 // Min Observation
-func (h *LibratoHistogram) Min() float64 {
+func (h *Histogram) Min() float64 {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	return h.min
 }
 
 // Max Observation
-func (h *LibratoHistogram) Max() float64 {
+func (h *Histogram) Max() float64 {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	return h.max
 }
 
 // Sum of the Observations
-func (h *LibratoHistogram) Sum() float64 {
+func (h *Histogram) Sum() float64 {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	return h.sum
 }
 
 // SumSq of the Observations
-func (h *LibratoHistogram) SumSq() float64 {
+func (h *Histogram) SumSq() float64 {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	return h.sumsq

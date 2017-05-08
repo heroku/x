@@ -1,7 +1,6 @@
-package provider
+package librato
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -25,12 +24,12 @@ func TestLibratoSingleReport(t *testing.T) {
 		t.Fatalf("got %q, expected nil", err)
 	}
 	u.User = url.UserPassword(user, pwd)
-	source := "test.source"
 
-	var l Librato
-	c := l.NewCounter("test.counter")
-	g := l.NewGauge("test.gauge")
-	h := l.NewHistogram("test.histogram", DefaultBucketCount)
+	var p Provider
+	p.source = "test.source"
+	c := p.NewCounter("test.counter")
+	g := p.NewGauge("test.gauge")
+	h := p.NewHistogram("test.histogram", DefaultBucketCount)
 	c.Add(float64(time.Now().Unix())) // increasing value
 	g.Set(rand.Float64())
 	h.Observe(10)
@@ -38,7 +37,7 @@ func TestLibratoSingleReport(t *testing.T) {
 	h.Observe(150)
 
 	// Call the reporter explicitly
-	if err := l.report(u, 10*time.Second, source); err != nil {
+	if err := p.report(u, 10*time.Second); err != nil {
 		t.Fatalf("got %q, expected nil", err)
 	}
 }
@@ -56,12 +55,17 @@ func TestLibratoReport(t *testing.T) {
 	}
 	u.User = url.UserPassword(user, pwd)
 
-	var l Librato
-	c := l.NewCounter("test.counter")
-	g := l.NewGauge("test.gauge")
-	h := l.NewHistogram("test.histogram", DefaultBucketCount)
+	errHandler := func(err error) {
+		t.Errorf("got %q but didn't expect any errors", err)
+	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	p := New(u, time.Second, WithSource("test.source"), WithErrorHandler(errHandler))
+	c := p.NewCounter("test.counter")
+	g := p.NewGauge("test.gauge")
+	h := p.NewHistogram("test.histogram", DefaultBucketCount)
+
+	done := make(chan struct{})
+
 	go func() {
 		for i := 0; i < 30; i++ {
 			c.Add(float64(time.Now().Unix())) // increasing value
@@ -71,13 +75,11 @@ func TestLibratoReport(t *testing.T) {
 			h.Observe(rand.Float64() * 100)
 			time.Sleep(100 * time.Millisecond)
 		}
-		cancel()
+		p.Stop()
+		close(done)
 	}()
 
-	source := "test.source"
-	for err := range l.Report(ctx, u, time.Second, source) {
-		t.Errorf("got %q, but didn't expect error", err)
-	}
+	<-done
 }
 
 func gaugeExpectations(t *testing.T, gJSON []byte, eJSON, eName string, eCount int64, ePeriod, eSum, eMin, eMax, eSumSq float64) {
@@ -137,7 +139,7 @@ func counterExpectations(t *testing.T, gJSON []byte, eJSON, eName string, ePerio
 }
 
 func TestLibratoHistogramJSONMarshalers(t *testing.T) {
-	h := LibratoHistogram{name: "test.histogram", buckets: DefaultBucketCount}
+	h := Histogram{name: "test.histogram", buckets: DefaultBucketCount}
 	h.reset()
 	h.Observe(10)
 	h.Observe(100)
@@ -265,7 +267,7 @@ func generateHistogramTestData(c, max int) testcase {
 }
 
 func TestHistogram(t *testing.T) {
-	var l Librato
+	var p Provider
 	for _, tc := range []testcase{
 		generateHistogramTestData(10, 5*int(time.Second/time.Microsecond)),
 		generateHistogramTestData(100, 5*int(time.Second/time.Microsecond)),
@@ -284,11 +286,11 @@ func TestHistogram(t *testing.T) {
 		generateHistogramTestData(100000, int(time.Hour/time.Microsecond)),
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			h := l.NewHistogram(tc.name, DefaultBucketCount)
+			h := p.NewHistogram(tc.name, DefaultBucketCount)
 			for _, v := range tc.values {
 				h.Observe(v)
 			}
-			lh, ok := h.(*LibratoHistogram)
+			lh, ok := h.(*Histogram)
 			if !ok {
 				t.Fatal("Could not convert to *Histogram")
 			}
