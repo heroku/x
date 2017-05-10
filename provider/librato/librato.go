@@ -13,11 +13,12 @@ import (
 	"github.com/VividCortex/gohistogram"
 	kmetrics "github.com/go-kit/kit/metrics"
 	"github.com/go-kit/kit/metrics/generic"
-	"github.com/heroku/metaas/internal/metrics"
+	"github.com/heroku/x/go-kit/metrics"
 )
 
 const (
-	// DefaultBucketCount if you don't know what to use for the Histogram's bucket count.
+	// DefaultBucketCount is a reasonable default for the number of buckets a
+	// Histogram should use.
 	DefaultBucketCount = 50
 	// DefaultURL for reporting metrics.
 	DefaultURL = "https://metrics-api.librato.com/v1/metrics"
