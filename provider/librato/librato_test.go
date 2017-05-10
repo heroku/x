@@ -19,7 +19,7 @@ func TestLibratoSingleReport(t *testing.T) {
 		t.Skip("LIBRATO_TEST_USER || LIBRATO_TEST_PWD unset")
 	}
 	rand.Seed(time.Now().UnixNano())
-	u, err := url.Parse(DefaultLibratoURL)
+	u, err := url.Parse(DefaultURL)
 	if err != nil {
 		t.Fatalf("got %q, expected nil", err)
 	}
@@ -49,7 +49,7 @@ func TestLibratoReport(t *testing.T) {
 		t.Skip("LIBRATO_TEST_USER || LIBRATO_TEST_PWD unset")
 	}
 	rand.Seed(time.Now().UnixNano())
-	u, err := url.Parse(DefaultLibratoURL)
+	u, err := url.Parse(DefaultURL)
 	if err != nil {
 		t.Fatalf("got %q, expected nil", err)
 	}

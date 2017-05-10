@@ -19,8 +19,8 @@ import (
 const (
 	// DefaultBucketCount if you don't know what to use for the Histogram's bucket count.
 	DefaultBucketCount = 50
-	// DefaultLibratoURL for reporting metrics.
-	DefaultLibratoURL = "https://metrics-api.librato.com/v1/metrics"
+	// DefaultURL for reporting metrics.
+	DefaultURL = "https://metrics-api.librato.com/v1/metrics"
 )
 
 var (
