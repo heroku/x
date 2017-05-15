@@ -54,15 +54,18 @@ func NewInProcess(name string) (*testserver.GRPCTestServer, error) {
 	return s, nil
 }
 
-// A ServerStarter registers and starts itself on the provided grpc.Server.
-type ServerStarter interface {
+// A Starter registers and starts itself on the provided grpc.Server.
+//
+// It's expected Start will call the relevant RegisterXXXServer method
+// using srv.
+type Starter interface {
 	Start(srv *grpc.Server) error
 }
 
 // RunStandardServer runs a GRPC server with a standard setup including metrics,
 // panic handling, a health check service, TLS termination with client authentication,
 // and proxy-protocol wrapping.
-func RunStandardServer(logger log.FieldLogger, p grpcmetrics.Provider, port int, serverCACert, serverCert, serverKey []byte, server ServerStarter) error {
+func RunStandardServer(logger log.FieldLogger, p grpcmetrics.Provider, port int, serverCACert, serverCert, serverKey []byte, server Starter) error {
 	tlsConfig, err := tlsconfig.NewMutualTLS(serverCACert, serverCert, serverKey)
 	if err != nil {
 		return err
