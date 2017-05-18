@@ -28,6 +28,9 @@ func NewProvider(t *testing.T) *Provider {
 	}
 }
 
+// Stop makes it Provider compliant.
+func (p *Provider) Stop() {}
+
 // NewCounter implements go-kit's Provider interface.
 func (p *Provider) NewCounter(name string) metrics.Counter {
 	if c, ok := p.counters[name]; ok {

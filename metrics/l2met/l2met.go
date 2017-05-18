@@ -52,6 +52,11 @@ func New(prefix string) *L2met {
 	}
 }
 
+// Stop makes it comply with metrics.Provider.
+func (l *L2met) Stop() {
+	// noop
+}
+
 // NewCounter returns a counter. Observations are aggregated and emitted once
 // per write invocation.
 func (l *L2met) NewCounter(name string) metrics.Counter {

@@ -9,4 +9,5 @@ type Provider interface {
 	NewCounter(name string) kitmetrics.Counter
 	NewGauge(name string) kitmetrics.Gauge
 	NewHistogram(name string, buckets int) kitmetrics.Histogram
+	Stop()
 }
