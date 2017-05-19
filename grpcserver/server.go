@@ -10,6 +10,7 @@ import (
 	"github.com/heroku/cedar/lib/grpc/grpcmetrics"
 	"github.com/heroku/cedar/lib/grpc/panichandler"
 	"github.com/heroku/cedar/lib/grpc/testserver"
+	"github.com/heroku/cedar/lib/kit/metrics"
 	"github.com/heroku/cedar/lib/tlsconfig"
 	"github.com/mwitkow/go-grpc-middleware"
 	"github.com/pkg/errors"
@@ -65,7 +66,7 @@ type Starter interface {
 // RunStandardServer runs a GRPC server with a standard setup including metrics,
 // panic handling, a health check service, TLS termination with client authentication,
 // and proxy-protocol wrapping.
-func RunStandardServer(logger log.FieldLogger, p grpcmetrics.Provider, port int, serverCACert, serverCert, serverKey []byte, server Starter) error {
+func RunStandardServer(logger log.FieldLogger, p metrics.Provider, port int, serverCACert, serverCert, serverKey []byte, server Starter) error {
 	tlsConfig, err := tlsconfig.NewMutualTLS(serverCACert, serverCert, serverKey)
 	if err != nil {
 		return err

@@ -51,7 +51,7 @@ func TestUnaryServerInterceptor(t *testing.T) {
 
 func TestStreamServerInterceptor(t *testing.T) {
 	p := testmetrics.NewProvider(t)
-	usi := NewStreamServerInterceptor(p)
+	ssi := NewStreamServerInterceptor(p)
 	handler := func(err error) grpc.StreamHandler {
 		return func(srv interface{}, stream grpc.ServerStream) error {
 			if err == nil {
@@ -66,21 +66,31 @@ func TestStreamServerInterceptor(t *testing.T) {
 		FullMethod: "/spec.Hello/StreamUpdates",
 	}
 
-	err := usi(context.Background(), &testServerStream{}, info, handler(nil))
+	err := ssi(nil, &testServerStream{}, info, handler(nil))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = usi(context.Background(), nil, info, handler(errors.New("test")))
+	err = ssi(nil, &testServerStream{}, info, func(srv interface{}, stream grpc.ServerStream) error {
+		p.CheckGauge("grpc.server.hello.stream-updates.stream.clients", 1)
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = ssi(nil, &testServerStream{}, info, handler(errors.New("test")))
 	if err == nil {
 		t.Fatal("expected an error")
 	}
 
-	p.CheckCounter("grpc.server.hello.stream-updates.requests", 2)
-	p.CheckCounter("grpc.server.hello.stream-updates.response-codes.ok", 1)
+	p.CheckCounter("grpc.server.hello.stream-updates.requests", 3)
+	p.CheckCounter("grpc.server.hello.stream-updates.response-codes.ok", 2)
 	p.CheckCounter("grpc.server.hello.stream-updates.response-codes.unknown", 1)
 	p.CheckCounter("grpc.server.hello.stream-updates.errors", 1)
-	p.CheckObservationCount("grpc.server.hello.stream-updates.request-duration.ms", 2)
+	p.CheckObservationCount("grpc.server.hello.stream-updates.request-duration.ms", 3)
+
+	p.CheckGauge("grpc.server.hello.stream-updates.stream.clients", 0)
 
 	p.CheckCounter("grpc.server.hello.stream-updates.stream.sends", 2)
 	p.CheckObservationCount("grpc.server.hello.stream-updates.stream.send-duration.ms", 2)

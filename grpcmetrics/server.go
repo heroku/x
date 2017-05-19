@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/heroku/cedar/lib/kit/metrics"
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -11,7 +12,7 @@ import (
 
 // NewUnaryServerInterceptor returns an interceptor for unary server calls
 // which will report metrics to the given provider.
-func NewUnaryServerInterceptor(p Provider) grpc.UnaryServerInterceptor {
+func NewUnaryServerInterceptor(p metrics.Provider) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (_ interface{}, err error) {
 		pp := &prefixProvider{metricPrefix("server", info.FullMethod), p}
 
@@ -25,11 +26,15 @@ func NewUnaryServerInterceptor(p Provider) grpc.UnaryServerInterceptor {
 
 // NewStreamServerInterceptor returns an interceptor for stream server calls
 // which will report metrics to the given provider.
-func NewStreamServerInterceptor(p Provider) grpc.StreamServerInterceptor {
+func NewStreamServerInterceptor(p metrics.Provider) grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) (err error) {
 		pp := &prefixProvider{metricPrefix("server", info.FullMethod), p}
 
+		clients := pp.NewGauge("stream.clients")
+		clients.Add(1)
+
 		defer func(begin time.Time) {
+			clients.Add(-1)
 			instrumentMethod(pp, time.Since(begin), err)
 		}(time.Now())
 
@@ -41,7 +46,7 @@ func NewStreamServerInterceptor(p Provider) grpc.StreamServerInterceptor {
 // serverStream provides a light wrapper over grpc.ServerStream
 // to instrument SendMsg and RecvMsg.
 type serverStream struct {
-	p Provider
+	p metrics.Provider
 	grpc.ServerStream
 }
 
@@ -63,7 +68,7 @@ func (ss *serverStream) RecvMsg(m interface{}) error {
 	return ss.ServerStream.RecvMsg(m)
 }
 
-func instrumentMethod(p Provider, duration time.Duration, err error) {
+func instrumentMethod(p metrics.Provider, duration time.Duration, err error) {
 	p.NewHistogram("request-duration.ms", 50).Observe(ms(duration))
 	p.NewCounter("requests").Add(1)
 	p.NewCounter(fmt.Sprintf("response-codes.%s", code(err))).Add(1)
@@ -78,12 +83,12 @@ func instrumentMethod(p Provider, duration time.Duration, err error) {
 	}
 }
 
-func instrumentStreamSend(p Provider, duration time.Duration) {
+func instrumentStreamSend(p metrics.Provider, duration time.Duration) {
 	p.NewHistogram("stream.send-duration.ms", 50).Observe(ms(duration))
 	p.NewCounter("stream.sends").Add(1)
 }
 
-func instrumentStreamRecv(p Provider, duration time.Duration) {
+func instrumentStreamRecv(p metrics.Provider, duration time.Duration) {
 	p.NewHistogram("stream.recv-duration.ms", 50).Observe(ms(duration))
 	p.NewCounter("stream.recvs").Add(1)
 }

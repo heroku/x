@@ -18,6 +18,7 @@
 //
 // In addition to these metrics, streams will also report:
 //
+//		stream.clients - gauge of connected clients
 //		stream.sends - counter of sent messages
 //		stream.send-duration.ms - histogram of send durations in milliseconds
 //		stream.recvs - counter of received messages
