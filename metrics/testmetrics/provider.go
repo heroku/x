@@ -33,8 +33,8 @@ func (p *Provider) Stop() {}
 
 // NewCounter implements go-kit's Provider interface.
 func (p *Provider) NewCounter(name string) metrics.Counter {
-	if c, ok := p.counters[name]; ok {
-		return c
+	if _, ok := p.counters[name]; ok {
+		p.t.Errorf("NewCounter(%s) called, already existing", name)
 	}
 
 	c := &Counter{}
@@ -44,8 +44,8 @@ func (p *Provider) NewCounter(name string) metrics.Counter {
 
 // NewGauge implements go-kit's Provider interface.
 func (p *Provider) NewGauge(name string) metrics.Gauge {
-	if g, ok := p.gauges[name]; ok {
-		return g
+	if _, ok := p.gauges[name]; ok {
+		p.t.Errorf("NewGauge(%s) called, already existing", name)
 	}
 
 	g := &Gauge{}
@@ -55,8 +55,8 @@ func (p *Provider) NewGauge(name string) metrics.Gauge {
 
 // NewHistogram implements go-kit's Provider interface.
 func (p *Provider) NewHistogram(name string, _ int) metrics.Histogram {
-	if h, ok := p.histograms[name]; ok {
-		return h
+	if _, ok := p.histograms[name]; ok {
+		p.t.Errorf("NewHistogram(%s) called, already existing", name)
 	}
 
 	h := &Histogram{}
