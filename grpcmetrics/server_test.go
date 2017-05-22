@@ -101,10 +101,11 @@ func TestStreamServerInterceptor(t *testing.T) {
 
 func TestInstrumentMethod(t *testing.T) {
 	p := testmetrics.NewProvider(t)
+	r := newRegistry(p)
 
-	instrumentMethod(p, time.Millisecond, nil)
-	instrumentMethod(p, time.Second, nil)
-	instrumentMethod(p, 10*time.Second, errors.New(""))
+	instrumentMethod(r, time.Millisecond, nil)
+	instrumentMethod(r, time.Second, nil)
+	instrumentMethod(r, 10*time.Second, errors.New(""))
 
 	p.CheckCounter("requests", 3)
 	p.CheckCounter("errors", 1)
@@ -115,10 +116,11 @@ func TestInstrumentMethod(t *testing.T) {
 
 func TestInstrumentStreamSend(t *testing.T) {
 	p := testmetrics.NewProvider(t)
+	r := newRegistry(p)
 
-	instrumentStreamSend(p, time.Millisecond)
-	instrumentStreamSend(p, time.Second)
-	instrumentStreamSend(p, 10*time.Second)
+	instrumentStreamSend(r, time.Millisecond)
+	instrumentStreamSend(r, time.Second)
+	instrumentStreamSend(r, 10*time.Second)
 
 	p.CheckCounter("stream.sends", 3)
 	p.CheckObservations("stream.send-duration.ms", 1.0, 1000.0, 10000.0)
@@ -126,10 +128,11 @@ func TestInstrumentStreamSend(t *testing.T) {
 
 func TestInstrumentStreamRecv(t *testing.T) {
 	p := testmetrics.NewProvider(t)
+	r := newRegistry(p)
 
-	instrumentStreamRecv(p, time.Millisecond)
-	instrumentStreamRecv(p, time.Second)
-	instrumentStreamRecv(p, 10*time.Second)
+	instrumentStreamRecv(r, time.Millisecond)
+	instrumentStreamRecv(r, time.Second)
+	instrumentStreamRecv(r, 10*time.Second)
 
 	p.CheckCounter("stream.recvs", 3)
 	p.CheckObservations("stream.recv-duration.ms", 1.0, 1000.0, 10000.0)

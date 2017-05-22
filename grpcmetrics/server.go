@@ -13,11 +13,12 @@ import (
 // NewUnaryServerInterceptor returns an interceptor for unary server calls
 // which will report metrics to the given provider.
 func NewUnaryServerInterceptor(p metrics.Provider) grpc.UnaryServerInterceptor {
+	r0 := newRegistry(p)
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (_ interface{}, err error) {
-		pp := &prefixProvider{metricPrefix("server", info.FullMethod), p}
+		r1 := &prefixedRegistry{r0, metricPrefix("server", info.FullMethod)}
 
 		defer func(begin time.Time) {
-			instrumentMethod(pp, time.Since(begin), err)
+			instrumentMethod(r1, time.Since(begin), err)
 		}(time.Now())
 
 		return handler(ctx, req)
@@ -27,18 +28,19 @@ func NewUnaryServerInterceptor(p metrics.Provider) grpc.UnaryServerInterceptor {
 // NewStreamServerInterceptor returns an interceptor for stream server calls
 // which will report metrics to the given provider.
 func NewStreamServerInterceptor(p metrics.Provider) grpc.StreamServerInterceptor {
+	reg := newRegistry(p)
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) (err error) {
-		pp := &prefixProvider{metricPrefix("server", info.FullMethod), p}
+		reg := &prefixedRegistry{reg, metricPrefix("server", info.FullMethod)}
 
-		clients := pp.NewGauge("stream.clients")
+		clients := reg.GetOrRegisterGauge("stream.clients")
 		clients.Add(1)
 
 		defer func(begin time.Time) {
 			clients.Add(-1)
-			instrumentMethod(pp, time.Since(begin), err)
+			instrumentMethod(reg, time.Since(begin), err)
 		}(time.Now())
 
-		wrapped := &serverStream{pp, ss}
+		wrapped := &serverStream{reg, ss}
 		return handler(srv, wrapped)
 	}
 }
@@ -46,14 +48,14 @@ func NewStreamServerInterceptor(p metrics.Provider) grpc.StreamServerInterceptor
 // serverStream provides a light wrapper over grpc.ServerStream
 // to instrument SendMsg and RecvMsg.
 type serverStream struct {
-	p metrics.Provider
+	reg registry
 	grpc.ServerStream
 }
 
 // RecvMsg implements the grpc.Stream interface.
 func (ss *serverStream) SendMsg(m interface{}) error {
 	defer func(begin time.Time) {
-		instrumentStreamSend(ss.p, time.Since(begin))
+		instrumentStreamSend(ss.reg, time.Since(begin))
 	}(time.Now())
 
 	return ss.ServerStream.SendMsg(m)
@@ -62,35 +64,35 @@ func (ss *serverStream) SendMsg(m interface{}) error {
 // RecvMsg implements the grpc.Stream interface.
 func (ss *serverStream) RecvMsg(m interface{}) error {
 	defer func(begin time.Time) {
-		instrumentStreamRecv(ss.p, time.Since(begin))
+		instrumentStreamRecv(ss.reg, time.Since(begin))
 	}(time.Now())
 
 	return ss.ServerStream.RecvMsg(m)
 }
 
-func instrumentMethod(p metrics.Provider, duration time.Duration, err error) {
-	p.NewHistogram("request-duration.ms", 50).Observe(ms(duration))
-	p.NewCounter("requests").Add(1)
-	p.NewCounter(fmt.Sprintf("response-codes.%s", code(err))).Add(1)
+func instrumentMethod(r registry, duration time.Duration, err error) {
+	r.GetOrRegisterHistogram("request-duration.ms", 50).Observe(ms(duration))
+	r.GetOrRegisterCounter("requests").Add(1)
+	r.GetOrRegisterCounter(fmt.Sprintf("response-codes.%s", code(err))).Add(1)
 	if err != nil {
 		if errors.Cause(err) == context.Canceled {
 			// Count cancelations differently from other errors to avoid
 			// introducing too much noise into the error count.
-			p.NewCounter("context-canceled-errors").Add(1)
+			r.GetOrRegisterCounter("context-canceled-errors").Add(1)
 		} else {
-			p.NewCounter("errors").Add(1)
+			r.GetOrRegisterCounter("errors").Add(1)
 		}
 	}
 }
 
-func instrumentStreamSend(p metrics.Provider, duration time.Duration) {
-	p.NewHistogram("stream.send-duration.ms", 50).Observe(ms(duration))
-	p.NewCounter("stream.sends").Add(1)
+func instrumentStreamSend(r registry, duration time.Duration) {
+	r.GetOrRegisterHistogram("stream.send-duration.ms", 50).Observe(ms(duration))
+	r.GetOrRegisterCounter("stream.sends").Add(1)
 }
 
-func instrumentStreamRecv(p metrics.Provider, duration time.Duration) {
-	p.NewHistogram("stream.recv-duration.ms", 50).Observe(ms(duration))
-	p.NewCounter("stream.recvs").Add(1)
+func instrumentStreamRecv(r registry, duration time.Duration) {
+	r.GetOrRegisterHistogram("stream.recv-duration.ms", 50).Observe(ms(duration))
+	r.GetOrRegisterCounter("stream.recvs").Add(1)
 }
 
 func ms(d time.Duration) float64 {

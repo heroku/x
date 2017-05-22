@@ -13,7 +13,7 @@ import (
 
 func metricPrefix(rpcType, fullMethod string) string {
 	service, method := methodInfo(fullMethod)
-	return fmt.Sprintf("grpc.%s.%s.%s.", rpcType, service, method)
+	return fmt.Sprintf("grpc.%s.%s.%s", rpcType, service, method)
 }
 
 // methodInfo splits gRPC FullMethod names into service and method
