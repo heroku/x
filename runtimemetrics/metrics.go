@@ -6,7 +6,7 @@ import (
 	"time"
 
 	kitmetrics "github.com/go-kit/kit/metrics"
-	"github.com/heroku/cedar/lib/kit/metrics"
+	"github.com/heroku/x/go-kit/metrics"
 )
 
 // Collector collects metrics about the Go runtime into go-kit metrics.
