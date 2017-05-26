@@ -4,7 +4,7 @@ import (
 	"sync"
 
 	kitmetrics "github.com/go-kit/kit/metrics"
-	"github.com/heroku/cedar/lib/kit/metrics"
+	"github.com/heroku/x/go-kit/metrics"
 )
 
 // A registry holds references to a set of metrics by name. It's guaranteed

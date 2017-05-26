@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/heroku/cedar/lib/kit/metrics"
+	"github.com/heroku/x/go-kit/metrics"
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
