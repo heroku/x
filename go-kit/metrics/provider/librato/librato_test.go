@@ -59,7 +59,7 @@ func TestLibratoReport(t *testing.T) {
 		t.Errorf("got %q but didn't expect any errors", err)
 	}
 
-	p := New(u, time.Second, WithSource("test.source"), WithErrorHandler(errHandler))
+	p := New(u, time.Second, WithSource("test.source"), WithErrorHandler(errHandler), WithPercentilePrefix(defaultPercentilePrefix))
 	c := p.NewCounter("test.counter")
 	g := p.NewGauge("test.gauge")
 	h := p.NewHistogram("test.histogram", DefaultBucketCount)
@@ -139,13 +139,13 @@ func counterExpectations(t *testing.T, gJSON []byte, eJSON, eName string, ePerio
 }
 
 func TestLibratoHistogramJSONMarshalers(t *testing.T) {
-	h := Histogram{name: "test.histogram", buckets: DefaultBucketCount}
+	h := Histogram{name: "test.histogram", buckets: DefaultBucketCount, percentilePrefix: ".p"}
 	h.reset()
 	h.Observe(10)
 	h.Observe(100)
 	h.Observe(150)
 	ePeriod := 1.0
-	d := h.measures(ePeriod, ".p")
+	d := h.measures(ePeriod)
 	if len(d) != 4 {
 		t.Fatalf("got %d, expected length to be 4", len(d))
 	}

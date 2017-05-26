@@ -187,7 +187,7 @@ func (p *Provider) NewGauge(name string) kmetrics.Gauge {
 
 // NewHistogram for this librato provider.
 func (p *Provider) NewHistogram(name string, buckets int) kmetrics.Histogram {
-	h := Histogram{name: prefixName(p.prefix, name), buckets: buckets}
+	h := Histogram{name: prefixName(p.prefix, name), buckets: buckets, percentilePrefix: p.percentilePrefix}
 	h.reset()
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -245,7 +245,7 @@ func (p *Provider) report(u *url.URL, interval time.Duration) error {
 		r.Gauges = append(r.Gauges, gauge{Name: g.Name, Period: period, Count: 1, Sum: v, Min: v, Max: v, SumSq: v * v})
 	}
 	for _, h := range p.histograms {
-		r.Gauges = append(r.Gauges, h.measures(period, p.percentilePrefix)...)
+		r.Gauges = append(r.Gauges, h.measures(period)...)
 	}
 
 	if err := e.Encode(r); err != nil {
@@ -273,8 +273,9 @@ func (p *Provider) report(u *url.URL, interval time.Duration) error {
 // reports p99, p95 and p50 values as gauges in addition to a gauge for the
 // histogram itself.
 type Histogram struct {
-	buckets int
-	name    string
+	buckets          int
+	name             string
+	percentilePrefix string
 
 	mu sync.RWMutex
 	// I would prefer to use hdrhistogram, but that's incompatible with the
@@ -285,7 +286,7 @@ type Histogram struct {
 }
 
 // the json marshalers for the histograms 4 different gauges
-func (h *Histogram) measures(period float64, prefix string) []gauge {
+func (h *Histogram) measures(period float64) []gauge {
 	h.mu.Lock()
 	if h.count == 0 {
 		h.mu.Unlock()
@@ -301,9 +302,9 @@ func (h *Histogram) measures(period float64, prefix string) []gauge {
 		n string
 		v float64
 	}{
-		{name + prefix + "99", h.h.Quantile(.99)},
-		{name + prefix + "95", h.h.Quantile(.95)},
-		{name + prefix + "50", h.h.Quantile(.50)},
+		{name + h.percentilePrefix + "99", h.h.Quantile(.99)},
+		{name + h.percentilePrefix + "95", h.h.Quantile(.95)},
+		{name + h.percentilePrefix + "50", h.h.Quantile(.50)},
 	}
 	h.reset()
 	h.mu.Unlock()
