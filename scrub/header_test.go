@@ -8,7 +8,7 @@ import (
 )
 
 func TestHeader(t *testing.T) {
-	for name := range restrictedHeaders {
+	for name := range RestrictedHeaders {
 		t.Run(name, func(tt *testing.T) {
 			h := http.Header{
 				textproto.CanonicalMIMEHeaderKey(name): []string{"test_string_please_ignore"},

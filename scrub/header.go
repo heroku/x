@@ -11,9 +11,10 @@ const (
 	authHeaderLowerCase = "authorization"
 )
 
+// The list of HTTP header names that will have their contents scrubbed of sensitive data.
 var (
-	// copy from https://github.com/heroku/rollbar-blanket/blob/master/lib/rollbar/blanket/headers.rb
-	restrictedHeaders = map[string]bool{
+	// copied from https://github.com/heroku/rollbar-blanket/blob/master/lib/rollbar/blanket/headers.rb
+	RestrictedHeaders = map[string]bool{
 		"cookie":                      true,
 		"heroku-authorization-token":  true,
 		"heroku-two-factor-code":      true,
@@ -47,7 +48,7 @@ func Header(h http.Header) http.Header {
 				scrubbedValues = append(scrubbedValues, scrubbed)
 			}
 			scrubbedHeader[k] = scrubbedValues
-		} else if _, contains := restrictedHeaders[strings.ToLower(k)]; contains {
+		} else if _, contains := RestrictedHeaders[strings.ToLower(k)]; contains {
 			scrubbedHeader[k] = []string{scrubbedValue}
 		} else {
 			scrubbedHeader[k] = v

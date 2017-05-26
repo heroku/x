@@ -15,7 +15,7 @@ func urlMustParse(t *testing.T, val string) *url.URL {
 }
 
 func TestURL(t *testing.T) {
-	for param := range restrictedParams {
+	for param := range RestrictedParams {
 		t.Run(param, func(tt *testing.T) {
 			u := urlMustParse(tt, "https://thisisnotadoma.in/login")
 			q := u.Query()

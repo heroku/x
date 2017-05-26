@@ -5,9 +5,10 @@ import (
 	"strings"
 )
 
+// The list of URL parameter names that will have their contents scrubbed of sensitive data.
 var (
 	// copy from https://github.com/heroku/rollbar-blanket/blob/master/lib/rollbar/blanket/fields.rb
-	restrictedParams = map[string]bool{
+	RestrictedParams = map[string]bool{
 		"access_token":                                true,
 		"api_key":                                     true,
 		"authenticity_token":                          true,
@@ -44,12 +45,15 @@ var (
 	}
 )
 
+// URL removes a subset of "sensitive" URL parameters as used by parts of Heroku's
+// conventions for API design. The output of this function is safe to be logged
+// except in high-security scenarios.
 func URL(u *url.URL) *url.URL {
 	// copy the url
 	uu := *u
 	query := uu.Query()
 	for k, v := range query {
-		if _, contains := restrictedParams[strings.ToLower(k)]; contains {
+		if _, contains := RestrictedParams[strings.ToLower(k)]; contains {
 			query.Set(k, scrubbedValue)
 			continue
 		}
