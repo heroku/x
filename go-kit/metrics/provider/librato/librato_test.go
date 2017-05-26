@@ -59,7 +59,7 @@ func TestLibratoReport(t *testing.T) {
 		t.Errorf("got %q but didn't expect any errors", err)
 	}
 
-	p := New(u, time.Second, WithSource("test.source"), WithErrorHandler(errHandler), WithPercentilePrefix(defaultPercentilePrefix))
+	p := New(u, time.Second, WithSource("test.source"), WithErrorHandler(errHandler))
 	c := p.NewCounter("test.counter")
 	g := p.NewGauge("test.gauge")
 	h := p.NewHistogram("test.histogram", DefaultBucketCount)
