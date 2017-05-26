@@ -1,13 +1,8 @@
-package url
+package scrub
 
 import (
 	"net/url"
 	"strings"
-)
-
-const (
-	scrubbedValue       = "[SCRUBBED]"
-	authHeaderLowerCase = "authorization"
 )
 
 var (

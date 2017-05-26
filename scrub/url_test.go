@@ -1,83 +1,53 @@
-package url
+package scrub
 
 import (
 	"net/url"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/suite"
 )
 
-func TestScrubber(t *testing.T) {
-	suite.Run(t, new(ScrubberSuite))
+func urlMustParse(t *testing.T, val string) *url.URL {
+	u, err := url.Parse(val)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return u
 }
 
-type ScrubberSuite struct {
-	suite.Suite
+func TestURL(t *testing.T) {
+	for param := range restrictedParams {
+		t.Run(param, func(tt *testing.T) {
+			u := urlMustParse(tt, "https://thisisnotadoma.in/login")
+			q := u.Query()
+
+			q.Set(param, "hunter2")
+			u.RawQuery = q.Encode()
+
+			sc := URL(u)
+			scq := sc.Query()
+
+			if val := scq.Get(param); val != scrubbedValue {
+				tt.Fatalf("%s: want: %q, got: %q", param, scrubbedValue, val)
+			}
+		})
+	}
 }
 
-func (s *ScrubberSuite) TestScrubURL() {
-	u, _ := url.Parse("https://api.heroku.com/login?username=foo&password=bar")
-	uu := URL(u)
+func TestURLUserInfo(t *testing.T) {
+	u := urlMustParse(t, "https://AzureDiamond:hunter2@thisisnotadoma.in/login")
+	sc := URL(u)
 
-	query := uu.Query()
-	assert.Equal(s.T(), "foo", query.Get("username"))
-	assert.Equal(s.T(), scrubbedValue, query.Get("password"))
+	user := sc.User.Username()
+	if user != "AzureDiamond" {
+		t.Fatalf("sc.User.Username(): want: \"AzureDiamond\", got: %q", user)
+	}
 
-	originalQuery := u.Query()
-	assert.Equal(s.T(), "foo", originalQuery.Get("username"))
-	assert.Equal(s.T(), "bar", originalQuery.Get("password"))
-}
+	pass, ok := sc.User.Password()
+	if !ok {
+		t.Fatalf("expected sc.User.Password to have a value.")
+	}
 
-func (s *ScrubberSuite) TestScrubURLCaseInsensitive() {
-	u, _ := url.Parse("https://api.heroku.com/login?username=foo&passWord=bar")
-	uu := URL(u)
-
-	query := uu.Query()
-	assert.Equal(s.T(), "foo", query.Get("username"))
-	assert.Equal(s.T(), scrubbedValue, query.Get("passWord"))
-
-	originalQuery := u.Query()
-	assert.Equal(s.T(), "foo", originalQuery.Get("username"))
-	assert.Equal(s.T(), "bar", originalQuery.Get("passWord"))
-}
-
-func (s *ScrubberSuite) TestScrubURLQueryWithURL() {
-	u, _ := url.Parse("https://api.heroku.com/login?url=https://user:password@api.heroku.com/login")
-	uu := URL(u)
-
-	query := uu.Query()
-	uu, err := url.Parse(query.Get("url"))
-	assert.NoError(s.T(), err)
-
-	userInfo := uu.User
-	password, _ := userInfo.Password()
-	assert.Equal(s.T(), "user", userInfo.Username())
-	assert.Equal(s.T(), scrubbedValue, password)
-
-	originalQuery := u.Query()
-	uu, err = url.Parse(originalQuery.Get("url"))
-	assert.NoError(s.T(), err)
-
-	originalUserInfo := uu.User
-	originalPassword, _ := originalUserInfo.Password()
-	assert.Equal(s.T(), "user", originalUserInfo.Username())
-	assert.Equal(s.T(), "password", originalPassword)
-}
-
-func (s *ScrubberSuite) TestScrubURLUserInfoPassword() {
-	u, _ := url.Parse("https://user:password@api.heroku.com/login")
-	uu := URL(u)
-
-	userInfo := uu.User
-	password, _ := userInfo.Password()
-
-	assert.Equal(s.T(), "user", userInfo.Username())
-	assert.Equal(s.T(), scrubbedValue, password)
-
-	originalUserInfo := u.User
-	originalPassword, _ := originalUserInfo.Password()
-
-	assert.Equal(s.T(), "user", originalUserInfo.Username())
-	assert.Equal(s.T(), "password", originalPassword)
+	if pass != scrubbedValue {
+		t.Fatalf("sc.User.Password(): want: %q, got: %q", scrubbedValue, pass)
+	}
 }

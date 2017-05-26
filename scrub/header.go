@@ -1,4 +1,4 @@
-package header
+package scrub
 
 import (
 	"fmt"
@@ -26,9 +26,13 @@ var (
 		"set-cookie":                  true,
 		"x-csrf-token":                true,
 		"x_csrf_token":                true,
+		"authorization":               true,
 	}
 )
 
+// Header removes a subset of "sensitive" HTTP headers as used by parts of Heroku's
+// conventions for API design. The output of this function is safe to be logged
+// except in high-security scenarios.
 func Header(h http.Header) http.Header {
 	scrubbedHeader := http.Header{}
 	for k, v := range h {
