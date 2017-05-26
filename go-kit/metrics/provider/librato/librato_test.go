@@ -139,7 +139,7 @@ func counterExpectations(t *testing.T, gJSON []byte, eJSON, eName string, ePerio
 }
 
 func TestLibratoHistogramJSONMarshalers(t *testing.T) {
-	h := Histogram{name: "test.histogram", buckets: DefaultBucketCount}
+	h := Histogram{name: "test.histogram", buckets: DefaultBucketCount, percentilePrefix: ".p"}
 	h.reset()
 	h.Observe(10)
 	h.Observe(100)

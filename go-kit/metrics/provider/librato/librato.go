@@ -61,8 +61,8 @@ func (e Error) Error() string {
 // metrics, but are otherwise noops as the LabelValues are not applied in any
 // meaningful way.
 type Provider struct {
-	errorHandler   func(err error)
-	source, prefix string
+	errorHandler                     func(err error)
+	source, prefix, percentilePrefix string
 
 	once sync.Once
 	done chan struct{}
@@ -84,6 +84,13 @@ type Provider struct {
 
 // OptionFunc used to set options on a librato provider
 type OptionFunc func(*Provider)
+
+// WithPercentilePrefix sets the optional percentile prefix.
+func WithPercentilePrefix(prefix string) OptionFunc {
+	return func(p *Provider) {
+		p.percentilePrefix = prefix
+	}
+}
 
 // WithSource sets the optional provided source for the librato provider
 func WithSource(source string) OptionFunc {
@@ -108,10 +115,15 @@ func WithErrorHandler(eh func(err error)) OptionFunc {
 	}
 }
 
+const (
+	defaultPercentilePrefix = ".p"
+)
+
 // New metrics provider that reports metrics to the URL every interval.
 func New(URL *url.URL, interval time.Duration, opts ...OptionFunc) metrics.Provider {
 	p := Provider{
-		done: make(chan struct{}),
+		done:             make(chan struct{}),
+		percentilePrefix: defaultPercentilePrefix,
 	}
 
 	for _, opt := range opts {
@@ -175,7 +187,7 @@ func (p *Provider) NewGauge(name string) kmetrics.Gauge {
 
 // NewHistogram for this librato provider.
 func (p *Provider) NewHistogram(name string, buckets int) kmetrics.Histogram {
-	h := Histogram{name: prefixName(p.prefix, name), buckets: buckets}
+	h := Histogram{name: prefixName(p.prefix, name), buckets: buckets, percentilePrefix: p.percentilePrefix}
 	h.reset()
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -261,8 +273,9 @@ func (p *Provider) report(u *url.URL, interval time.Duration) error {
 // reports p99, p95 and p50 values as gauges in addition to a gauge for the
 // histogram itself.
 type Histogram struct {
-	buckets int
-	name    string
+	buckets          int
+	name             string
+	percentilePrefix string
 
 	mu sync.RWMutex
 	// I would prefer to use hdrhistogram, but that's incompatible with the
@@ -289,9 +302,9 @@ func (h *Histogram) measures(period float64) []gauge {
 		n string
 		v float64
 	}{
-		{name + ".p99", h.h.Quantile(.99)},
-		{name + ".p95", h.h.Quantile(.95)},
-		{name + ".p50", h.h.Quantile(.50)},
+		{name + h.percentilePrefix + "99", h.h.Quantile(.99)},
+		{name + h.percentilePrefix + "95", h.h.Quantile(.95)},
+		{name + h.percentilePrefix + "50", h.h.Quantile(.50)},
 	}
 	h.reset()
 	h.mu.Unlock()
