@@ -61,8 +61,8 @@ func (e Error) Error() string {
 // metrics, but are otherwise noops as the LabelValues are not applied in any
 // meaningful way.
 type Provider struct {
-	errorHandler   func(err error)
-	source, prefix string
+	errorHandler                     func(err error)
+	source, prefix, percentilePrefix string
 
 	once sync.Once
 	done chan struct{}
@@ -84,6 +84,13 @@ type Provider struct {
 
 // OptionFunc used to set options on a librato provider
 type OptionFunc func(*Provider)
+
+// WithPercentilePrefix sets the optional percentile prefix.
+func WithPercentilePrefix(prefix string) OptionFunc {
+	return func(p *Provider) {
+		p.percentilePrefix = prefix
+	}
+}
 
 // WithSource sets the optional provided source for the librato provider
 func WithSource(source string) OptionFunc {
@@ -108,10 +115,15 @@ func WithErrorHandler(eh func(err error)) OptionFunc {
 	}
 }
 
+const (
+	defaultPercentilePrefix = ".p"
+)
+
 // New metrics provider that reports metrics to the URL every interval.
 func New(URL *url.URL, interval time.Duration, opts ...OptionFunc) metrics.Provider {
 	p := Provider{
-		done: make(chan struct{}),
+		done:             make(chan struct{}),
+		percentilePrefix: defaultPercentilePrefix,
 	}
 
 	for _, opt := range opts {
@@ -233,7 +245,7 @@ func (p *Provider) report(u *url.URL, interval time.Duration) error {
 		r.Gauges = append(r.Gauges, gauge{Name: g.Name, Period: period, Count: 1, Sum: v, Min: v, Max: v, SumSq: v * v})
 	}
 	for _, h := range p.histograms {
-		r.Gauges = append(r.Gauges, h.measures(period)...)
+		r.Gauges = append(r.Gauges, h.measures(period, p.percentilePrefix)...)
 	}
 
 	if err := e.Encode(r); err != nil {
@@ -273,7 +285,7 @@ type Histogram struct {
 }
 
 // the json marshalers for the histograms 4 different gauges
-func (h *Histogram) measures(period float64) []gauge {
+func (h *Histogram) measures(period float64, prefix string) []gauge {
 	h.mu.Lock()
 	if h.count == 0 {
 		h.mu.Unlock()
@@ -289,9 +301,9 @@ func (h *Histogram) measures(period float64) []gauge {
 		n string
 		v float64
 	}{
-		{name + ".p99", h.h.Quantile(.99)},
-		{name + ".p95", h.h.Quantile(.95)},
-		{name + ".p50", h.h.Quantile(.50)},
+		{name + prefix + "99", h.h.Quantile(.99)},
+		{name + prefix + "95", h.h.Quantile(.95)},
+		{name + prefix + "50", h.h.Quantile(.50)},
 	}
 	h.reset()
 	h.mu.Unlock()

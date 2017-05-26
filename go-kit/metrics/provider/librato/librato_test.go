@@ -145,7 +145,7 @@ func TestLibratoHistogramJSONMarshalers(t *testing.T) {
 	h.Observe(100)
 	h.Observe(150)
 	ePeriod := 1.0
-	d := h.measures(ePeriod)
+	d := h.measures(ePeriod, ".p")
 	if len(d) != 4 {
 		t.Fatalf("got %d, expected length to be 4", len(d))
 	}
