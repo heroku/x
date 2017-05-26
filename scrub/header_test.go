@@ -41,3 +41,18 @@ func TestHeaderAuthorization(t *testing.T) {
 		})
 	}
 }
+
+func TestHeaderShouldntScrub(t *testing.T) {
+	const (
+		headerName = "super-awesome-api-key"
+		eValue     = "hunter2"
+	)
+
+	h := http.Header{}
+	h.Add(headerName, eValue)
+
+	sc := Header(h)
+	if val := sc.Get(headerName); val != eValue {
+		t.Fatalf("want: %q, got: %q", eValue, val)
+	}
+}

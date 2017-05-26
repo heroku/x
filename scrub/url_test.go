@@ -5,20 +5,19 @@ import (
 	"testing"
 )
 
-func mustParseURL(t *testing.T, val string) *url.URL {
+func mustParseURL(t *testing.T, val string) (*url.URL, url.Values) {
 	u, err := url.Parse(val)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	return u
+	return u, u.Query()
 }
 
 func TestURL(t *testing.T) {
 	for param := range RestrictedParams {
 		t.Run(param, func(tt *testing.T) {
-			u := urlMustParse(tt, "https://thisisnotadoma.in/login")
-			q := u.Query()
+			u, q := mustParseURL(tt, "https://thisisnotadoma.in/login")
 
 			q.Set(param, "hunter2")
 			u.RawQuery = q.Encode()
@@ -34,7 +33,7 @@ func TestURL(t *testing.T) {
 }
 
 func TestURLUserInfo(t *testing.T) {
-	u := mustParseURL(t, "https://AzureDiamond:hunter2@thisisnotadoma.in/login")
+	u, _ := mustParseURL(t, "https://AzureDiamond:hunter2@thisisnotadoma.in/login")
 	sc := URL(u)
 
 	user := sc.User.Username()
@@ -49,5 +48,23 @@ func TestURLUserInfo(t *testing.T) {
 
 	if pass != scrubbedValue {
 		t.Fatalf("sc.User.Password(): want: %q, got: %q", scrubbedValue, pass)
+	}
+}
+
+func TestURLShouldntScrub(t *testing.T) {
+	const (
+		param  = "there"
+		eValue = "be_dragons"
+	)
+
+	u, q := mustParseURL(t, "https://thisisnotadoma.in/login")
+	q.Set(param, eValue)
+	u.RawQuery = q.Encode()
+
+	sc := URL(u)
+	scq := sc.Query()
+
+	if val := scq.Get(param); val != eValue {
+		t.Fatalf("%s: want: %q, got: %q", param, eValue, val)
 	}
 }
