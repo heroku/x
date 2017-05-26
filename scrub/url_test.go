@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func urlMustParse(t *testing.T, val string) *url.URL {
+func mustParseURL(t *testing.T, val string) *url.URL {
 	u, err := url.Parse(val)
 	if err != nil {
 		t.Fatal(err)
@@ -34,7 +34,7 @@ func TestURL(t *testing.T) {
 }
 
 func TestURLUserInfo(t *testing.T) {
-	u := urlMustParse(t, "https://AzureDiamond:hunter2@thisisnotadoma.in/login")
+	u := mustParseURL(t, "https://AzureDiamond:hunter2@thisisnotadoma.in/login")
 	sc := URL(u)
 
 	user := sc.User.Username()
