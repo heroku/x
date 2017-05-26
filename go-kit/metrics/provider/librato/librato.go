@@ -207,7 +207,7 @@ func (p *Provider) report(u *url.URL, interval time.Duration) error {
 	p.mu.Lock()
 	defer p.mu.Unlock() // should only block New{Histogram,Counter,Gauge}
 
-	if len(p.counters) == 0 || len(p.histograms) == 0 || len(p.gauges) == 0 {
+	if len(p.counters) == 0 && len(p.histograms) == 0 && len(p.gauges) == 0 {
 		return nil
 	}
 
