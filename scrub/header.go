@@ -48,11 +48,16 @@ func Header(h http.Header) http.Header {
 				scrubbedValues = append(scrubbedValues, scrubbed)
 			}
 			scrubbedHeader[k] = scrubbedValues
-		} else if _, contains := RestrictedHeaders[strings.ToLower(k)]; contains {
-			scrubbedHeader[k] = []string{scrubbedValue}
-		} else {
-			scrubbedHeader[k] = v
+
+			continue
 		}
+
+		if _, contains := RestrictedHeaders[strings.ToLower(k)]; contains {
+			scrubbedHeader[k] = []string{scrubbedValue}
+			continue
+		}
+
+		scrubbedHeader[k] = v
 	}
 
 	return scrubbedHeader

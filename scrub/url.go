@@ -66,7 +66,7 @@ func URL(u *url.URL) *url.URL {
 			}
 
 			u.User = scrubURLUserInfo(u.User)
-			query.Set(k, u.String())
+			query.Set(k, URL(u).String())
 		}
 	}
 
