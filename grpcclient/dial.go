@@ -10,8 +10,8 @@ import (
 
 // Dial initialites a secure gRPC connection to the specified server
 // usual mutual TLS authentication.
-func Dial(serverURL string, caCert, clientCert, clientKey []byte) (*grpc.ClientConn, error) {
-	creds, err := Credentials(serverURL, caCert, clientCert, clientKey)
+func Dial(serverURL string, caCerts [][]byte, clientCert, clientKey []byte) (*grpc.ClientConn, error) {
+	creds, err := Credentials(serverURL, caCerts, clientCert, clientKey)
 	if err != nil {
 		return nil, err
 	}
@@ -20,13 +20,13 @@ func Dial(serverURL string, caCert, clientCert, clientKey []byte) (*grpc.ClientC
 }
 
 // Credentials returns a gRPC DialOption configured for mutual TLS.
-func Credentials(serverURL string, caCert, clientCert, clientKey []byte) (grpc.DialOption, error) {
+func Credentials(serverURL string, caCerts [][]byte, clientCert, clientKey []byte) (grpc.DialOption, error) {
 	uri, err := url.Parse(serverURL)
 	if err != nil {
 		return nil, err
 	}
 
-	cfg, err := tlsconfig.NewMutualTLS(caCert, clientCert, clientKey)
+	cfg, err := tlsconfig.NewMutualTLS(caCerts, clientCert, clientKey)
 	if err != nil {
 		return nil, err
 	}

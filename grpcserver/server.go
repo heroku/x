@@ -32,8 +32,8 @@ func NewProxyProtocolListener(port int) (net.Listener, error) {
 }
 
 // NewTCP returns a grpc.Server configured to authenticate using mutual TLS.
-func NewTCP(serverCACert, serverCert, serverKey []byte) (*grpc.Server, error) {
-	tlsConfig, err := tlsconfig.NewMutualTLS(serverCACert, serverCert, serverKey)
+func NewTCP(serverCACertList [][]byte, serverCert, serverKey []byte) (*grpc.Server, error) {
+	tlsConfig, err := tlsconfig.NewMutualTLS(serverCACertList, serverCert, serverKey)
 	if err != nil {
 		return nil, err
 	}
@@ -66,8 +66,8 @@ type Starter interface {
 // RunStandardServer runs a GRPC server with a standard setup including metrics,
 // panic handling, a health check service, TLS termination with client authentication,
 // and proxy-protocol wrapping.
-func RunStandardServer(logger log.FieldLogger, p metrics.Provider, port int, serverCACert, serverCert, serverKey []byte, server Starter) error {
-	tlsConfig, err := tlsconfig.NewMutualTLS(serverCACert, serverCert, serverKey)
+func RunStandardServer(logger log.FieldLogger, p metrics.Provider, port int, serverCACerts [][]byte, serverCert, serverKey []byte, server Starter) error {
+	tlsConfig, err := tlsconfig.NewMutualTLS(serverCACerts, serverCert, serverKey)
 	if err != nil {
 		return err
 	}
