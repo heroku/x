@@ -238,7 +238,8 @@ func (p *Provider) report(u *url.URL, interval time.Duration) error {
 	period := interval.Seconds()
 
 	for _, c := range p.counters {
-		r.Counters = append(r.Counters, counter{Name: c.Name, Period: period, Value: c.Value()})
+		v := c.Value()
+		r.Gauges = append(r.Gauges, gauge{Name: c.Name, Period: period, Count: 1, Sum: v, Min: v, Max: v, SumSq: v * v})
 	}
 	for _, g := range p.gauges {
 		v := g.Value()
