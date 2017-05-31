@@ -16,6 +16,7 @@ type Provider struct {
 	counters   map[string]*Counter
 	gauges     map[string]*Gauge
 	histograms map[string]*Histogram
+	stopped    bool
 }
 
 // NewProvider constructs a test provider which can later be checked.
@@ -29,7 +30,9 @@ func NewProvider(t *testing.T) *Provider {
 }
 
 // Stop makes it Provider compliant.
-func (p *Provider) Stop() {}
+func (p *Provider) Stop() {
+	p.stopped = true
+}
 
 // NewCounter implements go-kit's Provider interface.
 func (p *Provider) NewCounter(name string) metrics.Counter {
@@ -170,5 +173,12 @@ func (p *Provider) CheckGaugeNonZero(name string) {
 
 	if g.value == 0 {
 		p.t.Fatalf("%v = %v, want non-zero", name, g.value)
+	}
+}
+
+// CheckStopped verifies that a provider has been Stop'd.
+func (p *Provider) CheckStopped() {
+	if !p.stopped {
+		p.t.Fatal("provider is not stopped")
 	}
 }

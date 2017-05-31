@@ -49,5 +49,9 @@ func (m *multiProvider) NewHistogram(name string, buckets int) kitmetrics.Histog
 	return multi.NewHistogram(histograms...)
 }
 
-// Stop complies with metrics.Provider.
-func (m *multiProvider) Stop() {}
+// Stop calls stop on all the underlying providers.
+func (m *multiProvider) Stop() {
+	for _, p := range m.providers {
+		p.Stop()
+	}
+}

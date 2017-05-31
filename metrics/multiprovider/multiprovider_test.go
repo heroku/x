@@ -38,3 +38,14 @@ func TestHistograms(t *testing.T) {
 	p1.CheckObservationCount("foo", 1)
 	p2.CheckObservationCount("foo", 1)
 }
+
+func TestStop(t *testing.T) {
+	p1 := testmetrics.NewProvider(t)
+	p2 := testmetrics.NewProvider(t)
+
+	p := New(p1, p2)
+	p.Stop()
+
+	p1.CheckStopped()
+	p2.CheckStopped()
+}
