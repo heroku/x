@@ -63,6 +63,7 @@ func (e Error) Error() string {
 type Provider struct {
 	errorHandler                     func(err error)
 	source, prefix, percentilePrefix string
+	resetCounters                    bool
 
 	once sync.Once
 	done chan struct{}
@@ -89,6 +90,16 @@ type OptionFunc func(*Provider)
 func WithPercentilePrefix(prefix string) OptionFunc {
 	return func(p *Provider) {
 		p.percentilePrefix = prefix
+	}
+}
+
+// WithResetCounters makes the reporting behavior reset all the counters every
+// reporting interval. Use this option if you're trying to be compatible with
+// l2met (e.g. you previously had l2met metrics which exhibited the same
+// behavior).
+func WithResetCounters() OptionFunc {
+	return func(p *Provider) {
+		p.resetCounters = true
 	}
 }
 
@@ -238,7 +249,12 @@ func (p *Provider) report(u *url.URL, interval time.Duration) error {
 	period := interval.Seconds()
 
 	for _, c := range p.counters {
-		v := c.ValueReset()
+		var v float64
+		if p.resetCounters {
+			v = c.ValueReset()
+		} else {
+			v = c.Value()
+		}
 		r.Gauges = append(r.Gauges, gauge{Name: c.Name, Period: period, Count: 1, Sum: v, Min: v, Max: v, SumSq: v * v})
 	}
 	for _, g := range p.gauges {
