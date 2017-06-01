@@ -10,6 +10,8 @@ import (
 	"sort"
 	"testing"
 	"time"
+
+	"github.com/go-kit/kit/metrics/generic"
 )
 
 func TestLibratoSingleReport(t *testing.T) {
@@ -310,5 +312,32 @@ func TestHistogram(t *testing.T) {
 				t.Errorf("got Max() (%f), but expecte (%f)", m, tc.eMax)
 			}
 		})
+	}
+}
+
+func TestWithResetCounters(t *testing.T) {
+	u, err := url.Parse(DefaultURL)
+	if err != nil {
+		t.Fatalf("got %q, expected nil", err)
+	}
+
+	cases := []struct {
+		resetCounters bool
+		added         float64
+		want          float64
+	}{
+		{true, 1, 0},
+		{false, 1, 1},
+	}
+
+	for _, test := range cases {
+		p := &Provider{resetCounters: test.resetCounters}
+		foo := p.NewCounter("foo")
+		foo.Add(test.added)
+		p.report(u, time.Second)
+
+		if v := foo.(*generic.Counter).Value(); v != test.want {
+			t.Fatalf("got %v want %v", v, test.want)
+		}
 	}
 }
