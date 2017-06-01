@@ -63,7 +63,7 @@ func (e Error) Error() string {
 type Provider struct {
 	errorHandler                     func(err error)
 	source, prefix, percentilePrefix string
-	resetCounters                    bool
+	resetCounters, ssa               bool
 
 	once sync.Once
 	done chan struct{}
@@ -85,6 +85,13 @@ type Provider struct {
 
 // OptionFunc used to set options on a librato provider
 type OptionFunc func(*Provider)
+
+// WithSSA turns on SSA for all gauges submitted.
+func WithSSA() OptionFunc {
+	return func(p *Provider) {
+		p.ssa = true
+	}
+}
 
 // WithPercentilePrefix sets the optional percentile prefix.
 func WithPercentilePrefix(prefix string) OptionFunc {
@@ -225,6 +232,12 @@ type gauge struct {
 	SumSq  float64 `json:"sum_squares"`
 }
 
+// attributes are top level things which you can use to affect newly created
+// metrics.
+type attributes struct {
+	Aggregate bool `json:"aggregate,omitempty"`
+}
+
 // report the metrics to the url, every interval
 func (p *Provider) report(u *url.URL, interval time.Duration) error {
 	p.mu.Lock()
@@ -237,15 +250,19 @@ func (p *Provider) report(u *url.URL, interval time.Duration) error {
 	var buf bytes.Buffer
 	e := json.NewEncoder(&buf)
 	r := struct {
-		Source      string    `json:"source,omitempty"`
-		MeasureTime int64     `json:"measure_time"`
-		Counters    []counter `json:"counters"`
-		Gauges      []gauge   `json:"gauges"`
+		Source      string      `json:"source,omitempty"`
+		MeasureTime int64       `json:"measure_time"`
+		Counters    []counter   `json:"counters"`
+		Gauges      []gauge     `json:"gauges"`
+		Attributes  *attributes `json:"attributes,omitempty"`
 	}{}
 
 	r.Source = p.source
 	ivSec := int64(interval / time.Second)
 	r.MeasureTime = (time.Now().Unix() / ivSec) * ivSec
+	if p.ssa {
+		r.Attributes = &attributes{Aggregate: true}
+	}
 	period := interval.Seconds()
 
 	for _, c := range p.counters {
