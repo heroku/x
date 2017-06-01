@@ -235,14 +235,7 @@ type gauge struct {
 // attributes are top level things which you can use to affect newly created
 // metrics.
 type attributes struct {
-	Color             string  `json:"color,omitempty"`
-	DisplayMin        float64 `json:"display_min,omitempty"`
-	DisplayMax        float64 `json:"display_max,omitempty"`
-	DisplayUnitsShort string  `json:"display_units_short,omitempty"`
-	DisplayUnitsLong  string  `json:"display_units_long,omitempty"`
-	DisplayStacked    bool    `json:"display_stacked,omitempty"`
-	SummarizeFunction string  `json:"summarize_function,omitempty"`
-	Aggregate         bool    `json:"aggregate,omitempty"`
+	Aggregate bool `json:"aggregate,omitempty"`
 }
 
 // report the metrics to the url, every interval
