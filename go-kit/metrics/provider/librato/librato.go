@@ -230,9 +230,19 @@ type gauge struct {
 	Min    float64 `json:"min"`
 	Max    float64 `json:"max"`
 	SumSq  float64 `json:"sum_squares"`
+}
 
-	// Attributes are used to enable SSA for gauges.
-	Attributes map[string]interface{} `json:"attributes,omitempty"`
+// attributes are top level things which you can use to affect newly created
+// metrics.
+type attributes struct {
+	Color             string  `json:"color,omitempty"`
+	DisplayMin        float64 `json:"display_min,omitempty"`
+	DisplayMax        float64 `json:"display_max,omitempty"`
+	DisplayUnitsShort string  `json:"display_units_short,omitempty"`
+	DisplayUnitsLong  string  `json:"display_units_long,omitempty"`
+	DisplayStacked    bool    `json:"display_stacked,omitempty"`
+	SummarizeFunction string  `json:"summarize_function,omitempty"`
+	Aggregate         bool    `json:"aggregate,omitempty"`
 }
 
 // report the metrics to the url, every interval
@@ -247,18 +257,18 @@ func (p *Provider) report(u *url.URL, interval time.Duration) error {
 	var buf bytes.Buffer
 	e := json.NewEncoder(&buf)
 	r := struct {
-		Source      string                 `json:"source,omitempty"`
-		MeasureTime int64                  `json:"measure_time"`
-		Counters    []counter              `json:"counters"`
-		Gauges      []gauge                `json:"gauges"`
-		Attributes  map[string]interface{} `json:"attributes,omitempty"`
+		Source      string      `json:"source,omitempty"`
+		MeasureTime int64       `json:"measure_time"`
+		Counters    []counter   `json:"counters"`
+		Gauges      []gauge     `json:"gauges"`
+		Attributes  *attributes `json:"attributes,omitempty"`
 	}{}
 
 	r.Source = p.source
 	ivSec := int64(interval / time.Second)
 	r.MeasureTime = (time.Now().Unix() / ivSec) * ivSec
 	if p.ssa {
-		r.Attributes = map[string]interface{}{"aggregate": true}
+		r.Attributes = &attributes{Aggregate: true}
 	}
 	period := interval.Seconds()
 
