@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/heroku/cedar/lib/kit/metricsregistry"
 	"github.com/heroku/x/go-kit/metrics"
 	"github.com/pkg/errors"
 	"golang.org/x/net/context"
@@ -13,9 +14,9 @@ import (
 // NewUnaryServerInterceptor returns an interceptor for unary server calls
 // which will report metrics to the given provider.
 func NewUnaryServerInterceptor(p metrics.Provider) grpc.UnaryServerInterceptor {
-	r0 := newRegistry(p)
+	r0 := metricsregistry.New(p)
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (_ interface{}, err error) {
-		r1 := &prefixedRegistry{r0, metricPrefix("server", info.FullMethod)}
+		r1 := metricsregistry.NewPrefixed(r0, metricPrefix("server", info.FullMethod))
 
 		defer func(begin time.Time) {
 			instrumentMethod(r1, time.Since(begin), err)
@@ -28,9 +29,9 @@ func NewUnaryServerInterceptor(p metrics.Provider) grpc.UnaryServerInterceptor {
 // NewStreamServerInterceptor returns an interceptor for stream server calls
 // which will report metrics to the given provider.
 func NewStreamServerInterceptor(p metrics.Provider) grpc.StreamServerInterceptor {
-	reg := newRegistry(p)
+	reg := metricsregistry.New(p)
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) (err error) {
-		reg := &prefixedRegistry{reg, metricPrefix("server", info.FullMethod)}
+		reg := metricsregistry.NewPrefixed(reg, metricPrefix("server", info.FullMethod))
 
 		clients := reg.GetOrRegisterGauge("stream.clients")
 		clients.Add(1)
@@ -48,7 +49,7 @@ func NewStreamServerInterceptor(p metrics.Provider) grpc.StreamServerInterceptor
 // serverStream provides a light wrapper over grpc.ServerStream
 // to instrument SendMsg and RecvMsg.
 type serverStream struct {
-	reg registry
+	reg metricsregistry.Registry
 	grpc.ServerStream
 }
 
@@ -70,7 +71,7 @@ func (ss *serverStream) RecvMsg(m interface{}) error {
 	return ss.ServerStream.RecvMsg(m)
 }
 
-func instrumentMethod(r registry, duration time.Duration, err error) {
+func instrumentMethod(r metricsregistry.Registry, duration time.Duration, err error) {
 	r.GetOrRegisterHistogram("request-duration.ms", 50).Observe(ms(duration))
 	r.GetOrRegisterCounter("requests").Add(1)
 	r.GetOrRegisterCounter(fmt.Sprintf("response-codes.%s", code(err))).Add(1)
@@ -85,12 +86,12 @@ func instrumentMethod(r registry, duration time.Duration, err error) {
 	}
 }
 
-func instrumentStreamSend(r registry, duration time.Duration) {
+func instrumentStreamSend(r metricsregistry.Registry, duration time.Duration) {
 	r.GetOrRegisterHistogram("stream.send-duration.ms", 50).Observe(ms(duration))
 	r.GetOrRegisterCounter("stream.sends").Add(1)
 }
 
-func instrumentStreamRecv(r registry, duration time.Duration) {
+func instrumentStreamRecv(r metricsregistry.Registry, duration time.Duration) {
 	r.GetOrRegisterHistogram("stream.recv-duration.ms", 50).Observe(ms(duration))
 	r.GetOrRegisterCounter("stream.recvs").Add(1)
 }

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/heroku/cedar/lib/kit/metrics/testmetrics"
+	"github.com/heroku/cedar/lib/kit/metricsregistry"
 
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
@@ -101,7 +102,7 @@ func TestStreamServerInterceptor(t *testing.T) {
 
 func TestInstrumentMethod(t *testing.T) {
 	p := testmetrics.NewProvider(t)
-	r := newRegistry(p)
+	r := metricsregistry.New(p)
 
 	instrumentMethod(r, time.Millisecond, nil)
 	instrumentMethod(r, time.Second, nil)
@@ -116,7 +117,7 @@ func TestInstrumentMethod(t *testing.T) {
 
 func TestInstrumentStreamSend(t *testing.T) {
 	p := testmetrics.NewProvider(t)
-	r := newRegistry(p)
+	r := metricsregistry.New(p)
 
 	instrumentStreamSend(r, time.Millisecond)
 	instrumentStreamSend(r, time.Second)
@@ -128,7 +129,7 @@ func TestInstrumentStreamSend(t *testing.T) {
 
 func TestInstrumentStreamRecv(t *testing.T) {
 	p := testmetrics.NewProvider(t)
-	r := newRegistry(p)
+	r := metricsregistry.New(p)
 
 	instrumentStreamRecv(r, time.Millisecond)
 	instrumentStreamRecv(r, time.Second)
