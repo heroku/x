@@ -22,9 +22,9 @@ func TestServer(t *testing.T) {
 	hand := NewServer(p, next)
 	hand.ServeHTTP(w, r)
 
-	p.CheckCounter("all.requests", 1)
-	p.CheckCounter("all.response-statuses.200", 1)
-	p.CheckObservationCount("all.request-duration.ms", 1)
+	p.CheckCounter("http.server.all.requests", 1)
+	p.CheckCounter("http.server.all.response-statuses.200", 1)
+	p.CheckObservationCount("http.server.all.request-duration.ms", 1)
 }
 
 func TestServer_ResponseStatus(t *testing.T) {
@@ -40,9 +40,9 @@ func TestServer_ResponseStatus(t *testing.T) {
 	hand := NewServer(p, next)
 	hand.ServeHTTP(w, r)
 
-	p.CheckCounter("all.requests", 1)
-	p.CheckCounter("all.response-statuses.502", 1)
-	p.CheckObservationCount("all.request-duration.ms", 1)
+	p.CheckCounter("http.server.all.requests", 1)
+	p.CheckCounter("http.server.all.response-statuses.502", 1)
+	p.CheckObservationCount("http.server.all.request-duration.ms", 1)
 }
 
 func TestServer_Chi(t *testing.T) {
@@ -62,11 +62,11 @@ func TestServer_Chi(t *testing.T) {
 	hand := NewServer(p, next)
 	hand.ServeHTTP(w, r)
 
-	p.CheckCounter("all.requests", 1)
-	p.CheckCounter("all.response-statuses.200", 1)
-	p.CheckObservationCount("all.request-duration.ms", 1)
+	p.CheckCounter("http.server.all.requests", 1)
+	p.CheckCounter("http.server.all.response-statuses.200", 1)
+	p.CheckObservationCount("http.server.all.request-duration.ms", 1)
 
-	p.CheckCounter("get.apps.foo-id.bars.bar-id.requests", 1)
-	p.CheckCounter("get.apps.foo-id.bars.bar-id.response-statuses.200", 1)
-	p.CheckObservationCount("get.apps.foo-id.bars.bar-id.request-duration.ms", 1)
+	p.CheckCounter("http.server.get.apps.foo-id.bars.bar-id.requests", 1)
+	p.CheckCounter("http.server.get.apps.foo-id.bars.bar-id.response-statuses.200", 1)
+	p.CheckObservationCount("http.server.get.apps.foo-id.bars.bar-id.request-duration.ms", 1)
 }

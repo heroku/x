@@ -2,13 +2,13 @@
 //
 // Metrics are prefixed with:
 //
-//		<method>.<normalized path>
-//              all
+//		http.server.<method>.<normalized path>
+//		http.server.all
 //
 // For example, a request to GET /apps/:foo/bars/:bar_id emits metrics prefixed with:
 //
-//              get.apps.foo.bars.bar-id
-//              all
+//		http.server.get.apps.foo.bars.bar-id
+//		http.server.all
 //
 // For each unique path, and under the global all prefix, servers will report:
 //

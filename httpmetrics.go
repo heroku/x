@@ -18,7 +18,7 @@ import (
 func NewServer(p metrics.Provider, next http.Handler) http.Handler {
 	reg := metricsregistry.New(p)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		reg.GetOrRegisterCounter("all.requests").Add(1)
+		reg.GetOrRegisterCounter("http.server.all.requests").Add(1)
 
 		ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
 
@@ -33,8 +33,8 @@ func NewServer(p metrics.Provider, next http.Handler) http.Handler {
 		}
 		sts := strconv.Itoa(st)
 
-		reg.GetOrRegisterHistogram("all.request-duration.ms", 50).Observe(ms(dur))
-		reg.GetOrRegisterCounter("all.response-statuses." + sts).Add(1)
+		reg.GetOrRegisterHistogram("http.server.all.request-duration.ms", 50).Observe(ms(dur))
+		reg.GetOrRegisterCounter("http.server.all.response-statuses." + sts).Add(1)
 
 		ctx := r.Context()
 		if ctx.Value(chi.RouteCtxKey) == nil {
@@ -44,9 +44,9 @@ func NewServer(p metrics.Provider, next http.Handler) http.Handler {
 
 		// GET /apps/:foo/bars/:baz_id -> get.apps.foo.bars.baz-id
 		met := strings.ToLower(r.Method) + "." + joinRoutePatterns(rtCtx.RoutePatterns)
-		reg.GetOrRegisterCounter(met + ".requests").Add(1)
-		reg.GetOrRegisterHistogram(met+".request-duration.ms", 50).Observe(ms(dur))
-		reg.GetOrRegisterCounter(met + ".response-statuses." + sts).Add(1)
+		reg.GetOrRegisterCounter("http.server." + met + ".requests").Add(1)
+		reg.GetOrRegisterHistogram("http.server."+met+".request-duration.ms", 50).Observe(ms(dur))
+		reg.GetOrRegisterCounter("http.server." + met + ".response-statuses." + sts).Add(1)
 	})
 }
 
