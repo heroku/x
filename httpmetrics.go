@@ -42,8 +42,13 @@ func NewServer(p metrics.Provider, next http.Handler) http.Handler {
 		}
 		rtCtx := chi.RouteContext(ctx)
 
+		if len(rtCtx.RoutePatterns) == 0 {
+			// Did not match a route, give up.
+			return
+		}
+
 		// GET /apps/:foo/bars/:baz_id -> get.apps.foo.bars.baz-id
-		met := strings.ToLower(r.Method) + "." + joinRoutePatterns(rtCtx.RoutePatterns)
+		met := strings.ToLower(r.Method) + "." + nameRoutePatterns(rtCtx.RoutePatterns)
 		reg.GetOrRegisterCounter("http.server." + met + ".requests").Add(1)
 		reg.GetOrRegisterHistogram("http.server."+met+".request-duration.ms", 50).Observe(ms(dur))
 		reg.GetOrRegisterCounter("http.server." + met + ".response-statuses." + sts).Add(1)
@@ -57,10 +62,18 @@ func ms(d time.Duration) float64 {
 // turn these into dashes
 var dashRe = regexp.MustCompile(`[_]+`)
 
-func joinRoutePatterns(patterns []string) string {
+func nameRoutePatterns(patterns []string) string {
 	result := make([]string, len(patterns))
 	for idx, pattern := range patterns {
-		result[idx] = dashRe.ReplaceAllString(strings.TrimPrefix(strings.TrimSuffix(pattern, "/*"), ":"), "-")
+		pattern = strings.TrimPrefix(pattern, "/")
+		pattern = strings.TrimSuffix(pattern, "/*")
+		parts := strings.Split(pattern, "/")
+		for pidx, part := range parts {
+			part = strings.TrimPrefix(part, ":")
+			part = dashRe.ReplaceAllString(part, "-")
+			parts[pidx] = part
+		}
+		result[idx] = strings.Join(parts, ".")
 	}
 	return strings.Join(result, ".")
 }

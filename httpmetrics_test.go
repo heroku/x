@@ -54,7 +54,7 @@ func TestServer_Chi(t *testing.T) {
 	r := httptest.NewRequest("GET", "http://example.org/foo/bar", nil)
 
 	rctx := chi.NewRouteContext()
-	rctx.RoutePatterns = []string{"apps", ":foo_id", "bars", ":bar_id"}
+	rctx.RoutePatterns = []string{"/apps/:foo_id/bars/:bar_id"}
 	r = r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, rctx))
 
 	w := httptest.NewRecorder()
