@@ -1,4 +1,4 @@
-package redis
+package cache
 
 import (
 	"context"
@@ -8,14 +8,15 @@ import (
 	"github.com/go-kit/kit/metrics"
 )
 
-// Storage ...
+// Storage is a common interface for the different kinds of ways redis is used
+// at Heroku.
 type Storage interface {
 	Get(ctx context.Context, prefix, key string) ([]byte, error)
 	Put(ctx context.Context, prefix, key string, buf []byte) error
 	Delete(ctx context.Context, prefix, key string) (bool, error)
 }
 
-// Hash ...
+// Hash uses redis hashes to store data.
 type Hash struct {
 	Pool *redis.Pool
 
@@ -30,7 +31,7 @@ func measure(h metrics.Histogram, start time.Time) {
 	h.Observe(time.Since(start).Seconds())
 }
 
-// Put ...
+// Put inserts an item into a redis Hash.
 func (h Hash) Put(ctx context.Context, prefix, key string, buf []byte) error {
 	conn := h.Pool.Get()
 	defer conn.Close()
@@ -40,7 +41,7 @@ func (h Hash) Put(ctx context.Context, prefix, key string, buf []byte) error {
 	return err
 }
 
-// Get ...
+// Get retrieves an item from a redis Hash.
 func (h Hash) Get(ctx context.Context, prefix, key string) ([]byte, error) {
 	conn := h.Pool.Get()
 	defer conn.Close()
@@ -49,7 +50,7 @@ func (h Hash) Get(ctx context.Context, prefix, key string) ([]byte, error) {
 	return redis.Bytes(conn.Do("HGET", prefix, key))
 }
 
-// Delete ...
+// Delete removes an item from a redis Hash.
 func (h Hash) Delete(ctx context.Context, prefix, key string) (bool, error) {
 	conn := h.Pool.Get()
 	defer conn.Close()
@@ -58,7 +59,7 @@ func (h Hash) Delete(ctx context.Context, prefix, key string) (bool, error) {
 	return redis.Bool(conn.Do("HDEL", prefix, key))
 }
 
-// Volatile ...
+// Volatile uses redis key->value pairs with a common expiration time-to-live.
 type Volatile struct {
 	TTL  time.Duration
 	Pool *redis.Pool
@@ -67,7 +68,7 @@ type Volatile struct {
 	PutTimes, GetTimes, DeleteTimes metrics.Histogram
 }
 
-// Put ...
+// Put inserts an item into redis with a time-to-live.
 func (v Volatile) Put(ctx context.Context, prefix, key string, buf []byte) error {
 	conn := v.Pool.Get()
 	defer conn.Close()
@@ -77,7 +78,7 @@ func (v Volatile) Put(ctx context.Context, prefix, key string, buf []byte) error
 	return err
 }
 
-// Get ...
+// Get retrieves an item from redis.
 func (v Volatile) Get(ctx context.Context, prefix, key string) ([]byte, error) {
 	conn := v.Pool.Get()
 	defer conn.Close()
@@ -86,11 +87,12 @@ func (v Volatile) Get(ctx context.Context, prefix, key string) ([]byte, error) {
 	return redis.Bytes(conn.Do("GET", prefix+":"+key))
 }
 
-// Delete ...
+// Delete removes an item from redis.
 func (v Volatile) Delete(ctx context.Context, prefix, key string) (bool, error) {
 	conn := v.Pool.Get()
 	defer conn.Close()
 
 	defer measure(v.DeleteTimes, time.Now())
-	return redis.Bool(conn.Do("DEL", prefix, key))
+	val, err := redis.Bool(conn.Do("DEL", prefix, key))
+	return !val, err
 }

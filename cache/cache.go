@@ -1,3 +1,7 @@
+// Package cache is a generic cache mechanism.
+//
+// This is intended to store recently retrieved data from a datastore that
+// cannot handle being queried directly for each request.
 package cache
 
 import "context"
