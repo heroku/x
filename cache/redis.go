@@ -7,17 +7,6 @@ import (
 	"github.com/garyburd/redigo/redis"
 )
 
-// Encoder ...
-type Encoder func(v interface{}) ([]byte, error)
-
-// Decoder ...
-type Decoder func([]byte) (interface{}, error)
-
-// interface compliance checks
-var (
-	_ Cache = Redis{}
-)
-
 // NewPool creates a new redis pool with default "sane" settings.
 func NewPool(uri string) (*redis.Pool, error) {
 	return &redis.Pool{
@@ -34,7 +23,8 @@ func NewPool(uri string) (*redis.Pool, error) {
 	}, nil
 }
 
-// RedisCache ...
+// Redis is a Cache implementation backed by redis using a given key prefix, Storage
+// mechanism, and a pair of Encoder/Decoder to convert redis values into boxed Go types.
 type Redis struct {
 	Prefix  string
 	Storage Storage
@@ -42,7 +32,7 @@ type Redis struct {
 	Decoder Decoder
 }
 
-// Put ...
+// Put adds a given key->value pair to the Cache.
 func (r Redis) Put(ctx context.Context, key string, value interface{}) error {
 	buf, err := r.Encoder(value)
 	if err != nil {
@@ -51,7 +41,7 @@ func (r Redis) Put(ctx context.Context, key string, value interface{}) error {
 	return r.Storage.Put(ctx, r.Prefix, key, buf)
 }
 
-// Get ...
+// Get retrieves a given key->value pair from the Cache.
 func (r Redis) Get(ctx context.Context, key string) (interface{}, bool) {
 	v, err := r.Storage.Get(ctx, r.Prefix, key)
 	if err != nil {
@@ -62,7 +52,7 @@ func (r Redis) Get(ctx context.Context, key string) (interface{}, bool) {
 	return buf, err == nil
 }
 
-// Delete ...
+// Delete removes a given key->value pair from the Cache.
 func (r Redis) Delete(ctx context.Context, key string) (bool, error) {
 	ok, err := r.Storage.Delete(ctx, r.Prefix, key)
 	return err == nil && ok, err
