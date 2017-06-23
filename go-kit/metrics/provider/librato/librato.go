@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"sync"
@@ -32,6 +33,10 @@ var (
 type Error struct {
 	code                             int
 	body, rateLimitAgg, rateLimitStd string
+
+	// Used to debug things on occasion if inspection of the original
+	// request is necessary.
+	Request *http.Request
 }
 
 // Code returned by librato
@@ -65,6 +70,7 @@ type Provider struct {
 	source, prefix, percentilePrefix string
 	resetCounters, ssa               bool
 	numRetries                       int
+	requestDebugging                 bool
 
 	once sync.Once
 	done chan struct{}
@@ -91,6 +97,14 @@ type OptionFunc func(*Provider)
 func WithRetries(n int) OptionFunc {
 	return func(p *Provider) {
 		p.numRetries = n
+	}
+}
+
+// WithRequestDebugging enables request debugging and exposes the original
+// request in the Error.
+func WithRequestDebugging() OptionFunc {
+	return func(p *Provider) {
+		p.requestDebugging = true
 	}
 }
 
@@ -308,19 +322,40 @@ func (p *Provider) report(u *url.URL, interval time.Duration) error {
 	if err := e.Encode(r); err != nil {
 		return err
 	}
-	resp, err := http.Post(u.String(), "application/json", &buf)
+
+	var rawRequest []byte
+	if p.requestDebugging {
+		rawRequest = buf.Bytes()
+	}
+
+	req, err := http.NewRequest(http.MethodPost, u.String(), &buf)
 	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Fatalf("err = %s", err)
 		return err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode/100 != 2 {
 		b, _ := ioutil.ReadAll(resp.Body)
+
+		if p.requestDebugging {
+			req.Body = ioutil.NopCloser(bytes.NewReader(rawRequest))
+		} else {
+			req = nil
+		}
+
 		return Error{
 			resp.StatusCode,
 			string(b),
 			resp.Header.Get("X-Librato-RateLimit-Agg"),
 			resp.Header.Get("X-Librato-RateLimit-Std"),
+			req,
 		}
 	}
 	return nil
