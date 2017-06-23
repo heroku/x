@@ -265,28 +265,6 @@ func gaugeExpectations(t *testing.T, gJSON []byte, eJSON, eName string, eCount i
 	}
 }
 
-func counterExpectations(t *testing.T, gJSON []byte, eJSON, eName string, ePeriod, eValue float64) {
-	if string(gJSON) != eJSON {
-		t.Errorf("got %q\nexpected %q", gJSON, eJSON)
-	}
-
-	var tc counter
-	err := json.Unmarshal(gJSON, &tc)
-	if err != nil {
-		t.Fatalf("got %q, expected nil", err)
-	}
-
-	if tc.Name != eName {
-		t.Errorf("got %q, expected %q", tc.Name, eName)
-	}
-	if tc.Period != ePeriod {
-		t.Errorf("got %f, expected %f", tc.Period, ePeriod)
-	}
-	if tc.Value != eValue {
-		t.Errorf("got %f, expected %f", tc.Value, eValue)
-	}
-}
-
 func TestLibratoHistogramJSONMarshalers(t *testing.T) {
 	h := Histogram{name: "test.histogram", buckets: DefaultBucketCount, percentilePrefix: ".p"}
 	h.reset()

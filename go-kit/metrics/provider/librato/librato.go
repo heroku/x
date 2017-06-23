@@ -22,6 +22,10 @@ const (
 	DefaultBucketCount = 50
 	// DefaultURL for reporting metrics.
 	DefaultURL = "https://metrics-api.librato.com/v1/metrics"
+	// DefaultPercentilePrefix if WithPercentilePrefix isn't used to set a different prefix
+	DefaultPercentilePrefix = ".p"
+	// DefaultNumRetries if WithRetries isn't used to set a different value
+	DefaultNumRetries = 3
 )
 
 var (
@@ -100,7 +104,7 @@ func WithRetries(n int) OptionFunc {
 	}
 }
 
-// WithRequestDebugging enables request debugging and exposes the original
+// WithRequestDebugging enables request debugging which exposes the original
 // request in the Error.
 func WithRequestDebugging() OptionFunc {
 	return func(p *Provider) {
@@ -108,14 +112,20 @@ func WithRequestDebugging() OptionFunc {
 	}
 }
 
-// WithSSA turns on SSA for all gauges submitted.
+// WithSSA turns on Server Side Aggreggation for all gauges submitted.
 func WithSSA() OptionFunc {
 	return func(p *Provider) {
 		p.ssa = true
 	}
 }
 
-// WithPercentilePrefix sets the optional percentile prefix.
+// WithPercentilePrefix sets the optional percentile prefix used for the
+// different percentile gauges reported for each histogram. The default is `.p`,
+// meaning the name of those gauges will be:
+//
+//  <histogram metric name>.p50
+//  <histogram metric name>.p95
+//  <histogram metric name>.p99
 func WithPercentilePrefix(prefix string) OptionFunc {
 	return func(p *Provider) {
 		p.percentilePrefix = prefix
@@ -140,7 +150,7 @@ func WithSource(source string) OptionFunc {
 }
 
 // WithPrefix sets the optional metrics prefix for the librato provider. If the
-// prefix is != "" then it is prefixed to each reported metric.
+// prefix is != "" then it is prefixed to each metric name when reported.
 func WithPrefix(prefix string) OptionFunc {
 	return func(p *Provider) {
 		p.prefix = prefix
@@ -156,17 +166,13 @@ func WithErrorHandler(eh func(err error)) OptionFunc {
 	}
 }
 
-const (
-	defaultPercentilePrefix = ".p"
-	defaultNumRetries       = 3
-)
-
-// New metrics provider that reports metrics to the URL every interval.
+// New librato metrics provider that reports metrics to the URL every interval
+// with the provided options.
 func New(URL *url.URL, interval time.Duration, opts ...OptionFunc) metrics.Provider {
 	p := Provider{
 		done:             make(chan struct{}),
-		percentilePrefix: defaultPercentilePrefix,
-		numRetries:       defaultNumRetries,
+		percentilePrefix: DefaultPercentilePrefix,
+		numRetries:       DefaultNumRetries,
 	}
 
 	for _, opt := range opts {
@@ -204,7 +210,10 @@ func prefixName(prefix, name string) string {
 	return prefix + "." + name
 }
 
-// NewCounter for this librato provider.
+// NewCounter that will be reported by the provider. Becuase of the way librato
+// works, they are reported as gauges. If you require a counter reset every
+// report use the WithResetCounters option function, otherwise the counter's
+// value will increase until restart.
 func (p *Provider) NewCounter(name string) kmetrics.Counter {
 	c := generic.NewCounter(prefixName(p.prefix, name))
 	p.mu.Lock()
@@ -213,7 +222,7 @@ func (p *Provider) NewCounter(name string) kmetrics.Counter {
 	return c
 }
 
-// NewGauge for this librato provider.
+// NewGauge that will be reported by the provider.
 func (p *Provider) NewGauge(name string) kmetrics.Gauge {
 	g := generic.NewGauge(prefixName(p.prefix, name))
 	p.mu.Lock()
@@ -222,7 +231,7 @@ func (p *Provider) NewGauge(name string) kmetrics.Gauge {
 	return g
 }
 
-// NewHistogram for this librato provider.
+// NewHistogram that will be reported by the provider.
 func (p *Provider) NewHistogram(name string, buckets int) kmetrics.Histogram {
 	h := Histogram{name: prefixName(p.prefix, name), buckets: buckets, percentilePrefix: p.percentilePrefix}
 	h.reset()
@@ -232,15 +241,7 @@ func (p *Provider) NewHistogram(name string, buckets int) kmetrics.Histogram {
 	return &h
 }
 
-// librato counter and gauge structs for json Marshaling
-type counter struct {
-	Name   string  `json:"name"`
-	Period float64 `json:"period"`
-	Value  float64 `json:"value"`
-}
-
-// extended librato gauge format is used for all gauges in order to keep the coe
-// base simple
+// extended librato gauge format is used for all metric types.
 type gauge struct {
 	Name   string  `json:"name"`
 	Period float64 `json:"period"`
@@ -251,8 +252,7 @@ type gauge struct {
 	SumSq  float64 `json:"sum_squares"`
 }
 
-// attributes are top level things which you can use to affect newly created
-// metrics.
+// attributes for a set of metrics being reported to librato.
 type attributes struct {
 	Aggregate bool `json:"aggregate,omitempty"`
 }
@@ -289,7 +289,6 @@ func (p *Provider) report(u *url.URL, interval time.Duration) error {
 	r := struct {
 		Source      string      `json:"source,omitempty"`
 		MeasureTime int64       `json:"measure_time"`
-		Counters    []counter   `json:"counters"`
 		Gauges      []gauge     `json:"gauges"`
 		Attributes  *attributes `json:"attributes,omitempty"`
 	}{}

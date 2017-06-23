@@ -1,3 +1,7 @@
+/*
+Package discard is copied out of the go-kit metrics, provider package because
+importing that package brings in too many dependencies.
+*/
 package discard
 
 import (
