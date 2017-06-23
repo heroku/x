@@ -325,7 +325,8 @@ func (p *Provider) report(u *url.URL, interval time.Duration) error {
 
 	var rawRequest []byte
 	if p.requestDebugging {
-		rawRequest = buf.Bytes()
+		rawRequest = make([]byte, buf.Len())
+		copy(rawRequest, buf.Bytes())
 	}
 
 	req, err := http.NewRequest(http.MethodPost, u.String(), &buf)
