@@ -31,17 +31,27 @@ var (
 
 // Error is used to report information from a non 200 error returned by Librato.
 type Error struct {
-	code                             int
+	code, retries                    int // return code and retries remaining
 	body, rateLimitAgg, rateLimitStd string
 
 	// Used to debug things on occasion if inspection of the original
 	// request is necessary.
-	Request *http.Request
+	request *http.Request
 }
 
 // Code returned by librato
 func (e Error) Code() int {
 	return e.code
+}
+
+// Temporary error that will be retried?
+func (e Error) Temporary() bool {
+	return e.retries > 0
+}
+
+// Request that generated the error
+func (e Error) Request() *http.Request {
+	return e.request
 }
 
 // RateLimit info returned by librato in the X-Librato-RateLimit-Agg and
@@ -57,7 +67,7 @@ func (e Error) Body() string {
 
 // Error interface
 func (e Error) Error() string {
-	return fmt.Sprintf("code: %d, body: %s, rate-limit-agg: %s, rate-limit-std: %s", e.code, e.body, e.rateLimitAgg, e.rateLimitStd)
+	return fmt.Sprintf("code: %d, retries remaining: %d, body: %s, rate-limit-agg: %s, rate-limit-std: %s", e.code, e.retries, e.body, e.rateLimitAgg, e.rateLimitStd)
 }
 
 // Provider works with Librato's older source based
@@ -258,12 +268,19 @@ type attributes struct {
 
 // reportWithRetry the metrics to the url, every interval, with max retries.
 func (p *Provider) reportWithRetry(u *url.URL, interval time.Duration) {
-	for i := p.numRetries; i > 0; i-- {
+	for r := p.numRetries; r > 0; r-- {
 		err := p.report(u, interval)
-		if err == nil {
+		switch terr := err.(type) {
+		case nil:
 			return
+		case Error:
+			terr.retries = r - 1
+			err = error(terr)
 		}
-		p.errorHandler(err)
+		if p.errorHandler != nil {
+			p.errorHandler(err)
+		}
+
 	}
 }
 
@@ -344,11 +361,11 @@ func (p *Provider) report(u *url.URL, interval time.Duration) error {
 		}
 
 		return Error{
-			resp.StatusCode,
-			string(b),
-			resp.Header.Get("X-Librato-RateLimit-Agg"),
-			resp.Header.Get("X-Librato-RateLimit-Std"),
-			req,
+			code:         resp.StatusCode,
+			body:         string(b),
+			rateLimitAgg: resp.Header.Get("X-Librato-RateLimit-Agg"),
+			rateLimitStd: resp.Header.Get("X-Librato-RateLimit-Std"),
+			request:      req,
 		}
 	}
 	return nil
