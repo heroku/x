@@ -71,7 +71,7 @@ func (e Error) Error() string {
 
 // Provider works with Librato's older source based
 // metrics (http://api-docs-archive.librato.com/?shell#create-a-metric, not the
-// new tag based metrcis). The generated metric's With methods return new
+// new tag based metrics). The generated metric's With methods return new
 // metrics, but are otherwise noops as the LabelValues are not applied in any
 // meaningful way.
 type Provider struct {
@@ -89,15 +89,6 @@ type Provider struct {
 	gauges     []*generic.Gauge
 	histograms []*Histogram
 }
-
-// with the given source. If the prefix is != "" then it is prefixed to each
-// reported metric.
-// the context to stop reporting. The returned channel can be used to monitor
-// errors, of which there will be a max of 1 every interval. If Librato responds
-// with a non 2XX response code a LibratoError is returned. Callers need to
-// drain the error channel or it will block reporting. The error channel is
-// closed after a final report is sent. Callers should ensure there is only one
-// Report operating at a time.
 
 // OptionFunc used to set options on a librato provider
 type OptionFunc func(*Provider)
@@ -148,7 +139,8 @@ func WithSource(source string) OptionFunc {
 	}
 }
 
-// WithPrefix sets the optional metrics prefix for the librato provider
+// WithPrefix sets the optional metrics prefix for the librato provider. If the
+// prefix is != "" then it is prefixed to each reported metric.
 func WithPrefix(prefix string) OptionFunc {
 	return func(p *Provider) {
 		p.prefix = prefix
