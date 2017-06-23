@@ -3,8 +3,11 @@ package librato
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"math"
 	"math/rand"
+	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"os"
 	"sort"
@@ -13,6 +16,150 @@ import (
 
 	"github.com/go-kit/kit/metrics/generic"
 )
+
+func TestLibratoReportWithRequestDebugging(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+	}))
+	defer srv.Close()
+
+	u, err := url.Parse(srv.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	u.User = url.UserPassword("librato", "secret123")
+
+	t.Run("request debugging", func(t *testing.T) {
+		p := Provider{
+			done:             make(chan struct{}),
+			requestDebugging: true,
+		}
+
+		p.NewCounter("foo").Add(1)
+
+		err = p.report(u, time.Minute)
+		if err == nil {
+			t.Fatal("got nil err wanted something")
+		}
+
+		e, ok := err.(Error)
+		if !ok {
+			t.Fatalf("got %T want Error", err)
+		}
+
+		checkRequestDebugging(t, u, e)
+
+	})
+
+	t.Run("no request debugging", func(t *testing.T) {
+		p := Provider{
+			done:             make(chan struct{}),
+			requestDebugging: false,
+		}
+
+		p.NewCounter("foo").Add(1)
+
+		err = p.report(u, time.Minute)
+		if err == nil {
+			t.Fatal("got nil err wanted something")
+		}
+
+		e, ok := err.(Error)
+		if !ok {
+			t.Fatalf("got %T want Error", err)
+		}
+
+		checkNoRequestDebugging(t, u, e)
+	})
+
+}
+
+func TestLibratoRetriesWithErrors(t *testing.T) {
+	var retried int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		retried++
+		w.WriteHeader(http.StatusBadRequest)
+	}))
+	defer srv.Close()
+
+	u, err := url.Parse(srv.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	u.User = url.UserPassword("librato", "secret123")
+
+	var totalErrors, temporaryErrors, finalErrors int
+	expectedRetries := 3
+	p := Provider{
+		done:             make(chan struct{}),
+		requestDebugging: true,
+		numRetries:       expectedRetries,
+		errorHandler: func(err error) {
+			totalErrors++
+			type temporary interface {
+				Temporary() bool
+			}
+			if terr, ok := err.(temporary); ok {
+				if terr.Temporary() {
+					temporaryErrors++
+				} else {
+					finalErrors++
+				}
+			}
+		},
+	}
+
+	p.NewCounter("foo").Add(1)
+	p.reportWithRetry(u, time.Minute)
+
+	if totalErrors != expectedRetries {
+		t.Errorf("expected %d total errors, got %d", expectedRetries, totalErrors)
+	}
+
+	expectedTemporaryErrors := expectedRetries - 1
+	if temporaryErrors != expectedTemporaryErrors {
+		t.Errorf("expected %d temporary errors, got %d", expectedTemporaryErrors, temporaryErrors)
+	}
+
+	expectedFinalErrors := 1
+	if finalErrors != expectedFinalErrors {
+		t.Errorf("expected %d final errors, got %d", expectedFinalErrors, finalErrors)
+	}
+
+	if retried != expectedRetries {
+		t.Errorf("expected %d retries, got %d", expectedRetries, retried)
+	}
+}
+
+func checkNoRequestDebugging(t testing.TB, u *url.URL, e Error) {
+	if e.Request() != nil {
+		t.Fatalf("got request non nil for request debugging off, expected nil")
+	}
+}
+
+func checkRequestDebugging(t testing.TB, u *url.URL, e Error) {
+	req := e.Request()
+	if req.URL.String() != u.String() {
+		t.Fatalf("got url %s want %s", req.URL, u)
+	}
+
+	if v := req.Header.Get("Content-Type"); v != "application/json" {
+		t.Fatalf("got content type %v want %v", v, "application/json")
+	}
+
+	buf, _ := ioutil.ReadAll(req.Body)
+
+	var payload map[string]interface{}
+	if err := json.Unmarshal(buf, &payload); err != nil {
+		t.Fatal(err)
+	}
+
+	if len(payload) == 0 {
+		t.Fatal("got no payload wanted something")
+	}
+}
 
 func TestLibratoSingleReport(t *testing.T) {
 	user := os.Getenv("LIBRATO_TEST_USER")

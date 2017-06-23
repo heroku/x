@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"sync"
@@ -30,13 +31,27 @@ var (
 
 // Error is used to report information from a non 200 error returned by Librato.
 type Error struct {
-	code                             int
+	code, retries                    int // return code and retries remaining
 	body, rateLimitAgg, rateLimitStd string
+
+	// Used to debug things on occasion if inspection of the original
+	// request is necessary.
+	request *http.Request
 }
 
 // Code returned by librato
 func (e Error) Code() int {
 	return e.code
+}
+
+// Temporary error that will be retried?
+func (e Error) Temporary() bool {
+	return e.retries > 0
+}
+
+// Request that generated the error
+func (e Error) Request() *http.Request {
+	return e.request
 }
 
 // RateLimit info returned by librato in the X-Librato-RateLimit-Agg and
@@ -52,7 +67,7 @@ func (e Error) Body() string {
 
 // Error interface
 func (e Error) Error() string {
-	return fmt.Sprintf("code: %d, body: %s, rate-limit-agg: %s, rate-limit-std: %s", e.code, e.body, e.rateLimitAgg, e.rateLimitStd)
+	return fmt.Sprintf("code: %d, retries remaining: %d, body: %s, rate-limit-agg: %s, rate-limit-std: %s", e.code, e.retries, e.body, e.rateLimitAgg, e.rateLimitStd)
 }
 
 // Provider works with Librato's older source based
@@ -64,6 +79,8 @@ type Provider struct {
 	errorHandler                     func(err error)
 	source, prefix, percentilePrefix string
 	resetCounters, ssa               bool
+	numRetries                       int
+	requestDebugging                 bool
 
 	once sync.Once
 	done chan struct{}
@@ -85,6 +102,21 @@ type Provider struct {
 
 // OptionFunc used to set options on a librato provider
 type OptionFunc func(*Provider)
+
+// WithRetries sets the max number of retries during reporting.
+func WithRetries(n int) OptionFunc {
+	return func(p *Provider) {
+		p.numRetries = n
+	}
+}
+
+// WithRequestDebugging enables request debugging and exposes the original
+// request in the Error.
+func WithRequestDebugging() OptionFunc {
+	return func(p *Provider) {
+		p.requestDebugging = true
+	}
+}
 
 // WithSSA turns on SSA for all gauges submitted.
 func WithSSA() OptionFunc {
@@ -135,6 +167,7 @@ func WithErrorHandler(eh func(err error)) OptionFunc {
 
 const (
 	defaultPercentilePrefix = ".p"
+	defaultNumRetries       = 3
 )
 
 // New metrics provider that reports metrics to the URL every interval.
@@ -142,6 +175,7 @@ func New(URL *url.URL, interval time.Duration, opts ...OptionFunc) metrics.Provi
 	p := Provider{
 		done:             make(chan struct{}),
 		percentilePrefix: defaultPercentilePrefix,
+		numRetries:       defaultNumRetries,
 	}
 
 	for _, opt := range opts {
@@ -154,15 +188,9 @@ func New(URL *url.URL, interval time.Duration, opts ...OptionFunc) metrics.Provi
 		for {
 			select {
 			case <-t.C:
-				err := p.report(URL, interval)
-				if err != nil && p.errorHandler != nil {
-					p.errorHandler(err)
-				}
+				p.reportWithRetry(URL, interval)
 			case <-p.done:
-				err := p.report(URL, interval)
-				if err != nil && p.errorHandler != nil {
-					p.errorHandler(err)
-				}
+				p.reportWithRetry(URL, interval)
 				return
 			}
 		}
@@ -238,6 +266,24 @@ type attributes struct {
 	Aggregate bool `json:"aggregate,omitempty"`
 }
 
+// reportWithRetry the metrics to the url, every interval, with max retries.
+func (p *Provider) reportWithRetry(u *url.URL, interval time.Duration) {
+	for r := p.numRetries; r > 0; r-- {
+		err := p.report(u, interval)
+		switch terr := err.(type) {
+		case nil:
+			return
+		case Error:
+			terr.retries = r - 1
+			err = error(terr)
+		}
+		if p.errorHandler != nil {
+			p.errorHandler(err)
+		}
+
+	}
+}
+
 // report the metrics to the url, every interval
 func (p *Provider) report(u *url.URL, interval time.Duration) error {
 	p.mu.Lock()
@@ -285,19 +331,41 @@ func (p *Provider) report(u *url.URL, interval time.Duration) error {
 	if err := e.Encode(r); err != nil {
 		return err
 	}
-	resp, err := http.Post(u.String(), "application/json", &buf)
+
+	var rawRequest []byte
+	if p.requestDebugging {
+		rawRequest = make([]byte, buf.Len())
+		copy(rawRequest, buf.Bytes())
+	}
+
+	req, err := http.NewRequest(http.MethodPost, u.String(), &buf)
 	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Fatalf("err = %s", err)
 		return err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode/100 != 2 {
 		b, _ := ioutil.ReadAll(resp.Body)
+
+		if p.requestDebugging {
+			req.Body = ioutil.NopCloser(bytes.NewReader(rawRequest))
+		} else {
+			req = nil
+		}
+
 		return Error{
-			resp.StatusCode,
-			string(b),
-			resp.Header.Get("X-Librato-RateLimit-Agg"),
-			resp.Header.Get("X-Librato-RateLimit-Std"),
+			code:         resp.StatusCode,
+			body:         string(b),
+			rateLimitAgg: resp.Header.Get("X-Librato-RateLimit-Agg"),
+			rateLimitStd: resp.Header.Get("X-Librato-RateLimit-Std"),
+			request:      req,
 		}
 	}
 	return nil
