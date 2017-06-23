@@ -64,6 +64,7 @@ type Provider struct {
 	errorHandler                     func(err error)
 	source, prefix, percentilePrefix string
 	resetCounters, ssa               bool
+	numRetries                       int
 
 	once sync.Once
 	done chan struct{}
@@ -85,6 +86,13 @@ type Provider struct {
 
 // OptionFunc used to set options on a librato provider
 type OptionFunc func(*Provider)
+
+// WithRetries sets the max number of retries during reporting.
+func WithRetries(n int) OptionFunc {
+	return func(p *Provider) {
+		p.numRetries = n
+	}
+}
 
 // WithSSA turns on SSA for all gauges submitted.
 func WithSSA() OptionFunc {
@@ -135,6 +143,7 @@ func WithErrorHandler(eh func(err error)) OptionFunc {
 
 const (
 	defaultPercentilePrefix = ".p"
+	defaultNumRetries       = 3
 )
 
 // New metrics provider that reports metrics to the URL every interval.
@@ -142,6 +151,7 @@ func New(URL *url.URL, interval time.Duration, opts ...OptionFunc) metrics.Provi
 	p := Provider{
 		done:             make(chan struct{}),
 		percentilePrefix: defaultPercentilePrefix,
+		numRetries:       defaultNumRetries,
 	}
 
 	for _, opt := range opts {
@@ -154,12 +164,12 @@ func New(URL *url.URL, interval time.Duration, opts ...OptionFunc) metrics.Provi
 		for {
 			select {
 			case <-t.C:
-				err := p.report(URL, interval)
+				err := p.reportWithRetry(URL, interval)
 				if err != nil && p.errorHandler != nil {
 					p.errorHandler(err)
 				}
 			case <-p.done:
-				err := p.report(URL, interval)
+				err := p.reportWithRetry(URL, interval)
 				if err != nil && p.errorHandler != nil {
 					p.errorHandler(err)
 				}
@@ -236,6 +246,19 @@ type gauge struct {
 // metrics.
 type attributes struct {
 	Aggregate bool `json:"aggregate,omitempty"`
+}
+
+// reportWithRetry the metrics to the url, every interval, with max retries.
+func (p *Provider) reportWithRetry(u *url.URL, interval time.Duration) error {
+	var err error
+
+	for i := p.numRetries; i > 0; i-- {
+		if err = p.report(u, interval); err == nil {
+			return nil
+		}
+	}
+
+	return err
 }
 
 // report the metrics to the url, every interval
