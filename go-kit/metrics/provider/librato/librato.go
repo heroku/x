@@ -178,15 +178,9 @@ func New(URL *url.URL, interval time.Duration, opts ...OptionFunc) metrics.Provi
 		for {
 			select {
 			case <-t.C:
-				err := p.reportWithRetry(URL, interval)
-				if err != nil && p.errorHandler != nil {
-					p.errorHandler(err)
-				}
+				p.reportWithRetry(URL, interval)
 			case <-p.done:
-				err := p.reportWithRetry(URL, interval)
-				if err != nil && p.errorHandler != nil {
-					p.errorHandler(err)
-				}
+				p.reportWithRetry(URL, interval)
 				return
 			}
 		}
@@ -263,16 +257,14 @@ type attributes struct {
 }
 
 // reportWithRetry the metrics to the url, every interval, with max retries.
-func (p *Provider) reportWithRetry(u *url.URL, interval time.Duration) error {
-	var err error
-
+func (p *Provider) reportWithRetry(u *url.URL, interval time.Duration) {
 	for i := p.numRetries; i > 0; i-- {
-		if err = p.report(u, interval); err == nil {
-			return nil
+		err := p.report(u, interval)
+		if err == nil {
+			return
 		}
+		p.errorHandler(err)
 	}
-
-	return err
 }
 
 // report the metrics to the url, every interval
