@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"sync"
@@ -346,7 +345,6 @@ func (p *Provider) report(u *url.URL, interval time.Duration) error {
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Fatalf("err = %s", err)
 		return err
 	}
 	defer resp.Body.Close()
