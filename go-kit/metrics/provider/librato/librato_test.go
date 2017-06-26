@@ -11,6 +11,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"strings"
 	"testing"
 	"time"
 )
@@ -191,6 +192,7 @@ func TestLibratoReport(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected nil, got %q", err)
 	}
+	//u.Host = "asdasda"
 	u.User = url.UserPassword(user, pwd)
 
 	errHandler := func(err error) {
@@ -318,6 +320,61 @@ func TestLibratoHistogramJSONMarshalers(t *testing.T) {
 
 		})
 	}
+}
+
+func TestScrubbing(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+	}))
+	u, err := url.Parse(srv.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	errors := make([]error, 0, 100)
+	var errCnt int
+	errHandler := func(err error) {
+		errors = append(errors, err)
+		errCnt++
+	}
+	u.User = url.UserPassword("foo", "bar") // put user info into the URL
+	p := New(u, doesntmatter, WithErrorHandler(errHandler), WithRequestDebugging())
+	foo := p.NewCounter("foo")
+	foo.Add(1)
+	p.(*Provider).reportWithRetry(u, doesntmatter)
+
+	for _, err := range errors {
+		e, ok := err.(Error)
+		if !ok {
+			t.Fatalf("expected Error, got %T: %q", err, err.Error())
+		}
+		request := e.Request()
+		if ahv := request.Header.Get("Authorization"); strings.Contains(ahv, "foo") {
+			t.Error("expected Authorizaton header to not contain username, got:", ahv)
+		}
+		if request.URL.User != nil {
+			t.Error("expected the request URL user to be nil, got", request.URL.User)
+		}
+	}
+
+	// Close the server now so we get an error from the http client
+	srv.Close()
+	errors = errors[errCnt:]
+	p.(*Provider).reportWithRetry(u, doesntmatter)
+
+	for _, err := range errors {
+		_, ok := err.(Error)
+		if ok {
+			t.Errorf("unexpected Error, got %T: %q", err, err.Error())
+		}
+		if es := err.Error(); strings.Contains(es, "foo") {
+			t.Error("expected the error to not contain sensitive data, got", es)
+		}
+	}
+
+	if errCnt != 2*DefaultNumRetries {
+		t.Errorf("expected total error count to be %d, got %d", 2*DefaultNumRetries, errCnt)
+	}
+
 }
 
 func TestWithResetCounters(t *testing.T) {

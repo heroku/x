@@ -14,6 +14,7 @@ import (
 	kmetrics "github.com/go-kit/kit/metrics"
 	"github.com/go-kit/kit/metrics/generic"
 	"github.com/heroku/x/go-kit/metrics"
+	"github.com/heroku/x/scrub"
 )
 
 const (
@@ -260,7 +261,8 @@ type attributes struct {
 // reportWithRetry the metrics to the url, every interval, with max retries.
 func (p *Provider) reportWithRetry(u *url.URL, interval time.Duration) {
 	for r := p.numRetries; r > 0; r-- {
-		err := p.report(u, interval)
+		nu := *u // copy the url
+		err := p.report(&nu, interval)
 		switch terr := err.(type) {
 		case nil:
 			return
@@ -271,7 +273,6 @@ func (p *Provider) reportWithRetry(u *url.URL, interval time.Duration) {
 		if p.errorHandler != nil {
 			p.errorHandler(err)
 		}
-
 	}
 }
 
@@ -328,9 +329,17 @@ func (p *Provider) report(u *url.URL, interval time.Duration) error {
 		copy(rawRequest, buf.Bytes())
 	}
 
+	// Don't accidentally leak the creds, which can happen if we return the u with a u.User set
+	var user *url.Userinfo
+	user, u.User = u.User, nil
+
 	req, err := http.NewRequest(http.MethodPost, u.String(), &buf)
 	if err != nil {
 		return err
+	}
+	if user != nil {
+		p, _ := user.Password()
+		req.SetBasicAuth(user.Username(), p)
 	}
 	req.Header.Set("Content-Type", "application/json")
 
@@ -345,6 +354,8 @@ func (p *Provider) report(u *url.URL, interval time.Duration) error {
 
 		if p.requestDebugging {
 			req.Body = ioutil.NopCloser(bytes.NewReader(rawRequest))
+			// Ensure that we've scrubbed out sensitive data
+			req.Header = scrub.Header(req.Header)
 		} else {
 			req = nil
 		}
