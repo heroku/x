@@ -72,12 +72,15 @@ func RunStandardServer(logger log.FieldLogger, p metrics.Provider, port int, ser
 		return err
 	}
 
+	uph := panichandler.LoggingUnaryPanicHandler(logger)
+	sph := panichandler.LoggingStreamPanicHandler(logger)
+
 	srv := grpc.NewServer(
 		grpc.Creds(credentials.NewTLS(tlsConfig)),
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
-			grpcmetrics.NewUnaryServerInterceptor(p), panichandler.UnaryPanicHandler)),
+			grpcmetrics.NewUnaryServerInterceptor(p), uph)),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
-			grpcmetrics.NewStreamServerInterceptor(p), panichandler.StreamPanicHandler)),
+			grpcmetrics.NewStreamServerInterceptor(p), sph)),
 	)
 	defer srv.Stop()
 
