@@ -61,7 +61,14 @@ func TestLibratoReportRequestDebugging(t *testing.T) {
 			p := New(u, doesntmatter, func(p *Provider) { p.requestDebugging = debug })
 			p.Stop()
 			p.NewCounter("foo").Add(1) // need at least one metric in order to report
-			err = p.(*Provider).report(u, doesntmatter)
+			reqs, err := p.(*Provider).batch(u, doesntmatter)
+			if err != nil {
+				t.Fatal("unexpected error", err)
+			}
+			if len(reqs) != 1 {
+				t.Errorf("expected 1 request, got %d", len(reqs))
+			}
+			err = p.(*Provider).report(reqs[0])
 			if err == nil {
 				t.Fatal("expected error, got nil")
 			}
@@ -164,8 +171,11 @@ func TestLibratoSingleReport(t *testing.T) {
 	}
 	u.User = url.UserPassword(user, pwd)
 
-	var p Provider
-	p.source = "test.source"
+	errs := func(err error) {
+		t.Fatal("unexpected error reporting metrics", err)
+	}
+
+	p := New(u, doesntmatter, WithSource("test.source"), WithErrorHandler(errs))
 	c := p.NewCounter("test.counter")
 	g := p.NewGauge("test.gauge")
 	h := p.NewHistogram("test.histogram", DefaultBucketCount)
@@ -174,11 +184,7 @@ func TestLibratoSingleReport(t *testing.T) {
 	h.Observe(10)
 	h.Observe(100)
 	h.Observe(150)
-
-	// Call the reporter explicitly
-	if err := p.report(u, 10*time.Second); err != nil {
-		t.Fatalf("expected nil, got %q", err)
-	}
+	p.Stop() // does a final report
 }
 
 func TestLibratoReport(t *testing.T) {
@@ -192,14 +198,13 @@ func TestLibratoReport(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected nil, got %q", err)
 	}
-	//u.Host = "asdasda"
 	u.User = url.UserPassword(user, pwd)
 
-	errHandler := func(err error) {
-		t.Errorf("expected nil, got %q", err)
+	errs := func(err error) {
+		t.Error("unexpected error reporting metrics", err)
 	}
 
-	p := New(u, time.Second, WithSource("test.source"), WithErrorHandler(errHandler))
+	p := New(u, time.Second, WithSource("test.source"), WithErrorHandler(errs))
 	c := p.NewCounter("test.counter")
 	g := p.NewGauge("test.gauge")
 	h := p.NewHistogram("test.histogram", DefaultBucketCount)
@@ -220,6 +225,7 @@ func TestLibratoReport(t *testing.T) {
 	}()
 
 	<-done
+	p.Stop() // does a final report
 }
 
 func TestLibratoHistogramJSONMarshalers(t *testing.T) {
@@ -317,7 +323,6 @@ func TestLibratoHistogramJSONMarshalers(t *testing.T) {
 			if math.Float64bits(tg.SumSq) != math.Float64bits(tc.eSumSq) {
 				t.Errorf("expected %f, got %f", tc.eSumSq, tg.SumSq)
 			}
-
 		})
 	}
 }
@@ -374,7 +379,6 @@ func TestScrubbing(t *testing.T) {
 	if errCnt != 2*DefaultNumRetries {
 		t.Errorf("expected total error count to be %d, got %d", 2*DefaultNumRetries, errCnt)
 	}
-
 }
 
 func TestWithResetCounters(t *testing.T) {
@@ -393,7 +397,14 @@ func TestWithResetCounters(t *testing.T) {
 			p.Stop()
 			foo := p.NewCounter("foo")
 			foo.Add(1)
-			p.(*Provider).report(u, doesntmatter)
+			reqs, err := p.(*Provider).batch(u, doesntmatter)
+			if err != nil {
+				t.Fatal("unexpected error batching", err)
+			}
+			if len(reqs) != 1 {
+				t.Errorf("expected 1 request, got %d", len(reqs))
+			}
+			p.(*Provider).report(reqs[0])
 
 			var expected float64
 			if reset {

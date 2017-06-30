@@ -1,10 +1,7 @@
 package librato
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"sync"
@@ -14,7 +11,6 @@ import (
 	kmetrics "github.com/go-kit/kit/metrics"
 	"github.com/go-kit/kit/metrics/generic"
 	"github.com/heroku/x/go-kit/metrics"
-	"github.com/heroku/x/scrub"
 )
 
 const (
@@ -27,6 +23,9 @@ const (
 	DefaultPercentilePrefix = ".p"
 	// DefaultNumRetries if WithRetries isn't used to set a different value
 	DefaultNumRetries = 3
+	// DefaultBatchSize of metric batches sent to librato. This value was taken out of the librato docs at:
+	// http://api-docs-archive.librato.com/?shell#measurement-properties
+	DefaultBatchSize = 300
 )
 
 var (
@@ -82,8 +81,10 @@ func (e Error) Error() string {
 type Provider struct {
 	errorHandler                     func(err error)
 	source, prefix, percentilePrefix string
-	resetCounters, ssa               bool
 	numRetries                       int
+	batchSize                        int
+	resetCounters                    bool
+	ssa                              bool
 	requestDebugging                 bool
 
 	once sync.Once
@@ -97,6 +98,13 @@ type Provider struct {
 
 // OptionFunc used to set options on a librato provider
 type OptionFunc func(*Provider)
+
+// WithBatchSize sets the number of metrics sent in a single request to librato
+func WithBatchSize(n int) OptionFunc {
+	return func(p *Provider) {
+		p.batchSize = n
+	}
+}
 
 // WithRetries sets the max number of retries during reporting.
 func WithRetries(n int) OptionFunc {
@@ -174,6 +182,7 @@ func New(URL *url.URL, interval time.Duration, opts ...OptionFunc) metrics.Provi
 		done:             make(chan struct{}),
 		percentilePrefix: DefaultPercentilePrefix,
 		numRetries:       DefaultNumRetries,
+		batchSize:        DefaultBatchSize,
 	}
 
 	for _, opt := range opts {
@@ -240,135 +249,6 @@ func (p *Provider) NewHistogram(name string, buckets int) kmetrics.Histogram {
 	defer p.mu.Unlock()
 	p.histograms = append(p.histograms, &h)
 	return &h
-}
-
-// extended librato gauge format is used for all metric types.
-type gauge struct {
-	Name   string  `json:"name"`
-	Period float64 `json:"period"`
-	Count  int64   `json:"count"`
-	Sum    float64 `json:"sum"`
-	Min    float64 `json:"min"`
-	Max    float64 `json:"max"`
-	SumSq  float64 `json:"sum_squares"`
-}
-
-// attributes for a set of metrics being reported to librato.
-type attributes struct {
-	Aggregate bool `json:"aggregate,omitempty"`
-}
-
-// reportWithRetry the metrics to the url, every interval, with max retries.
-func (p *Provider) reportWithRetry(u *url.URL, interval time.Duration) {
-	for r := p.numRetries; r > 0; r-- {
-		nu := *u // copy the url
-		err := p.report(&nu, interval)
-		switch terr := err.(type) {
-		case nil:
-			return
-		case Error:
-			terr.retries = r - 1
-			err = error(terr)
-		}
-		if p.errorHandler != nil {
-			p.errorHandler(err)
-		}
-	}
-}
-
-// report the metrics to the url, every interval
-func (p *Provider) report(u *url.URL, interval time.Duration) error {
-	p.mu.Lock()
-	defer p.mu.Unlock() // should only block New{Histogram,Counter,Gauge}
-
-	if len(p.counters) == 0 && len(p.histograms) == 0 && len(p.gauges) == 0 {
-		return nil
-	}
-
-	var buf bytes.Buffer
-	e := json.NewEncoder(&buf)
-	r := struct {
-		Source      string      `json:"source,omitempty"`
-		MeasureTime int64       `json:"measure_time"`
-		Gauges      []gauge     `json:"gauges"`
-		Attributes  *attributes `json:"attributes,omitempty"`
-	}{}
-
-	r.Source = p.source
-	ivSec := int64(interval / time.Second)
-	r.MeasureTime = (time.Now().Unix() / ivSec) * ivSec
-	if p.ssa {
-		r.Attributes = &attributes{Aggregate: true}
-	}
-	period := interval.Seconds()
-
-	for _, c := range p.counters {
-		var v float64
-		if p.resetCounters {
-			v = c.ValueReset()
-		} else {
-			v = c.Value()
-		}
-		r.Gauges = append(r.Gauges, gauge{Name: c.Name, Period: period, Count: 1, Sum: v, Min: v, Max: v, SumSq: v * v})
-	}
-	for _, g := range p.gauges {
-		v := g.Value()
-		r.Gauges = append(r.Gauges, gauge{Name: g.Name, Period: period, Count: 1, Sum: v, Min: v, Max: v, SumSq: v * v})
-	}
-	for _, h := range p.histograms {
-		r.Gauges = append(r.Gauges, h.measures(period)...)
-	}
-
-	if err := e.Encode(r); err != nil {
-		return err
-	}
-
-	var rawRequest []byte
-	if p.requestDebugging {
-		rawRequest = make([]byte, buf.Len())
-		copy(rawRequest, buf.Bytes())
-	}
-
-	// Don't accidentally leak the creds, which can happen if we return the u with a u.User set
-	var user *url.Userinfo
-	user, u.User = u.User, nil
-
-	req, err := http.NewRequest(http.MethodPost, u.String(), &buf)
-	if err != nil {
-		return err
-	}
-	if user != nil {
-		p, _ := user.Password()
-		req.SetBasicAuth(user.Username(), p)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode/100 != 2 {
-		b, _ := ioutil.ReadAll(resp.Body)
-
-		if p.requestDebugging {
-			req.Body = ioutil.NopCloser(bytes.NewReader(rawRequest))
-			// Ensure that we've scrubbed out sensitive data
-			req.Header = scrub.Header(req.Header)
-		} else {
-			req = nil
-		}
-
-		return Error{
-			code:         resp.StatusCode,
-			body:         string(b),
-			rateLimitAgg: resp.Header.Get("X-Librato-RateLimit-Agg"),
-			rateLimitStd: resp.Header.Get("X-Librato-RateLimit-Std"),
-			request:      req,
-		}
-	}
-	return nil
 }
 
 // Histogram adapts go-kit/Heroku/Librato's ideas of histograms. It
