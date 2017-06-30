@@ -8,27 +8,6 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
-var _ grpc.UnaryServerInterceptor = UnaryPanicHandler
-var _ grpc.StreamServerInterceptor = StreamPanicHandler
-
-// UnaryPanicHandler is an interceptor to catch panics and return err code 13
-// with a description of the panic.
-func UnaryPanicHandler(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
-	defer handleCrash(func(r interface{}) {
-		err = toPanicError(r)
-	})
-	return handler(ctx, req)
-}
-
-// StreamPanicHandler is an interceptor to catch panics and return err code 13
-// with a description of the panic.
-func StreamPanicHandler(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) (err error) {
-	defer handleCrash(func(r interface{}) {
-		err = toPanicError(r)
-	})
-	return handler(srv, stream)
-}
-
 // LoggingUnaryPanicHandler returns a server interceptor which recovers
 // panics, logs them as errors with logger, and returns a gRPC internal
 // error to clients.
@@ -49,7 +28,7 @@ func LoggingUnaryPanicHandler(logger log.FieldLogger) grpc.UnaryServerIntercepto
 func LoggingStreamPanicHandler(logger log.FieldLogger) grpc.StreamServerInterceptor {
 	return func(srv interface{}, stream grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) (err error) {
 		defer handleCrash(func(r interface{}) {
-			werr := errors.Errorf("grpc stream server panic: %+v", r)
+			werr := errors.Errorf("grpc stream server panic: %v", r)
 			logger.WithError(werr).Error("grpc stream server panic")
 			err = toPanicError(werr)
 		})
