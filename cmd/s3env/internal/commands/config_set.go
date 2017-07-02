@@ -2,7 +2,6 @@ package commands
 
 import (
 	"fmt"
-	"log"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -14,7 +13,6 @@ var configSetCmd = &cobra.Command{
 	Long:  "config:set sets one or more config vars",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			log.Printf("%+v", args)
 			displayUsage(cmd)
 		}
 
