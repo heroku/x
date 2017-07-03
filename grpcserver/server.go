@@ -43,8 +43,8 @@ func NewTCP(serverCACertList [][]byte, serverCert, serverKey []byte) (*grpc.Serv
 // NewInProcess returns a testserver.GRPCTestServer. This should mostly stand
 // in for a grpc.Server. It's started and its connection is registered in the
 // global list with grpcclient.RegisterConnection(name, s.Conn).
-func NewInProcess(name string) (*testserver.GRPCTestServer, error) {
-	s, err := testserver.New()
+func NewInProcess(name string, opts ...grpc.ServerOption) (*testserver.GRPCTestServer, error) {
+	s, err := testserver.New(opts...)
 	if err != nil {
 		return nil, err
 	}
