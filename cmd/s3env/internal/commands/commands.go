@@ -105,7 +105,8 @@ var (
 
 func loadS3Object() {
 	if err := envdecode.StrictDecode(&cfg); err != nil {
-		log.Fatalf("envdecode failed: %s", err)
+		fmt.Printf("s3env: %s (continuing with empty config)\n", err)
+		return
 	}
 
 	sess, err := session.NewSession(&aws.Config{
@@ -210,7 +211,7 @@ func input() (io.ReadCloser, error) {
 		// Cast err to awserr.Error to handle specific error codes.
 		aerr, ok := err.(awserr.Error)
 		if ok && aerr.Code() == s3.ErrCodeNoSuchKey {
-			fmt.Println("=====> s3env: object doesn't exist yet. using empty config")
+			fmt.Fprintf(os.Stderr, "s3env: object not found. using empty config\n")
 			buf := new(bytes.Buffer)
 			buf.Write([]byte("{}"))
 
@@ -218,6 +219,6 @@ func input() (io.ReadCloser, error) {
 		}
 		return nil, err
 	}
-	fmt.Println("=====> s3env: using s3 object")
+	fmt.Fprintf(os.Stderr, "s3env: object %s/%s found\n", cfg.Bucket, cfg.Key)
 	return out.Body, nil
 }

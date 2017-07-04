@@ -36,9 +36,9 @@ therefore all signals are properly delegated.`,
 		}
 
 		if len(keys) > 0 {
-			fmt.Printf("=====> s3env: Running %s with ENV %s\n", target, strings.Join(keys, ", "))
+			fmt.Printf("s3env: Running %s with ENV %s\n", target, strings.Join(keys, ", "))
 		} else {
-			fmt.Printf("=====> s3env: No configured vars found for %s/%s", cfg.Bucket, cfg.Key)
+			fmt.Printf("s3env: Running %s with empty ENV\n", target)
 		}
 		// pass control to the given cmd. This also means all signal
 		// handling is delegated at this point to the cmd.
