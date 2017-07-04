@@ -31,7 +31,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"strings"
 
@@ -119,19 +118,22 @@ func loadS3Object() {
 	})
 
 	if err != nil {
-		log.Fatalf("getting aws session failed: %s", err)
+		fmt.Printf("s3env: aws error: %s\n", err)
+		return
 	}
 
 	client = s3.New(sess)
 
 	in, err := input()
 	if err != nil {
-		log.Fatalf("error reading input: %s", err)
+		fmt.Printf("s3env: read input error: %s\n", err)
+		return
 	}
 	defer in.Close()
 
 	if err = json.NewDecoder(in).Decode(&s3vars); err != nil {
-		log.Fatalf("error decoding json: %s", err)
+		fmt.Printf("s3env: decode input error: %s\n", err)
+		return
 	}
 }
 
