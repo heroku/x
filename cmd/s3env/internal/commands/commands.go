@@ -221,6 +221,5 @@ func input() (io.ReadCloser, error) {
 		}
 		return nil, err
 	}
-	fmt.Fprintf(os.Stderr, "s3env: object %s/%s found\n", cfg.Bucket, cfg.Key)
 	return out.Body, nil
 }
