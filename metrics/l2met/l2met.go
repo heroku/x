@@ -13,9 +13,9 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/go-kit/kit/metrics"
 	"github.com/go-kit/kit/metrics/generic"
+	"github.com/sirupsen/logrus"
 )
 
 // L2met receives metrics observations and writes them to the log. Create a
