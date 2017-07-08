@@ -8,17 +8,6 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
-// Dial initialites a secure gRPC connection to the specified server
-// usual mutual TLS authentication.
-func Dial(serverURL string, caCerts [][]byte, clientCert, clientKey []byte) (*grpc.ClientConn, error) {
-	creds, err := Credentials(serverURL, caCerts, clientCert, clientKey)
-	if err != nil {
-		return nil, err
-	}
-
-	return grpc.Dial(serverURL, creds)
-}
-
 // Credentials returns a gRPC DialOption configured for mutual TLS.
 func Credentials(serverURL string, caCerts [][]byte, clientCert, clientKey []byte) (grpc.DialOption, error) {
 	uri, err := url.Parse(serverURL)
