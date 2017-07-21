@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 )
 
@@ -34,7 +35,7 @@ func methodInfo(fullMethod string) (string, string) {
 }
 
 func code(err error) string {
-	s := grpc.Code(err).String()
+	s := grpc.Code(errors.Cause(err)).String()
 
 	if s == "OK" {
 		return "ok"

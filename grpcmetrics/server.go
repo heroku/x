@@ -81,7 +81,9 @@ func instrumentMethod(r metricsregistry.Registry, duration time.Duration, err er
 			// introducing too much noise into the error count.
 			r.GetOrRegisterCounter("context-canceled-errors").Add(1)
 		} else {
-			r.GetOrRegisterCounter("errors").Add(1)
+			if !Ignorable(err) {
+				r.GetOrRegisterCounter("errors").Add(1)
+			}
 		}
 	}
 }

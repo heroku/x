@@ -10,6 +10,7 @@ import (
 
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 func TestUnaryServerInterceptor(t *testing.T) {
@@ -113,6 +114,21 @@ func TestInstrumentMethod(t *testing.T) {
 	p.CheckCounter("response-codes.ok", 2)
 	p.CheckCounter("response-codes.unknown", 1)
 	p.CheckObservations("request-duration.ms", 1.0, 1000.0, 10000.0)
+}
+
+func TestInstrumentMethodWithIgnorableError(t *testing.T) {
+	p := testmetrics.NewProvider(t)
+	r := metricsregistry.New(p)
+
+	instrumentMethod(r, 10*time.Second, Ignore(grpc.Errorf(codes.NotFound, "release not found")))
+	instrumentMethod(r, 10*time.Second, grpc.Errorf(codes.NotFound, "release not found"))
+	instrumentMethod(r, 10*time.Second, errors.New(""))
+	instrumentMethod(r, 10*time.Second, Ignore(errors.New("")))
+
+	p.CheckCounter("requests", 4)
+	p.CheckCounter("errors", 2)
+	p.CheckCounter("response-codes.not-found", 2)
+	p.CheckCounter("response-codes.unknown", 2)
 }
 
 func TestInstrumentStreamSend(t *testing.T) {

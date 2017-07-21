@@ -16,6 +16,8 @@ func TestCode(t *testing.T) {
 		{nil, "ok"},
 		{errors.New("custom"), "unknown"},
 		{grpc.Errorf(codes.InvalidArgument, ""), "invalid-argument"},
+		{grpc.Errorf(codes.NotFound, "release not found"), "not-found"},
+		{Ignore(grpc.Errorf(codes.NotFound, "release not found")), "not-found"},
 	} {
 		got := code(tt.err)
 		if got != tt.want {
