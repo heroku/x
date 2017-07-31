@@ -6,9 +6,11 @@ import (
 
 	proxyproto "github.com/armon/go-proxyproto"
 	grpc_logrus "github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus"
+	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	"github.com/heroku/cedar/lib/grpc/grpcclient"
 	"github.com/heroku/cedar/lib/grpc/grpcmetrics"
 	"github.com/heroku/cedar/lib/grpc/panichandler"
+	"github.com/heroku/cedar/lib/grpc/requestid"
 	"github.com/heroku/cedar/lib/grpc/testserver"
 	"github.com/heroku/cedar/lib/tlsconfig"
 	"github.com/heroku/x/go-kit/metrics"
@@ -17,7 +19,6 @@ import (
 	log "github.com/sirupsen/logrus"
 	xcontext "golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 	healthgrpc "google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
@@ -75,17 +76,14 @@ func RunStandardServer(logger log.FieldLogger, p metrics.Provider, port int, ser
 		return err
 	}
 
-	// TODO: use StandardOptions() + grpc.Creds
-	uph := panichandler.LoggingUnaryPanicHandler(logger)
-	sph := panichandler.LoggingStreamPanicHandler(logger)
-
-	srv := grpc.NewServer(
+	options := []grpc.ServerOption{
 		grpc.Creds(credentials.NewTLS(tlsConfig)),
-		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
-			grpcmetrics.NewUnaryServerInterceptor(p), uph)),
-		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
-			grpcmetrics.NewStreamServerInterceptor(p), sph)),
-	)
+	}
+
+	grpcLogger := logger.WithField("component", "grpc")
+	options = append(options, StandardOptions(grpcLogger, p)...)
+
+	srv := grpc.NewServer(options...)
 	defer srv.Stop()
 
 	healthpb.RegisterHealthServer(srv, healthgrpc.NewServer())
@@ -112,22 +110,26 @@ func RunStandardServer(logger log.FieldLogger, p metrics.Provider, port int, ser
 // servers.
 func StandardOptions(l *log.Entry, p metrics.Provider) []grpc.ServerOption {
 	logOpts := []grpc_logrus.Option{
-		grpc_logrus.WithCodes(func(err error) codes.Code {
-			return grpc.Code(errors.Cause(err))
-		}),
+		grpc_logrus.WithCodes(ErrorToCode),
 	}
 
 	return []grpc.ServerOption{
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
 			panichandler.LoggingUnaryPanicHandler(l),
+			grpc_ctxtags.UnaryServerInterceptor(),
+			UnaryPayloadLoggingTagger,
+			unaryRequestIDTagger,
 			grpcmetrics.NewUnaryServerInterceptor(p), // report metrics on unwrapped errors
 			unaryServerErrorUnwrapper,                // unwrap after we've logged
 			grpc_logrus.UnaryServerInterceptor(l, logOpts...),
 		)),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
 			panichandler.LoggingStreamPanicHandler(l),
+			grpc_ctxtags.StreamServerInterceptor(),
+			streamRequestIDTagger,
+			grpcmetrics.NewStreamServerInterceptor(p), // report metrics on unwrapped errors
+			streamServerErrorUnwrapper,                // unwrap after we've logged
 			grpc_logrus.StreamServerInterceptor(l, logOpts...),
-			grpcmetrics.NewStreamServerInterceptor(p),
 		)),
 	}
 }
@@ -150,4 +152,32 @@ func NewStandardInProcess(l *log.Entry, p metrics.Provider) (*grpc.Server, *grpc
 func unaryServerErrorUnwrapper(ctx xcontext.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (_ interface{}, err error) {
 	res, err := handler(ctx, req)
 	return res, errors.Cause(err)
+}
+
+// streamServerErrorUnwrapper removes errors.Wrap annotations from errors so
+// gRPC status codes are correctly returned to interceptors and clients later
+// in the chain.
+func streamServerErrorUnwrapper(srv interface{}, ss grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+	err := handler(srv, ss)
+	return errors.Cause(err)
+}
+
+// unaryRequestIDTagger sets a grpc_ctxtags request_id tag for logging if the
+// context includes a request ID.
+func unaryRequestIDTagger(ctx xcontext.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (_ interface{}, err error) {
+	if id, ok := requestid.FromContext(ctx); ok {
+		grpc_ctxtags.Extract(ctx).Set("request_id", id)
+	}
+
+	return handler(ctx, req)
+}
+
+// streamRequestIDTagger sets a grpc_ctxtags request_id tag for logging if the
+// context includes a request ID.
+func streamRequestIDTagger(req interface{}, ss grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+	if id, ok := requestid.FromContext(ss.Context()); ok {
+		grpc_ctxtags.Extract(ss.Context()).Set("request_id", id)
+	}
+
+	return handler(req, ss)
 }
