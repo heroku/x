@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"github.com/apg/ln"
-	"github.com/heroku/metaas/lg"
 )
 
 type lruEntry struct {
@@ -47,7 +46,7 @@ func (c *lruCache) Put(ctx context.Context, key string, value interface{}) error
 		v, ok := e.Value.(*lruEntry)
 		if !ok {
 			err := errors.New("type assertion failed")
-			lg.Error(ctx, ln.F{
+			ln.Error(ln.F{
 				"err": err,
 				"key": key,
 			})
