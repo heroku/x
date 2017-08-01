@@ -1,0 +1,7 @@
+language: go
+go: 1.8
+sudo: false
+install: true
+script:
+- go get -u -v ./...
+- go test -v ./...
