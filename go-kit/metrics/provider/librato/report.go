@@ -3,14 +3,57 @@ package librato
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
 	"sync"
 	"time"
 
 	"github.com/heroku/x/scrub"
 )
+
+// Error is used to report information from a non 200 error returned by Librato.
+type Error struct {
+	code, retries                    int // return code and retries remaining
+	body, rateLimitAgg, rateLimitStd string
+
+	// Used to debug things on occasion if inspection of the original
+	// request is necessary.
+	dumpedRequest string
+}
+
+// Code returned by librato
+func (e Error) Code() int {
+	return e.code
+}
+
+// Temporary error that will be retried?
+func (e Error) Temporary() bool {
+	return e.retries > 0
+}
+
+// Request that generated the error
+func (e Error) Request() string {
+	return e.dumpedRequest
+}
+
+// RateLimit info returned by librato in the X-Librato-RateLimit-Agg and
+// X-Librato-RateLimit-Std headers
+func (e Error) RateLimit() (string, string) {
+	return e.rateLimitAgg, e.rateLimitStd
+}
+
+// Body returned by librato.
+func (e Error) Body() string {
+	return e.body
+}
+
+// Error interface
+func (e Error) Error() string {
+	return fmt.Sprintf("code: %d, retries remaining: %d, body: %s, rate-limit-agg: %s, rate-limit-std: %s", e.code, e.retries, e.body, e.rateLimitAgg, e.rateLimitStd)
+}
 
 // extended librato gauge format is used for all metric types.
 type gauge struct {
@@ -129,15 +172,16 @@ func (p *Provider) reportWithRetry(u *url.URL, interval time.Duration) {
 			defer wg.Done()
 			for r := p.numRetries; r > 0; r-- {
 				err := p.report(req)
-				switch terr := err.(type) {
-				case nil:
+				if err == nil {
 					return
-				case Error:
+				}
+				if terr, ok := err.(Error); ok {
 					terr.retries = r - 1
 					err = error(terr)
 				}
-				if p.errorHandler != nil {
-					p.errorHandler(err)
+				p.errorHandler(err)
+				if err := p.backoff(r - 1); err != nil {
+					return
 				}
 			}
 		}(req)
@@ -147,13 +191,6 @@ func (p *Provider) reportWithRetry(u *url.URL, interval time.Duration) {
 
 // report the request, which already has a Body containing metrics
 func (p *Provider) report(req *http.Request) error {
-	var rawBody []byte
-	if p.requestDebugging {
-		// Read the whole body so we can debug later if we need to.
-		rawBody, _ = ioutil.ReadAll(req.Body) // do our best, but don't fail on error
-		req.Body = ioutil.NopCloser(bytes.NewReader(rawBody))
-	}
-
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return err
@@ -161,23 +198,27 @@ func (p *Provider) report(req *http.Request) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode/100 != 2 {
-		b, _ := ioutil.ReadAll(resp.Body) // do our best, but don't fail on error
+		// Best effort, but don't fail on error
+		d, _ := ioutil.ReadAll(resp.Body)
 
-		if p.requestDebugging {
-			req.Body = ioutil.NopCloser(bytes.NewReader(rawBody))
-			// Ensure that we've scrubbed out sensitive data
-			req.Header = scrub.Header(req.Header)
-		} else {
-			req = nil
-		}
-
-		return Error{
+		e := Error{
 			code:         resp.StatusCode,
-			body:         string(b),
+			body:         string(d),
 			rateLimitAgg: resp.Header.Get("X-Librato-RateLimit-Agg"),
 			rateLimitStd: resp.Header.Get("X-Librato-RateLimit-Std"),
-			request:      req,
 		}
+		if p.requestDebugging {
+			req.Header = scrub.Header(req.Header)
+
+			// Best effort, but don't fail on error
+			if b, err := req.GetBody(); err == nil {
+				req.Body = b
+			}
+			d, _ := httputil.DumpRequestOut(req, true)
+			e.dumpedRequest = string(d)
+		}
+
+		return e
 	}
 	return nil
 }

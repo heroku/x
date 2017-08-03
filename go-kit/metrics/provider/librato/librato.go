@@ -1,8 +1,6 @@
 package librato
 
 import (
-	"fmt"
-	"net/http"
 	"net/url"
 	"sync"
 	"time"
@@ -32,47 +30,6 @@ var (
 	_ kmetrics.Histogram = &Histogram{}
 )
 
-// Error is used to report information from a non 200 error returned by Librato.
-type Error struct {
-	code, retries                    int // return code and retries remaining
-	body, rateLimitAgg, rateLimitStd string
-
-	// Used to debug things on occasion if inspection of the original
-	// request is necessary.
-	request *http.Request
-}
-
-// Code returned by librato
-func (e Error) Code() int {
-	return e.code
-}
-
-// Temporary error that will be retried?
-func (e Error) Temporary() bool {
-	return e.retries > 0
-}
-
-// Request that generated the error
-func (e Error) Request() *http.Request {
-	return e.request
-}
-
-// RateLimit info returned by librato in the X-Librato-RateLimit-Agg and
-// X-Librato-RateLimit-Std headers
-func (e Error) RateLimit() (string, string) {
-	return e.rateLimitAgg, e.rateLimitStd
-}
-
-// Body returned by librato.
-func (e Error) Body() string {
-	return e.body
-}
-
-// Error interface
-func (e Error) Error() string {
-	return fmt.Sprintf("code: %d, retries remaining: %d, body: %s, rate-limit-agg: %s, rate-limit-std: %s", e.code, e.retries, e.body, e.rateLimitAgg, e.rateLimitStd)
-}
-
 // Provider works with Librato's older source based
 // metrics (http://api-docs-archive.librato.com/?shell#create-a-metric, not the
 // new tag based metrics). The generated metric's With methods return new
@@ -80,6 +37,7 @@ func (e Error) Error() string {
 // meaningful way.
 type Provider struct {
 	errorHandler                     func(err error)
+	backoff                          func(r int) error
 	source, prefix, percentilePrefix string
 	numRetries                       int
 	batchSize                        int
@@ -87,8 +45,8 @@ type Provider struct {
 	ssa                              bool
 	requestDebugging                 bool
 
-	once sync.Once
-	done chan struct{}
+	once          sync.Once
+	done, stopped chan struct{}
 
 	mu         sync.Mutex
 	counters   []*generic.Counter
@@ -175,11 +133,25 @@ func WithErrorHandler(eh func(err error)) OptionFunc {
 	}
 }
 
+// WithBackoff sets the optional backoff handler. The backoffhandler should sleep
+// for the amount of time required between retries. The backoff func receives the
+// current number of retries remaining. Returning an error from the backoff func
+// stops additional retries for that request.
+func WithBackoff(b func(r int) error) OptionFunc {
+	return func(p *Provider) {
+		p.backoff = b
+	}
+}
+
+func defaultErrorHandler(err error) {}
+
 // New librato metrics provider that reports metrics to the URL every interval
 // with the provided options.
 func New(URL *url.URL, interval time.Duration, opts ...OptionFunc) metrics.Provider {
 	p := Provider{
+		errorHandler:     defaultErrorHandler,
 		done:             make(chan struct{}),
+		stopped:          make(chan struct{}),
 		percentilePrefix: DefaultPercentilePrefix,
 		numRetries:       DefaultNumRetries,
 		batchSize:        DefaultBatchSize,
@@ -187,6 +159,13 @@ func New(URL *url.URL, interval time.Duration, opts ...OptionFunc) metrics.Provi
 
 	for _, opt := range opts {
 		opt(&p)
+	}
+
+	if p.backoff == nil {
+		p.backoff = func(r int) error {
+			time.Sleep((time.Duration(p.numRetries-r) * 100) * time.Millisecond)
+			return nil
+		}
 	}
 
 	go func() {
@@ -198,6 +177,7 @@ func New(URL *url.URL, interval time.Duration, opts ...OptionFunc) metrics.Provi
 				p.reportWithRetry(URL, interval)
 			case <-p.done:
 				p.reportWithRetry(URL, interval)
+				close(p.stopped)
 				return
 			}
 		}
@@ -210,6 +190,7 @@ func New(URL *url.URL, interval time.Duration, opts ...OptionFunc) metrics.Provi
 func (p *Provider) Stop() {
 	p.once.Do(func() {
 		close(p.done)
+		<-p.stopped
 	})
 }
 

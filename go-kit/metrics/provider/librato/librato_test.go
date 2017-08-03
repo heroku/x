@@ -3,6 +3,7 @@ package librato
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"math"
@@ -38,7 +39,7 @@ func ExampleNew() {
 
 	// Pretend applicaion logic....
 	c.Add(1)
-	h.Observe(time.Now().Sub(start).Seconds()) // how long did it take the program to get here.
+	h.Observe(time.Since(start).Seconds()) // how long did it take the program to get here.
 	g.Set(1000)
 	// /Pretend
 
@@ -58,17 +59,17 @@ func TestLibratoReportRequestDebugging(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			p := New(u, doesntmatter, func(p *Provider) { p.requestDebugging = debug })
+			p := New(u, doesntmatter, func(p *Provider) { p.requestDebugging = debug }).(*Provider)
 			p.Stop()
 			p.NewCounter("foo").Add(1) // need at least one metric in order to report
-			reqs, err := p.(*Provider).batch(u, doesntmatter)
+			reqs, err := p.batch(u, doesntmatter)
 			if err != nil {
 				t.Fatal("unexpected error", err)
 			}
 			if len(reqs) != 1 {
 				t.Errorf("expected 1 request, got %d", len(reqs))
 			}
-			err = p.(*Provider).report(reqs[0])
+			err = p.report(reqs[0])
 			if err == nil {
 				t.Fatal("expected error, got nil")
 			}
@@ -80,24 +81,11 @@ func TestLibratoReportRequestDebugging(t *testing.T) {
 
 			req := e.Request()
 			if debug {
-				if req.URL.String() != u.String() {
-					t.Fatalf("expected %s, got %s", u.String(), req.URL.String())
-				}
-				eContentType := "application/json"
-				if v := req.Header.Get("Content-Type"); v != eContentType {
-					t.Fatalf("expected %q, got %q", eContentType, v)
-				}
-				buf, _ := ioutil.ReadAll(req.Body)
-
-				var payload map[string]interface{}
-				if err := json.Unmarshal(buf, &payload); err != nil {
-					t.Fatal("unexpected error", err)
-				}
-				if len(payload) == 0 {
-					t.Fatal("expected payload with data, got empty payload")
+				if req == "" {
+					t.Error("unexpected empty request")
 				}
 			} else {
-				if req != nil {
+				if req != "" {
 					t.Errorf("expected no request, got %#v", req)
 				}
 			}
@@ -106,10 +94,21 @@ func TestLibratoReportRequestDebugging(t *testing.T) {
 	}
 }
 
+type temporary interface {
+	Temporary() bool
+}
+
 func TestLibratoRetriesWithErrors(t *testing.T) {
 	var retried int
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		retried++
+		b, err := io.Copy(ioutil.Discard, r.Body)
+		if err != nil {
+			t.Fatal("Unable to read all of the request body:", err)
+		}
+		if b == 0 {
+			t.Fatal("expected to copy more than 0 bytes")
+		}
 		w.WriteHeader(http.StatusBadRequest)
 	}))
 	defer srv.Close()
@@ -123,15 +122,13 @@ func TestLibratoRetriesWithErrors(t *testing.T) {
 	expectedRetries := 3
 	errHandler := func(err error) {
 		totalErrors++
-		type temporary interface {
-			Temporary() bool
-		}
 		if terr, ok := err.(temporary); ok {
 			if terr.Temporary() {
 				temporaryErrors++
 			} else {
 				finalErrors++
 			}
+			t.Log(err)
 		}
 	}
 	p := New(u, doesntmatter, WithErrorHandler(errHandler), WithRetries(expectedRetries), WithRequestDebugging()).(*Provider)
@@ -158,6 +155,62 @@ func TestLibratoRetriesWithErrors(t *testing.T) {
 	}
 }
 
+func TestLibratoRetriesWithErrorsNoDebugging(t *testing.T) {
+	var retried int
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		retried++
+		b, err := io.Copy(ioutil.Discard, r.Body)
+		if err != nil {
+			t.Fatal("Unable to read all of the request body:", err)
+		}
+		if b == 0 {
+			t.Fatal("expected more than 0 bytes in the body")
+		}
+		w.WriteHeader(http.StatusBadRequest)
+	}))
+	defer srv.Close()
+
+	u, err := url.Parse(srv.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var totalErrors, temporaryErrors, finalErrors int
+	expectedRetries := 3
+	errHandler := func(err error) {
+		totalErrors++
+		if terr, ok := err.(temporary); ok {
+			if terr.Temporary() {
+				temporaryErrors++
+			} else {
+				finalErrors++
+			}
+			t.Log(err)
+		}
+	}
+	p := New(u, doesntmatter, WithErrorHandler(errHandler), WithRetries(expectedRetries)).(*Provider)
+	p.Stop()
+	p.NewCounter("foo").Add(1) // need at least one metric in order to report
+	p.reportWithRetry(u, doesntmatter)
+
+	if totalErrors != expectedRetries {
+		t.Errorf("expected %d total errors, got %d", expectedRetries, totalErrors)
+	}
+
+	expectedTemporaryErrors := expectedRetries - 1
+	if temporaryErrors != expectedTemporaryErrors {
+		t.Errorf("expected %d temporary errors, got %d", expectedTemporaryErrors, temporaryErrors)
+	}
+
+	expectedFinalErrors := 1
+	if finalErrors != expectedFinalErrors {
+		t.Errorf("expected %d final errors, got %d", expectedFinalErrors, finalErrors)
+	}
+
+	if retried != expectedRetries {
+		t.Errorf("expected %d retries, got %d", expectedRetries, retried)
+	}
+}
 func TestLibratoSingleReport(t *testing.T) {
 	user := os.Getenv("LIBRATO_TEST_USER")
 	pwd := os.Getenv("LIBRATO_TEST_PWD")
@@ -329,6 +382,14 @@ func TestLibratoHistogramJSONMarshalers(t *testing.T) {
 
 func TestScrubbing(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, err := io.Copy(ioutil.Discard, r.Body)
+		if err != nil {
+			t.Fatal("Unable to read all of the request body:", err)
+		}
+		if b == 0 {
+			t.Fatal("expected more than 0 bytes in the body")
+		}
+
 		w.WriteHeader(http.StatusBadRequest)
 	}))
 	u, err := url.Parse(srv.URL)
@@ -342,10 +403,12 @@ func TestScrubbing(t *testing.T) {
 		errCnt++
 	}
 	u.User = url.UserPassword("foo", "bar") // put user info into the URL
-	p := New(u, doesntmatter, WithErrorHandler(errHandler), WithRequestDebugging())
+	p := New(u, doesntmatter, WithErrorHandler(errHandler), WithRequestDebugging()).(*Provider)
+	p.Stop()
+
 	foo := p.NewCounter("foo")
 	foo.Add(1)
-	p.(*Provider).reportWithRetry(u, doesntmatter)
+	p.reportWithRetry(u, doesntmatter)
 
 	for _, err := range errors {
 		e, ok := err.(Error)
@@ -353,18 +416,15 @@ func TestScrubbing(t *testing.T) {
 			t.Fatalf("expected Error, got %T: %q", err, err.Error())
 		}
 		request := e.Request()
-		if ahv := request.Header.Get("Authorization"); strings.Contains(ahv, "foo") {
-			t.Error("expected Authorizaton header to not contain username, got:", ahv)
-		}
-		if request.URL.User != nil {
-			t.Error("expected the request URL user to be nil, got", request.URL.User)
+		if !strings.Contains(request, "Authorization: Basic [SCRUBBED]") {
+			t.Errorf("expected Authorization header to be scrubbed, got %q", request)
 		}
 	}
 
 	// Close the server now so we get an error from the http client
 	srv.Close()
 	errors = errors[errCnt:]
-	p.(*Provider).reportWithRetry(u, doesntmatter)
+	p.reportWithRetry(u, doesntmatter)
 
 	for _, err := range errors {
 		_, ok := err.(Error)
@@ -393,18 +453,19 @@ func TestWithResetCounters(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			p := New(u, doesntmatter, func(p *Provider) { p.resetCounters = reset })
+			p := New(u, doesntmatter, func(p *Provider) { p.resetCounters = reset }).(*Provider)
 			p.Stop()
+
 			foo := p.NewCounter("foo")
 			foo.Add(1)
-			reqs, err := p.(*Provider).batch(u, doesntmatter)
+			reqs, err := p.batch(u, doesntmatter)
 			if err != nil {
 				t.Fatal("unexpected error batching", err)
 			}
 			if len(reqs) != 1 {
 				t.Errorf("expected 1 request, got %d", len(reqs))
 			}
-			p.(*Provider).report(reqs[0])
+			p.report(reqs[0])
 
 			var expected float64
 			if reset {
