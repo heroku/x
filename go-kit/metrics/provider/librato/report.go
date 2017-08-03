@@ -183,6 +183,10 @@ func (p *Provider) reportWithRetry(u *url.URL, interval time.Duration) {
 				if err := p.backoff(r - 1); err != nil {
 					return
 				}
+				// Not required with go1.9rc1
+				if b, err := req.GetBody(); err == nil {
+					req.Body = b
+				}
 			}
 		}(req)
 	}
