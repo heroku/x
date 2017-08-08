@@ -123,6 +123,7 @@ func submitPayload(ctx context.Context, where string) error {
 		return err
 	}
 	req = req.WithContext(ctx)
+	req.Header.Add("Content-Type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
