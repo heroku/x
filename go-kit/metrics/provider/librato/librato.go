@@ -1,11 +1,6 @@
 package librato
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"net/http"
 	"net/url"
 	"sync"
 	"time"
@@ -14,7 +9,6 @@ import (
 	kmetrics "github.com/go-kit/kit/metrics"
 	"github.com/go-kit/kit/metrics/generic"
 	"github.com/heroku/x/go-kit/metrics"
-	"github.com/heroku/x/scrub"
 )
 
 const (
@@ -27,52 +21,14 @@ const (
 	DefaultPercentilePrefix = ".p"
 	// DefaultNumRetries if WithRetries isn't used to set a different value
 	DefaultNumRetries = 3
+	// DefaultBatchSize of metric batches sent to librato. This value was taken out of the librato docs at:
+	// http://api-docs-archive.librato.com/?shell#measurement-properties
+	DefaultBatchSize = 300
 )
 
 var (
 	_ kmetrics.Histogram = &Histogram{}
 )
-
-// Error is used to report information from a non 200 error returned by Librato.
-type Error struct {
-	code, retries                    int // return code and retries remaining
-	body, rateLimitAgg, rateLimitStd string
-
-	// Used to debug things on occasion if inspection of the original
-	// request is necessary.
-	request *http.Request
-}
-
-// Code returned by librato
-func (e Error) Code() int {
-	return e.code
-}
-
-// Temporary error that will be retried?
-func (e Error) Temporary() bool {
-	return e.retries > 0
-}
-
-// Request that generated the error
-func (e Error) Request() *http.Request {
-	return e.request
-}
-
-// RateLimit info returned by librato in the X-Librato-RateLimit-Agg and
-// X-Librato-RateLimit-Std headers
-func (e Error) RateLimit() (string, string) {
-	return e.rateLimitAgg, e.rateLimitStd
-}
-
-// Body returned by librato.
-func (e Error) Body() string {
-	return e.body
-}
-
-// Error interface
-func (e Error) Error() string {
-	return fmt.Sprintf("code: %d, retries remaining: %d, body: %s, rate-limit-agg: %s, rate-limit-std: %s", e.code, e.retries, e.body, e.rateLimitAgg, e.rateLimitStd)
-}
 
 // Provider works with Librato's older source based
 // metrics (http://api-docs-archive.librato.com/?shell#create-a-metric, not the
@@ -81,13 +37,16 @@ func (e Error) Error() string {
 // meaningful way.
 type Provider struct {
 	errorHandler                     func(err error)
+	backoff                          func(r int) error
 	source, prefix, percentilePrefix string
-	resetCounters, ssa               bool
 	numRetries                       int
+	batchSize                        int
+	resetCounters                    bool
+	ssa                              bool
 	requestDebugging                 bool
 
-	once sync.Once
-	done chan struct{}
+	once          sync.Once
+	done, stopped chan struct{}
 
 	mu         sync.Mutex
 	counters   []*generic.Counter
@@ -97,6 +56,13 @@ type Provider struct {
 
 // OptionFunc used to set options on a librato provider
 type OptionFunc func(*Provider)
+
+// WithBatchSize sets the number of metrics sent in a single request to librato
+func WithBatchSize(n int) OptionFunc {
+	return func(p *Provider) {
+		p.batchSize = n
+	}
+}
 
 // WithRetries sets the max number of retries during reporting.
 func WithRetries(n int) OptionFunc {
@@ -167,17 +133,41 @@ func WithErrorHandler(eh func(err error)) OptionFunc {
 	}
 }
 
+// WithBackoff sets the optional backoff handler. The backoffhandler should sleep
+// for the amount of time required between retries. The backoff func receives the
+// current number of retries remaining. Returning an error from the backoff func
+// stops additional retries for that request.
+//
+// The default backoff strategy is 100ms * (total # of tries - retries remaining)
+func WithBackoff(b func(r int) error) OptionFunc {
+	return func(p *Provider) {
+		p.backoff = b
+	}
+}
+
+func defaultErrorHandler(err error) {}
+
 // New librato metrics provider that reports metrics to the URL every interval
 // with the provided options.
 func New(URL *url.URL, interval time.Duration, opts ...OptionFunc) metrics.Provider {
 	p := Provider{
+		errorHandler:     defaultErrorHandler,
 		done:             make(chan struct{}),
+		stopped:          make(chan struct{}),
 		percentilePrefix: DefaultPercentilePrefix,
 		numRetries:       DefaultNumRetries,
+		batchSize:        DefaultBatchSize,
 	}
 
 	for _, opt := range opts {
 		opt(&p)
+	}
+
+	if p.backoff == nil {
+		p.backoff = func(r int) error {
+			time.Sleep((time.Duration(p.numRetries-r) * 100) * time.Millisecond)
+			return nil
+		}
 	}
 
 	go func() {
@@ -189,6 +179,7 @@ func New(URL *url.URL, interval time.Duration, opts ...OptionFunc) metrics.Provi
 				p.reportWithRetry(URL, interval)
 			case <-p.done:
 				p.reportWithRetry(URL, interval)
+				close(p.stopped)
 				return
 			}
 		}
@@ -201,6 +192,7 @@ func New(URL *url.URL, interval time.Duration, opts ...OptionFunc) metrics.Provi
 func (p *Provider) Stop() {
 	p.once.Do(func() {
 		close(p.done)
+		<-p.stopped
 	})
 }
 
@@ -240,135 +232,6 @@ func (p *Provider) NewHistogram(name string, buckets int) kmetrics.Histogram {
 	defer p.mu.Unlock()
 	p.histograms = append(p.histograms, &h)
 	return &h
-}
-
-// extended librato gauge format is used for all metric types.
-type gauge struct {
-	Name   string  `json:"name"`
-	Period float64 `json:"period"`
-	Count  int64   `json:"count"`
-	Sum    float64 `json:"sum"`
-	Min    float64 `json:"min"`
-	Max    float64 `json:"max"`
-	SumSq  float64 `json:"sum_squares"`
-}
-
-// attributes for a set of metrics being reported to librato.
-type attributes struct {
-	Aggregate bool `json:"aggregate,omitempty"`
-}
-
-// reportWithRetry the metrics to the url, every interval, with max retries.
-func (p *Provider) reportWithRetry(u *url.URL, interval time.Duration) {
-	for r := p.numRetries; r > 0; r-- {
-		nu := *u // copy the url
-		err := p.report(&nu, interval)
-		switch terr := err.(type) {
-		case nil:
-			return
-		case Error:
-			terr.retries = r - 1
-			err = error(terr)
-		}
-		if p.errorHandler != nil {
-			p.errorHandler(err)
-		}
-	}
-}
-
-// report the metrics to the url, every interval
-func (p *Provider) report(u *url.URL, interval time.Duration) error {
-	p.mu.Lock()
-	defer p.mu.Unlock() // should only block New{Histogram,Counter,Gauge}
-
-	if len(p.counters) == 0 && len(p.histograms) == 0 && len(p.gauges) == 0 {
-		return nil
-	}
-
-	var buf bytes.Buffer
-	e := json.NewEncoder(&buf)
-	r := struct {
-		Source      string      `json:"source,omitempty"`
-		MeasureTime int64       `json:"measure_time"`
-		Gauges      []gauge     `json:"gauges"`
-		Attributes  *attributes `json:"attributes,omitempty"`
-	}{}
-
-	r.Source = p.source
-	ivSec := int64(interval / time.Second)
-	r.MeasureTime = (time.Now().Unix() / ivSec) * ivSec
-	if p.ssa {
-		r.Attributes = &attributes{Aggregate: true}
-	}
-	period := interval.Seconds()
-
-	for _, c := range p.counters {
-		var v float64
-		if p.resetCounters {
-			v = c.ValueReset()
-		} else {
-			v = c.Value()
-		}
-		r.Gauges = append(r.Gauges, gauge{Name: c.Name, Period: period, Count: 1, Sum: v, Min: v, Max: v, SumSq: v * v})
-	}
-	for _, g := range p.gauges {
-		v := g.Value()
-		r.Gauges = append(r.Gauges, gauge{Name: g.Name, Period: period, Count: 1, Sum: v, Min: v, Max: v, SumSq: v * v})
-	}
-	for _, h := range p.histograms {
-		r.Gauges = append(r.Gauges, h.measures(period)...)
-	}
-
-	if err := e.Encode(r); err != nil {
-		return err
-	}
-
-	var rawRequest []byte
-	if p.requestDebugging {
-		rawRequest = make([]byte, buf.Len())
-		copy(rawRequest, buf.Bytes())
-	}
-
-	// Don't accidentally leak the creds, which can happen if we return the u with a u.User set
-	var user *url.Userinfo
-	user, u.User = u.User, nil
-
-	req, err := http.NewRequest(http.MethodPost, u.String(), &buf)
-	if err != nil {
-		return err
-	}
-	if user != nil {
-		p, _ := user.Password()
-		req.SetBasicAuth(user.Username(), p)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode/100 != 2 {
-		b, _ := ioutil.ReadAll(resp.Body)
-
-		if p.requestDebugging {
-			req.Body = ioutil.NopCloser(bytes.NewReader(rawRequest))
-			// Ensure that we've scrubbed out sensitive data
-			req.Header = scrub.Header(req.Header)
-		} else {
-			req = nil
-		}
-
-		return Error{
-			code:         resp.StatusCode,
-			body:         string(b),
-			rateLimitAgg: resp.Header.Get("X-Librato-RateLimit-Agg"),
-			rateLimitStd: resp.Header.Get("X-Librato-RateLimit-Std"),
-			request:      req,
-		}
-	}
-	return nil
 }
 
 // Histogram adapts go-kit/Heroku/Librato's ideas of histograms. It
