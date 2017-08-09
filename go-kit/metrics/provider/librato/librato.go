@@ -137,6 +137,8 @@ func WithErrorHandler(eh func(err error)) OptionFunc {
 // for the amount of time required between retries. The backoff func receives the
 // current number of retries remaining. Returning an error from the backoff func
 // stops additional retries for that request.
+//
+// The default backoff strategy is 100ms * (total # of tries - retries remaining)
 func WithBackoff(b func(r int) error) OptionFunc {
 	return func(p *Provider) {
 		p.backoff = b

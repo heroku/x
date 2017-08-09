@@ -15,6 +15,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	kmetrics "github.com/go-kit/kit/metrics"
 )
 
 var (
@@ -211,6 +213,48 @@ func TestLibratoRetriesWithErrorsNoDebugging(t *testing.T) {
 		t.Errorf("expected %d retries, got %d", expectedRetries, retried)
 	}
 }
+
+func TestLibratoBatchingReport(t *testing.T) {
+	user := os.Getenv("LIBRATO_TEST_USER")
+	pwd := os.Getenv("LIBRATO_TEST_PWD")
+	if user == "" || pwd == "" {
+		t.Skip("LIBRATO_TEST_USER || LIBRATO_TEST_PWD unset")
+	}
+	rand.Seed(time.Now().UnixNano())
+	u, err := url.Parse(DefaultURL)
+	if err != nil {
+		t.Fatalf("expected nil, got %q", err)
+	}
+	u.User = url.UserPassword(user, pwd)
+
+	errs := func(err error) {
+		t.Error("unexpected error reporting metrics", err)
+	}
+
+	p := New(u, time.Second, WithSource("test.source"), WithErrorHandler(errs))
+	h := make([]kmetrics.Histogram, 0, DefaultBatchSize)
+	for i := 0; i < DefaultBatchSize; i++ { // each histogram creates multiple gauges
+		h = append(h, p.NewHistogram(fmt.Sprintf("test.histogram.%d", i), DefaultBucketCount))
+	}
+
+	done := make(chan struct{})
+	go func() {
+		for i := 0; i < 30; i++ {
+			for i := range h {
+				h[i].Observe(rand.Float64() * 100)
+				h[i].Observe(rand.Float64() * 200)
+				h[i].Observe(rand.Float64() * 300)
+			}
+			time.Sleep(100 * time.Millisecond)
+		}
+		p.Stop()
+		close(done)
+	}()
+
+	<-done
+	p.Stop() // do a final report
+}
+
 func TestLibratoSingleReport(t *testing.T) {
 	user := os.Getenv("LIBRATO_TEST_USER")
 	pwd := os.Getenv("LIBRATO_TEST_PWD")
