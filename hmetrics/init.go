@@ -87,6 +87,7 @@ func report(ctx context.Context, endpoint string, pfer printfer) {
 
 var (
 	lastGCPause uint64
+	lastNumGC   uint32
 	buf         bytes.Buffer
 )
 
@@ -100,12 +101,15 @@ func gatherMetrics() error {
 	pauseNS := stats.PauseTotalNs - lastGCPause
 	lastGCPause = stats.PauseTotalNs
 
+	numGC := stats.NumGC - lastNumGC
+	lastNumGC = stats.NumGC
+
 	result := struct {
 		Counters map[string]float64 `json:"counters"`
 		Gauges   map[string]float64 `json:"gauges"`
 	}{
 		Counters: map[string]float64{
-			"go.gc.collections": float64(stats.NumGC),
+			"go.gc.collections": float64(numGC),
 			"go.gc.pause.ns":    float64(pauseNS),
 		},
 		Gauges: map[string]float64{
