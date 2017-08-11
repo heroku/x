@@ -90,6 +90,7 @@ var (
 	buf         bytes.Buffer
 )
 
+// TODO: If we ever have high frequency charts HeapIdle minus HeapReleased could be interesting.
 func gatherMetrics() error {
 	stats := &runtime.MemStats{}
 	runtime.ReadMemStats(stats)
@@ -108,8 +109,10 @@ func gatherMetrics() error {
 			"go.gc.pause.ns":    float64(pauseNS),
 		},
 		Gauges: map[string]float64{
-			"go.memory.heap.bytes":  float64(stats.Alloc),
-			"go.memory.stack.bytes": float64(stats.StackInuse),
+			"go.memory.heap.bytes":   float64(stats.Alloc),
+			"go.memory.stack.bytes":  float64(stats.StackInuse),
+			"go.memory.heap.objects": float64(stats.Mallocs - stats.Frees), // Number of "live" objects.
+			"go.gc.goal":             float64(stats.NextGC),                // Goal heap size for next GC.
 		},
 	}
 
