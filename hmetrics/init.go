@@ -101,9 +101,11 @@ func report(ctx context.Context, endpoint string, ef ErrHandler) {
 
 var (
 	lastGCPause uint64
+	lastNumGC   uint32
 	buf         bytes.Buffer
 )
 
+// TODO: If we ever have high frequency charts HeapIdle minus HeapReleased could be interesting.
 func gatherMetrics() error {
 	var stats runtime.MemStats
 	runtime.ReadMemStats(&stats)
@@ -113,17 +115,22 @@ func gatherMetrics() error {
 	pauseNS := stats.PauseTotalNs - lastGCPause
 	lastGCPause = stats.PauseTotalNs
 
+	numGC := stats.NumGC - lastNumGC
+	lastNumGC = stats.NumGC
+
 	result := struct {
 		Counters map[string]float64 `json:"counters"`
 		Gauges   map[string]float64 `json:"gauges"`
 	}{
 		Counters: map[string]float64{
-			"go.gc.collections": float64(stats.NumGC),
+			"go.gc.collections": float64(numGC),
 			"go.gc.pause.ns":    float64(pauseNS),
 		},
 		Gauges: map[string]float64{
-			"go.memory.heap.bytes":  float64(stats.Alloc),
-			"go.memory.stack.bytes": float64(stats.StackInuse),
+			"go.memory.heap.bytes":   float64(stats.Alloc),
+			"go.memory.stack.bytes":  float64(stats.StackInuse),
+			"go.memory.heap.objects": float64(stats.Mallocs - stats.Frees), // Number of "live" objects.
+			"go.gc.goal":             float64(stats.NextGC),                // Goal heap size for next GC.
 		},
 	}
 
