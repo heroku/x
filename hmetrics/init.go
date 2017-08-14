@@ -131,6 +131,7 @@ func gatherMetrics() error {
 			"go.memory.stack.bytes":  float64(stats.StackInuse),
 			"go.memory.heap.objects": float64(stats.Mallocs - stats.Frees), // Number of "live" objects.
 			"go.gc.goal":             float64(stats.NextGC),                // Goal heap size for next GC.
+			"go.routines":            float64(runtime.NumGoroutine()),      // Current number of goroutines.
 		},
 	}
 
