@@ -63,7 +63,8 @@ func Report(ctx context.Context, ef ErrHandler) error {
 	return nil
 }
 
-// The only thing that should come after and exit() is a return
+// The only thing that should come after an exit() is a return.
+// Best to use in a function that can defer it.
 func exit() {
 	mu.Lock()
 	defer mu.Unlock()
@@ -71,6 +72,8 @@ func exit() {
 }
 
 func report(ctx context.Context, endpoint string, ef ErrHandler) {
+	defer exit()
+
 	t := time.NewTicker(metricWaitTime)
 	defer t.Stop()
 
@@ -78,20 +81,17 @@ func report(ctx context.Context, endpoint string, ef ErrHandler) {
 		select {
 		case <-t.C:
 		case <-ctx.Done():
-			exit()
 			return
 		}
 
 		if err := gatherMetrics(); err != nil {
 			if err := ef(err); err != nil {
-				exit()
 				return
 			}
 			continue
 		}
 		if err := submitPayload(ctx, endpoint); err != nil {
 			if err := ef(err); err != nil {
-				exit()
 				return
 			}
 			continue
