@@ -16,10 +16,6 @@ const (
 	metricWaitTime = 20 * time.Second
 )
 
-type printfer interface {
-	Printf(s string, v ...interface{})
-}
-
 type AlreadyStarted struct{}
 
 func (as AlreadyStarted) Error() string {
@@ -45,7 +41,11 @@ var (
 	started bool
 )
 
-func Report(ctx context.Context, pfer printfer) error {
+// ErrHandler receives any errors encountered during collection or reporting of metrics to Heroku. Processing of metrics
+// continues if the ErrHandler returns nil, but aborts if the ErrHandler itself returns an error.
+type ErrHandler func(err error) error
+
+func Report(ctx context.Context, ef ErrHandler) error {
 	mu.Lock()
 	defer mu.Unlock()
 	if started {
@@ -55,12 +55,25 @@ func Report(ctx context.Context, pfer printfer) error {
 	if endpoint == "" {
 		return HerokuMetricsURLUnset{}
 	}
-	go report(ctx, endpoint, pfer)
+	if ef == nil {
+		ef = func(_ error) error { return nil }
+	}
+	go report(ctx, endpoint, ef)
 	started = true
 	return nil
 }
 
-func report(ctx context.Context, endpoint string, pfer printfer) {
+// The only thing that should come after an exit() is a return.
+// Best to use in a function that can defer it.
+func exit() {
+	mu.Lock()
+	defer mu.Unlock()
+	started = false
+}
+
+func report(ctx context.Context, endpoint string, ef ErrHandler) {
+	defer exit()
+
 	t := time.NewTicker(metricWaitTime)
 	defer t.Stop()
 
@@ -68,18 +81,19 @@ func report(ctx context.Context, endpoint string, pfer printfer) {
 		select {
 		case <-t.C:
 		case <-ctx.Done():
-			mu.Lock()
-			defer mu.Unlock()
-			started = false
 			return
 		}
 
-		if err := gatherMetrics(); err != nil && pfer != nil {
-			pfer.Printf("error encoding metrics: %v", err)
+		if err := gatherMetrics(); err != nil {
+			if err := ef(err); err != nil {
+				return
+			}
 			continue
 		}
-		if err := submitPayload(ctx, endpoint); err != nil && pfer != nil {
-			pfer.Printf("error submitting metrics: %v", err)
+		if err := submitPayload(ctx, endpoint); err != nil {
+			if err := ef(err); err != nil {
+				return
+			}
 			continue
 		}
 	}
@@ -91,8 +105,8 @@ var (
 )
 
 func gatherMetrics() error {
-	stats := &runtime.MemStats{}
-	runtime.ReadMemStats(stats)
+	var stats runtime.MemStats
+	runtime.ReadMemStats(&stats)
 
 	// cribbed from https://github.com/codahale/metrics/blob/master/runtime/memstats.go
 

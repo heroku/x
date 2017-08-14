@@ -17,8 +17,11 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	hml := log.New(os.Stderr, "heroku metrics", 0)
-	if err := hmetrics.Report(ctx, hml); err != nil {
+	eh := func(err error) error {
+		log.Println("Error reporting metrics to heroku:", err)
+		return nil
+	}
+	if err := hmetrics.Report(ctx, eh); err != nil {
 		if f, ok := err.(fataler); ok {
 			if f.Fatal() {
 				log.Fatal(err)
