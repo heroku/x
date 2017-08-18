@@ -30,15 +30,24 @@ func UnaryPayloadLoggingTagger(ctx xcontext.Context, req interface{}, _ *grpc.Un
 	return resp, err
 }
 
-func tag(ctx xcontext.Context, scope string, pb interface{}) {
-	type loggable interface {
-		LoggingTags() map[string]interface{}
-	}
+type loggable interface {
+	LoggingTags() map[string]interface{}
+}
 
+func tag(ctx xcontext.Context, scope string, pb interface{}) {
+	tags := grpc_ctxtags.Extract(ctx)
+	extractTags(tags, scope, pb)
+}
+
+func extractTags(tags *grpc_ctxtags.Tags, scope string, pb interface{}) {
 	if lg, ok := pb.(loggable); ok {
-		tags := grpc_ctxtags.Extract(ctx)
 		for k, v := range lg.LoggingTags() {
-			tags.Set(fmt.Sprintf("%s.%s", scope, k), v)
+			name := fmt.Sprintf("%s.%s", scope, k)
+			if _, ok := v.(loggable); ok {
+				extractTags(tags, name, v)
+			} else {
+				tags.Set(name, v)
+			}
 		}
 	}
 }
