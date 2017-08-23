@@ -5,16 +5,11 @@ import (
 	"net"
 
 	proxyproto "github.com/armon/go-proxyproto"
-	grpc_logrus "github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	"github.com/heroku/cedar/lib/grpc/grpcclient"
-	"github.com/heroku/cedar/lib/grpc/grpcmetrics"
-	"github.com/heroku/cedar/lib/grpc/panichandler"
 	"github.com/heroku/cedar/lib/grpc/requestid"
 	"github.com/heroku/cedar/lib/grpc/testserver"
 	"github.com/heroku/cedar/lib/tlsconfig"
-	"github.com/heroku/x/go-kit/metrics"
-	"github.com/mwitkow/go-grpc-middleware"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	xcontext "golang.org/x/net/context"
@@ -67,10 +62,19 @@ type Starter interface {
 	Start(srv *grpc.Server) error
 }
 
-// RunStandardServer runs a GRPC server with a standard setup including metrics,
-// panic handling, a health check service, TLS termination with client authentication,
-// and proxy-protocol wrapping.
-func RunStandardServer(logger log.FieldLogger, p metrics.Provider, port int, serverCACerts [][]byte, serverCert, serverKey []byte, server Starter) error {
+// RunStandardServer runs a GRPC server with a standard setup including metrics
+// (if provider passed), panic handling, a health check service, TLS termination
+// with client authentication, and proxy-protocol wrapping.
+func RunStandardServer(logger log.FieldLogger, port int, serverCACerts [][]byte, serverCert, serverKey []byte, server Starter, opts ...ServerOption) error {
+	o := &options{}
+	for _, so := range opts {
+		so(o)
+	}
+	// If we don't have an explicit entry, add one
+	if o.logEntry == nil {
+		o.logEntry = logger.WithField("component", "grpc")
+	}
+
 	tlsConfig, err := tlsconfig.NewMutualTLS(serverCACerts, serverCert, serverKey)
 	if err != nil {
 		return err
@@ -80,8 +84,7 @@ func RunStandardServer(logger log.FieldLogger, p metrics.Provider, port int, ser
 		grpc.Creds(credentials.NewTLS(tlsConfig)),
 	}
 
-	grpcLogger := logger.WithField("component", "grpc")
-	options = append(options, StandardOptions(grpcLogger, p)...)
+	options = append(options, o.serverOptions()...)
 
 	srv := grpc.NewServer(options...)
 	defer srv.Stop()
@@ -106,38 +109,14 @@ func RunStandardServer(logger log.FieldLogger, p metrics.Provider, port int, ser
 	return srv.Serve(proxyprotoLn)
 }
 
-// StandardOptions return a list of standard server options to initialize
-// servers.
-func StandardOptions(l *log.Entry, p metrics.Provider) []grpc.ServerOption {
-	logOpts := []grpc_logrus.Option{
-		grpc_logrus.WithCodes(ErrorToCode),
-	}
-
-	return []grpc.ServerOption{
-		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
-			panichandler.LoggingUnaryPanicHandler(l),
-			grpc_ctxtags.UnaryServerInterceptor(),
-			UnaryPayloadLoggingTagger,
-			unaryRequestIDTagger,
-			grpcmetrics.NewUnaryServerInterceptor(p), // report metrics on unwrapped errors
-			unaryServerErrorUnwrapper,                // unwrap after we've logged
-			grpc_logrus.UnaryServerInterceptor(l, logOpts...),
-		)),
-		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
-			panichandler.LoggingStreamPanicHandler(l),
-			grpc_ctxtags.StreamServerInterceptor(),
-			streamRequestIDTagger,
-			grpcmetrics.NewStreamServerInterceptor(p), // report metrics on unwrapped errors
-			streamServerErrorUnwrapper,                // unwrap after we've logged
-			grpc_logrus.StreamServerInterceptor(l, logOpts...),
-		)),
-	}
-}
-
 // NewStandardInProcess starts a new in-proces gRPC server with the standard
 // middleware and returns the server and a valid connection.
-func NewStandardInProcess(l *log.Entry, p metrics.Provider) (*grpc.Server, *grpc.ClientConn, error) {
-	srv, err := NewInProcess("local", StandardOptions(l, p)...)
+func NewStandardInProcess(opts ...ServerOption) (*grpc.Server, *grpc.ClientConn, error) {
+	o := &options{}
+	for _, so := range opts {
+		so(o)
+	}
+	srv, err := NewInProcess("local", o.serverOptions()...)
 
 	if err != nil {
 		return nil, nil, err
