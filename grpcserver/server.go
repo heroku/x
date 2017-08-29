@@ -3,6 +3,7 @@ package grpcserver
 import (
 	"fmt"
 	"net"
+	"net/http"
 
 	proxyproto "github.com/armon/go-proxyproto"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
@@ -10,6 +11,7 @@ import (
 	"github.com/heroku/cedar/lib/grpc/requestid"
 	"github.com/heroku/cedar/lib/grpc/testserver"
 	"github.com/heroku/cedar/lib/tlsconfig"
+	"github.com/lstoll/grpce/h2c"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	xcontext "golang.org/x/net/context"
@@ -123,6 +125,32 @@ func NewStandardInProcess(opts ...ServerOption) (*grpc.Server, *grpc.ClientConn,
 	}
 
 	return srv.Server, grpcclient.Conn("local"), nil
+}
+
+// NewStandardH2C create a set of servers suitible for serving gRPC services
+// using H2C (aka client upgrades). This is suitible for serving gRPC services
+// via both hermes and dogwood-router. HTTP 1.x traffic will be passed to the
+// provided handler. This will return a *grpc.Server configured with our
+// standard set of services, and a HTTP server that should be what is served on
+// a listener.
+func NewStandardH2C(http11 http.Handler, opts ...ServerOption) (*grpc.Server, *http.Server) {
+	o := &options{}
+	for _, so := range opts {
+		so(o)
+	}
+
+	gSrv := grpc.NewServer(o.serverOptions()...)
+
+	healthpb.RegisterHealthServer(gSrv, healthgrpc.NewServer())
+
+	h2cSrv := &h2c.Server{
+		HTTP2Handler:      gSrv,
+		NonUpgradeHandler: http11,
+	}
+
+	hSrv := &http.Server{Handler: h2cSrv}
+
+	return gSrv, hSrv
 }
 
 // unaryServerErrorUnwrapper removes errors.Wrap annotations from errors so
