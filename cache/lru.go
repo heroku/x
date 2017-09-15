@@ -46,7 +46,7 @@ func (c *lruCache) Put(ctx context.Context, key string, value interface{}) error
 		v, ok := e.Value.(*lruEntry)
 		if !ok {
 			err := errors.New("type assertion failed")
-			ln.Error(ln.F{
+			ln.Error(ctx, ln.F{
 				"err": err,
 				"key": key,
 			})
