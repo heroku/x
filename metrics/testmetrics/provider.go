@@ -4,6 +4,7 @@ import (
 	"math"
 	"reflect"
 	"sort"
+	"sync"
 	"testing"
 
 	"github.com/go-kit/kit/metrics"
@@ -13,6 +14,7 @@ import (
 type Provider struct {
 	t *testing.T
 
+	sync.Mutex
 	counters   map[string]*Counter
 	gauges     map[string]*Gauge
 	histograms map[string]*Histogram
@@ -36,6 +38,9 @@ func (p *Provider) Stop() {
 
 // NewCounter implements go-kit's Provider interface.
 func (p *Provider) NewCounter(name string) metrics.Counter {
+	p.Lock()
+	defer p.Unlock()
+
 	if _, ok := p.counters[name]; ok {
 		p.t.Errorf("NewCounter(%s) called, already existing", name)
 	}
@@ -47,6 +52,9 @@ func (p *Provider) NewCounter(name string) metrics.Counter {
 
 // NewGauge implements go-kit's Provider interface.
 func (p *Provider) NewGauge(name string) metrics.Gauge {
+	p.Lock()
+	defer p.Unlock()
+
 	if _, ok := p.gauges[name]; ok {
 		p.t.Errorf("NewGauge(%s) called, already existing", name)
 	}
@@ -58,6 +66,9 @@ func (p *Provider) NewGauge(name string) metrics.Gauge {
 
 // NewHistogram implements go-kit's Provider interface.
 func (p *Provider) NewHistogram(name string, _ int) metrics.Histogram {
+	p.Lock()
+	defer p.Unlock()
+
 	if _, ok := p.histograms[name]; ok {
 		p.t.Errorf("NewHistogram(%s) called, already existing", name)
 	}
@@ -70,6 +81,9 @@ func (p *Provider) NewHistogram(name string, _ int) metrics.Histogram {
 // CheckCounter checks that there is a registered counter
 // with the name and value provided.
 func (p *Provider) CheckCounter(name string, v float64) {
+	p.Lock()
+	defer p.Unlock()
+
 	c, ok := p.counters[name]
 	if !ok {
 		p.t.Fatalf("no counter named %v", name)
@@ -142,6 +156,9 @@ func (p *Provider) CheckObservationAlmostEqual(name string, n int, value, epsilo
 }
 
 func (p *Provider) getObservations(name string) []float64 {
+	p.Lock()
+	defer p.Unlock()
+
 	h, ok := p.histograms[name]
 	if !ok {
 		p.t.Fatalf("no histogram named %v", name)
@@ -153,6 +170,9 @@ func (p *Provider) getObservations(name string) []float64 {
 // CheckGauge checks that there is a registered gauge
 // with the name and value provided.
 func (p *Provider) CheckGauge(name string, v float64) {
+	p.Lock()
+	defer p.Unlock()
+
 	g, ok := p.gauges[name]
 	if !ok {
 		p.t.Fatalf("no gauge named %v", name)
@@ -166,6 +186,9 @@ func (p *Provider) CheckGauge(name string, v float64) {
 // CheckGaugeNonZero checks that there is a registered gauge
 // with the name provided whose value is != 0.
 func (p *Provider) CheckGaugeNonZero(name string) {
+	p.Lock()
+	defer p.Unlock()
+
 	g, ok := p.gauges[name]
 	if !ok {
 		p.t.Fatalf("no gauge named %v", name)
