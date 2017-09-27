@@ -6,10 +6,12 @@ import (
 	"github.com/heroku/cedar/lib/grpc/grpcmetrics"
 	"github.com/heroku/cedar/lib/grpc/panichandler"
 	"github.com/heroku/cedar/lib/grpc/tokenauth"
+	"github.com/heroku/cedar/lib/tlsconfig"
 	"github.com/heroku/x/go-kit/metrics"
 	"github.com/mwitkow/go-grpc-middleware"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 )
 
 var defaultLogOpts = []grpc_logrus.Option{
@@ -20,10 +22,18 @@ type options struct {
 	logEntry        *logrus.Entry
 	metricsProvider metrics.Provider
 	authorizer      tokenauth.Authorizer
+	grpcOptions     []grpc.ServerOption
 }
 
 // ServerOption sets optional fields on the standard gRPC server
 type ServerOption func(*options)
+
+// GRPCOption adds a grpc ServerOption to the server.
+func GRPCOption(opt grpc.ServerOption) ServerOption {
+	return func(o *options) {
+		o.grpcOptions = append(o.grpcOptions, opt)
+	}
+}
 
 // LogEntry provided will be added to the context
 func LogEntry(entry *logrus.Entry) ServerOption {
@@ -99,8 +109,20 @@ func (o *options) streamInterceptors() []grpc.StreamServerInterceptor {
 }
 
 func (o *options) serverOptions() []grpc.ServerOption {
-	return []grpc.ServerOption{
+	opts := []grpc.ServerOption{
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(o.unaryInterceptors()...)),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(o.streamInterceptors()...)),
 	}
+	opts = append(opts, o.grpcOptions...)
+	return opts
+}
+
+// TLS returns a ServerOption which adds mutual-TLS to the gRPC server.
+func TLS(caCerts [][]byte, serverCert []byte, serverKey []byte) (ServerOption, error) {
+	tlsConfig, err := tlsconfig.NewMutualTLS(caCerts, serverCert, serverKey)
+	if err != nil {
+		return nil, err
+	}
+
+	return GRPCOption(grpc.Creds(credentials.NewTLS(tlsConfig))), nil
 }

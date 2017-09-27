@@ -1,44 +1,33 @@
 package grpcserver
 
 import (
-	"fmt"
-	"net"
 	"net/http"
 
-	proxyproto "github.com/armon/go-proxyproto"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	"github.com/heroku/cedar/lib/grpc/grpcclient"
 	"github.com/heroku/cedar/lib/grpc/requestid"
 	"github.com/heroku/cedar/lib/grpc/testserver"
-	"github.com/heroku/cedar/lib/tlsconfig"
 	"github.com/lstoll/grpce/h2c"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	xcontext "golang.org/x/net/context"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials"
 	healthgrpc "google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 )
 
-// NewProxyProtocolListener returns a net.Listener listening on port that is
-// suitable for use with a grpc.Server.
-func NewProxyProtocolListener(port int) (net.Listener, error) {
-	addr := fmt.Sprintf(":%d", port)
-	ln, err := net.Listen("tcp", addr)
-	if err != nil {
-		return nil, err
+// New configures a gRPC Server with default options and a health server.
+func New(opts ...ServerOption) *grpc.Server {
+	o := &options{}
+	for _, so := range opts {
+		so(o)
 	}
-	return &proxyproto.Listener{Listener: ln}, nil
-}
 
-// NewTCP returns a grpc.Server configured to authenticate using mutual TLS.
-func NewTCP(serverCACertList [][]byte, serverCert, serverKey []byte) (*grpc.Server, error) {
-	tlsConfig, err := tlsconfig.NewMutualTLS(serverCACertList, serverCert, serverKey)
-	if err != nil {
-		return nil, err
-	}
-	return grpc.NewServer(grpc.Creds(credentials.NewTLS(tlsConfig))), nil
+	srv := grpc.NewServer(o.serverOptions()...)
+
+	healthpb.RegisterHealthServer(srv, healthgrpc.NewServer())
+
+	return srv
 }
 
 // NewInProcess returns a testserver.GRPCTestServer. This should mostly stand
@@ -67,48 +56,26 @@ type Starter interface {
 // RunStandardServer runs a GRPC server with a standard setup including metrics
 // (if provider passed), panic handling, a health check service, TLS termination
 // with client authentication, and proxy-protocol wrapping.
+//
+// Deprecated: RunStandardServer is now a wrapper for New and TCP with TLS
+// options and a logger.
 func RunStandardServer(logger log.FieldLogger, port int, serverCACerts [][]byte, serverCert, serverKey []byte, server Starter, opts ...ServerOption) error {
-	o := &options{}
-	for _, so := range opts {
-		so(o)
-	}
-	// If we don't have an explicit entry, add one
-	if o.logEntry == nil {
-		o.logEntry = logger.WithField("component", "grpc")
-	}
-
-	tlsConfig, err := tlsconfig.NewMutualTLS(serverCACerts, serverCert, serverKey)
+	tls, err := TLS(serverCACerts, serverCert, serverKey)
 	if err != nil {
 		return err
 	}
 
-	options := []grpc.ServerOption{
-		grpc.Creds(credentials.NewTLS(tlsConfig)),
-	}
+	opts = append(opts, tls)
+	opts = append(opts, LogEntry(logger.WithField("component", "grpc")))
 
-	options = append(options, o.serverOptions()...)
+	grpcsrv := New(opts...)
 
-	srv := grpc.NewServer(options...)
-	defer srv.Stop()
-
-	healthpb.RegisterHealthServer(srv, healthgrpc.NewServer())
-
-	if err := server.Start(srv); err != nil {
+	if err := server.Start(grpcsrv); err != nil {
 		return err
 	}
 
-	proxyprotoLn, err := NewProxyProtocolListener(port)
-	if err != nil {
-		return err
-	}
-
-	logger.WithFields(log.Fields{
-		"at":      "binding",
-		"service": "grpc-tls",
-		"port":    port,
-	}).Print()
-
-	return srv.Serve(proxyprotoLn)
+	tcp := TCP(logger, grpcsrv, port)
+	return tcp.Run()
 }
 
 // NewStandardInProcess starts a new in-proces gRPC server with the standard
