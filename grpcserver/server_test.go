@@ -1,23 +1,28 @@
 package grpcserver
 
 import (
-	"testing"
+	"fmt"
 
-	"github.com/heroku/cedar/lib/grpc/grpcclient"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 )
 
-// NewInProcess creates a new grpc.Server, starts it and registers it in the
-// connection registry using the given service name.
-func TestNewInProcess(t *testing.T) {
-	name := "test-server"
-	ts, err := NewInProcess(name)
+func ExampleLocal() {
+	srv := New()
+	localsrv := Local(srv)
+
+	go localsrv.Run()
+	defer localsrv.Stop(nil)
+
+	c := healthpb.NewHealthClient(localsrv.Conn())
+
+	resp, err := c.Check(context.Background(), &healthpb.HealthCheckRequest{}, grpc.FailFast(true))
 	if err != nil {
-		t.Fatal(err)
+		fmt.Printf("Error = %v", err)
+		return
 	}
-	defer ts.Close()
-	defer grpcclient.DeregisterConnection(name)
-	s := grpcclient.Conn(name)
-	if ts.Conn != s {
-		t.Fatalf("got %v but want %v", s, ts.Conn)
-	}
+
+	fmt.Printf("Status = %v", resp.Status)
+	// Output: Status = SERVING
 }

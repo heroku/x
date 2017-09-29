@@ -4,9 +4,7 @@ import (
 	"net/http"
 
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
-	"github.com/heroku/cedar/lib/grpc/grpcclient"
 	"github.com/heroku/cedar/lib/grpc/requestid"
-	"github.com/heroku/cedar/lib/grpc/testserver"
 	"github.com/lstoll/grpce/h2c"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -28,21 +26,6 @@ func New(opts ...ServerOption) *grpc.Server {
 	healthpb.RegisterHealthServer(srv, healthgrpc.NewServer())
 
 	return srv
-}
-
-// NewInProcess returns a testserver.GRPCTestServer. This should mostly stand
-// in for a grpc.Server. It's started and its connection is registered in the
-// global list with grpcclient.RegisterConnection(name, s.Conn).
-func NewInProcess(name string, opts ...grpc.ServerOption) (*testserver.GRPCTestServer, error) {
-	s, err := testserver.New(opts...)
-	if err != nil {
-		return nil, err
-	}
-	if err := s.Start(); err != nil {
-		return nil, errors.Wrapf(err, "error initializing %s gRPC server", name)
-	}
-	grpcclient.RegisterConnection(name, s.Conn)
-	return s, nil
 }
 
 // A Starter registers and starts itself on the provided grpc.Server.
@@ -76,22 +59,6 @@ func RunStandardServer(logger log.FieldLogger, port int, serverCACerts [][]byte,
 
 	tcp := TCP(logger, grpcsrv, port)
 	return tcp.Run()
-}
-
-// NewStandardInProcess starts a new in-proces gRPC server with the standard
-// middleware and returns the server and a valid connection.
-func NewStandardInProcess(opts ...ServerOption) (*grpc.Server, *grpc.ClientConn, error) {
-	o := &options{}
-	for _, so := range opts {
-		so(o)
-	}
-	srv, err := NewInProcess("local", o.serverOptions()...)
-
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return srv.Server, grpcclient.Conn("local"), nil
 }
 
 // NewStandardH2C create a set of servers suitible for serving gRPC services

@@ -5,10 +5,8 @@ package testserver
 
 import (
 	"log"
-	"net"
-	"time"
 
-	"github.com/hydrogen18/memlistener"
+	"github.com/heroku/cedar/lib/grpc/grpcserver"
 	"google.golang.org/grpc"
 )
 
@@ -16,34 +14,29 @@ import (
 type GRPCTestServer struct {
 	Server   *grpc.Server
 	Conn     *grpc.ClientConn
-	listener *memlistener.MemoryListener
+	localsrv *grpcserver.LocalServer
 }
 
 // New returns a new GRPCTestServer, configured to listen on a random local
 // port.
-func New(opt ...grpc.ServerOption) (*GRPCTestServer, error) {
+func New(opts ...grpcserver.ServerOption) *GRPCTestServer {
+	srv := grpcserver.New(opts...)
+
 	return &GRPCTestServer{
-		Server:   grpc.NewServer(opt...),
-		listener: memlistener.NewMemoryListener(),
-	}, nil
+		Server:   srv,
+		localsrv: grpcserver.Local(srv),
+	}
 }
 
 // Dial initiates a new gRPC connection to the server
 // with the provided dial options.
 func (t *GRPCTestServer) Dial(opts ...grpc.DialOption) (*grpc.ClientConn, error) {
-	defaultOptions := []grpc.DialOption{
-		grpc.WithDialer(func(addr string, timeout time.Duration) (net.Conn, error) {
-			return t.listener.Dial("", "")
-		}),
-		grpc.WithInsecure(),
-	}
-
-	return grpc.Dial("", append(defaultOptions, opts...)...)
+	return t.localsrv.Conn(opts...), nil
 }
 
 // Start will start the gRPC server in a goroutine.
 func (t *GRPCTestServer) Start() error {
-	go t.Server.Serve(t.listener)
+	go t.localsrv.Run()
 
 	conn, err := t.Dial()
 	if err != nil {
@@ -60,18 +53,6 @@ func (t *GRPCTestServer) Close() error {
 		log.Printf("GRPCTestServer failed to close client conn: %s", err)
 	}
 
-	done := make(chan struct{})
-	defer close(done)
-
-	go func() {
-		select {
-		case <-done:
-		case <-time.After(5 * time.Second):
-			log.Println("GRPCTestServer failed to stop gracefully, stopping now")
-			t.Server.Stop()
-		}
-	}()
-
-	t.Server.GracefulStop()
+	t.localsrv.Stop(nil)
 	return nil
 }
