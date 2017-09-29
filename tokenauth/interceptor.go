@@ -41,7 +41,7 @@ func StreamServerInterceptor(authorizer Authorizer) grpc.StreamServerInterceptor
 
 // authCall runs the auth on the passed call information.
 func authCall(ctx context.Context, authorizer Authorizer, method string) (context.Context, error) {
-	md, ok := metadata.FromContext(ctx)
+	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return nil, grpc.Errorf(codes.Unauthenticated, "Context does not contain any metadata")
 	}
