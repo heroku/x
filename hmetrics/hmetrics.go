@@ -16,6 +16,14 @@ const (
 	metricWaitTime = 20 * time.Second
 )
 
+var (
+	DefaultEndpoint string
+)
+
+func init() {
+	DefaultEndpoint = os.Getenv("HEROKU_METRICS_URL")
+}
+
 type AlreadyStarted struct{}
 
 func (as AlreadyStarted) Error() string {
@@ -51,7 +59,7 @@ func Report(ctx context.Context, ef ErrHandler) error {
 	if started {
 		return AlreadyStarted{}
 	}
-	endpoint := os.Getenv("HEROKU_METRICS_URL")
+	endpoint := DefaultEndpoint
 	if endpoint == "" {
 		return HerokuMetricsURLUnset{}
 	}
