@@ -5,7 +5,8 @@ import (
 	"regexp"
 	"strings"
 
-	"google.golang.org/grpc"
+	"golang.org/x/net/context"
+	"google.golang.org/grpc/status"
 )
 
 // The helpers here exist to make friendly metric names for
@@ -33,14 +34,18 @@ func methodInfo(fullMethod string) (string, string) {
 	return dasherize(service), dasherize(method)
 }
 
+// code returns the gRPC error code, handling context and unknown errors.
 func code(err error) string {
-	s := grpc.Code(err).String()
-
-	if s == "OK" {
-		return "ok"
+	if err == context.Canceled {
+		return "canceled"
 	}
 
-	return dasherize(s)
+	st, ok := status.FromError(err)
+	if !ok {
+		return "unknown"
+	}
+
+	return dasherize(st.Code().String())
 }
 
 var uppers = regexp.MustCompile(`([[:lower:]])([[:upper:]])`)

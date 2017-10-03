@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 )
@@ -14,6 +15,7 @@ func TestCode(t *testing.T) {
 		want string
 	}{
 		{nil, "ok"},
+		{context.Canceled, "canceled"},
 		{errors.New("custom"), "unknown"},
 		{grpc.Errorf(codes.InvalidArgument, ""), "invalid-argument"},
 	} {

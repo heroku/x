@@ -44,9 +44,9 @@ func TestUnaryServerInterceptor(t *testing.T) {
 
 	p.CheckCounter("grpc.server.hello.ping.requests", 3)
 	p.CheckCounter("grpc.server.hello.ping.response-codes.ok", 1)
-	p.CheckCounter("grpc.server.hello.ping.response-codes.unknown", 2)
+	p.CheckCounter("grpc.server.hello.ping.response-codes.canceled", 1)
+	p.CheckCounter("grpc.server.hello.ping.response-codes.unknown", 1)
 	p.CheckCounter("grpc.server.hello.ping.errors", 1)
-	p.CheckCounter("grpc.server.hello.ping.context-canceled-errors", 1)
 	p.CheckObservationCount("grpc.server.hello.ping.request-duration.ms", 3)
 }
 

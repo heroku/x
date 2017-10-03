@@ -6,9 +6,10 @@ import (
 
 	"github.com/heroku/cedar/lib/kit/metricsregistry"
 	"github.com/heroku/x/go-kit/metrics"
-	"github.com/pkg/errors"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // NewUnaryServerInterceptor returns an interceptor for unary server calls
@@ -75,15 +76,23 @@ func instrumentMethod(r metricsregistry.Registry, duration time.Duration, err er
 	r.GetOrRegisterHistogram("request-duration.ms", 50).Observe(ms(duration))
 	r.GetOrRegisterCounter("requests").Add(1)
 	r.GetOrRegisterCounter(fmt.Sprintf("response-codes.%s", code(err))).Add(1)
-	if err != nil {
-		if errors.Cause(err) == context.Canceled {
-			// Count cancelations differently from other errors to avoid
-			// introducing too much noise into the error count.
-			r.GetOrRegisterCounter("context-canceled-errors").Add(1)
-		} else {
-			r.GetOrRegisterCounter("errors").Add(1)
-		}
+
+	if err != nil && !isCanceled(err) {
+		r.GetOrRegisterCounter("errors").Add(1)
 	}
+}
+
+// isCanceled returns true if error is a context or gRPC cancelation error.
+func isCanceled(err error) bool {
+	if err == context.Canceled {
+		return true
+	}
+
+	if st, ok := status.FromError(err); ok {
+		return st.Code() == codes.Canceled
+	}
+
+	return false
 }
 
 func instrumentStreamSend(r metricsregistry.Registry, duration time.Duration) {
