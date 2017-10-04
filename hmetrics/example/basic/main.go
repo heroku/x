@@ -10,7 +10,11 @@ import (
 
 func main() {
 	// Don't care about canceling or errors
-	hmetrics.Report(context.Background(), nil)
+	go func() { hmetrics.Report(context.Background(), nil) }()
 
-	http.ListenAndServe(":"+os.Getenv("PORT"), nil)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	http.ListenAndServe(":"+port, nil)
 }

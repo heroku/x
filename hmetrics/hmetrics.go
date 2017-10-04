@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"runtime"
@@ -13,17 +14,20 @@ import (
 )
 
 const (
-	metricWaitTime = 20 * time.Second
+	interval = 20 * time.Second
 )
 
 var (
-	DefaultEndpoint string
+	// DefaultEndpoint to report metrics to Heroku. The "HEROKU_METRICS_URL" env
+	// var is set by the Heroku runtime when the `runtime-heroku-metrics` labs
+	// flag is enabled. For more info see:
+	// https://devcenter.heroku.com/articles/language-runtime-metrics
+	//
+	// DefaultEndpoint must be changed before Report is called.
+	DefaultEndpoint = os.Getenv("HEROKU_METRICS_URL")
 )
 
-func init() {
-	DefaultEndpoint = os.Getenv("HEROKU_METRICS_URL")
-}
-
+// AlreadyStarted represents an Error condition of already being started.
 type AlreadyStarted struct{}
 
 func (as AlreadyStarted) Error() string {
@@ -34,6 +38,8 @@ func (as AlreadyStarted) Fatal() bool {
 	return false
 }
 
+// HerokuMetricsURLUnset represents the Error condition when the
+// HEROKU_METRICS_URL environment variables is unset or an empty string.
 type HerokuMetricsURLUnset struct{}
 
 func (e HerokuMetricsURLUnset) Error() string {
@@ -44,47 +50,66 @@ func (e HerokuMetricsURLUnset) Fatal() bool {
 	return true
 }
 
+// ErrHandler funcations are used to provide custom processing/handling of
+// errors encountered during the collection or reporting of metrics to Heroku.
+type ErrHandler func(err error) error
+
 var (
 	mu      sync.Mutex
 	started bool
 )
 
-// ErrHandler receives any errors encountered during collection or reporting of metrics to Heroku. Processing of metrics
-// continues if the ErrHandler returns nil, but aborts if the ErrHandler itself returns an error.
-type ErrHandler func(err error) error
-
+// Report go metrics to Heroku until the context is canceled.
+//
+// Only one call to the ErrHandler will happen at a time. Metrics can be dropped
+// or delayed if a call to ErrHandler takes longer than the reprting interval.
+// Processing of metrics continues if the ErrHandler returns nil, but aborts if
+// the ErrHandler itself returns an error. It is safe to pass a nil ErrHandler.
+//
+// Report is safe for concurrent usage, but calling it more than once w/o
+// canceling the context returns an AlreadyStarted error. This is to ensure that
+// metrics aren't duplicated. Report can be called again to restart reporting
+// after the context is canceled.
 func Report(ctx context.Context, ef ErrHandler) error {
 	mu.Lock()
-	defer mu.Unlock()
 	if started {
+		mu.Unlock()
 		return AlreadyStarted{}
 	}
 	endpoint := DefaultEndpoint
 	if endpoint == "" {
+		mu.Unlock()
 		return HerokuMetricsURLUnset{}
 	}
-	if ef == nil {
-		ef = func(_ error) error { return nil }
-	}
-	go report(ctx, endpoint, ef)
 	started = true
+	mu.Unlock()
+
+	report(ctx, &http.Client{Timeout: 20 * time.Second}, endpoint, errorHandler(ef))
+
+	mu.Lock()
+	started = false
+	mu.Unlock()
 	return nil
 }
 
-// The only thing that should come after an exit() is a return.
-// Best to use in a function that can defer it.
-func exit() {
-	mu.Lock()
-	defer mu.Unlock()
-	started = false
+func noopErrorHandler(_ error) error {
+	return nil
 }
 
-func report(ctx context.Context, endpoint string, ef ErrHandler) {
-	defer exit()
+func errorHandler(ef ErrHandler) ErrHandler {
+	if ef == nil {
+		return noopErrorHandler
+	}
+	return ef
+}
 
-	t := time.NewTicker(metricWaitTime)
+func report(ctx context.Context, client *http.Client, endpoint string, ef ErrHandler) {
+	t := time.NewTicker(interval)
 	defer t.Stop()
 
+	var buf bytes.Buffer
+	var pauseTotalNS uint64
+	var numGC uint32
 	for {
 		select {
 		case <-t.C:
@@ -92,13 +117,17 @@ func report(ctx context.Context, endpoint string, ef ErrHandler) {
 			return
 		}
 
-		if err := gatherMetrics(); err != nil {
+		buf.Reset()
+
+		var err error
+		pauseTotalNS, numGC, err = gatherMetrics(&buf, pauseTotalNS, numGC)
+		if err != nil {
 			if err := ef(err); err != nil {
 				return
 			}
 			continue
 		}
-		if err := submitPayload(ctx, endpoint); err != nil {
+		if err := submitMetrics(ctx, client, &buf, endpoint); err != nil {
 			if err := ef(err); err != nil {
 				return
 			}
@@ -107,32 +136,21 @@ func report(ctx context.Context, endpoint string, ef ErrHandler) {
 	}
 }
 
-var (
-	lastGCPause uint64
-	lastNumGC   uint32
-	buf         bytes.Buffer
-)
-
+// gatherMetrics and write the JSON encoded representation to w.
+// returns the sampled PauseTotalNs+NumGC & any encoding errors.
 // TODO: If we ever have high frequency charts HeapIdle minus HeapReleased could be interesting.
-func gatherMetrics() error {
+func gatherMetrics(w io.Writer, prevPauseTotalNS uint64, prevNumGC uint32) (uint64, uint32, error) {
 	var stats runtime.MemStats
 	runtime.ReadMemStats(&stats)
 
 	// cribbed from https://github.com/codahale/metrics/blob/master/runtime/memstats.go
-
-	pauseNS := stats.PauseTotalNs - lastGCPause
-	lastGCPause = stats.PauseTotalNs
-
-	numGC := stats.NumGC - lastNumGC
-	lastNumGC = stats.NumGC
-
 	result := struct {
 		Counters map[string]float64 `json:"counters"`
 		Gauges   map[string]float64 `json:"gauges"`
 	}{
 		Counters: map[string]float64{
-			"go.gc.collections": float64(numGC),
-			"go.gc.pause.ns":    float64(pauseNS),
+			"go.gc.collections": float64(stats.NumGC - prevNumGC),
+			"go.gc.pause.ns":    float64(stats.PauseTotalNs - prevPauseTotalNS),
 		},
 		Gauges: map[string]float64{
 			"go.memory.heap.bytes":   float64(stats.Alloc),
@@ -143,19 +161,18 @@ func gatherMetrics() error {
 		},
 	}
 
-	buf.Reset()
-	return json.NewEncoder(&buf).Encode(result)
+	return stats.PauseTotalNs, stats.NumGC, json.NewEncoder(w).Encode(result)
 }
 
-func submitPayload(ctx context.Context, where string) error {
-	req, err := http.NewRequest("POST", where, &buf)
+// submitMetrics read from r to the endpoint using the provided client
+func submitMetrics(ctx context.Context, client *http.Client, r io.Reader, endpoint string) error {
+	req, err := http.NewRequest("POST", endpoint, r)
 	if err != nil {
 		return err
 	}
-	req = req.WithContext(ctx)
 	req.Header.Add("Content-Type", "application/json")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := client.Do(req.WithContext(ctx))
 	if err != nil {
 		return err
 	}

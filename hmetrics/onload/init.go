@@ -12,7 +12,7 @@ import (
 
 */
 
-package onloads
+package onload
 
 import (
 	"context"
@@ -21,5 +21,7 @@ import (
 )
 
 func init() {
-	hmetrics.Report(context.Background(), nil)
+	go func() {
+		hmetrics.Report(context.Background(), nil)
+	}()
 }
