@@ -24,3 +24,44 @@ func NewUnaryClientInterceptor(p metrics.Provider) grpc.UnaryClientInterceptor {
 		return invoker(ctx, method, req, reply, cc, opts...)
 	}
 }
+
+// NewStreamClientInterceptor returns an interceptor for stream client calls
+// which will report metrics to the given provider.
+func NewStreamClientInterceptor(p metrics.Provider) grpc.StreamClientInterceptor {
+	r0 := metricsregistry.New(p)
+	return func(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, streamer grpc.Streamer, opts ...grpc.CallOption) (cs grpc.ClientStream, err error) {
+		r1 := metricsregistry.NewPrefixed(r0, metricPrefix("client", method))
+
+		defer func(begin time.Time) {
+			instrumentMethod(r1, time.Since(begin), err)
+		}(time.Now())
+
+		cs, err = streamer(ctx, desc, cc, method, opts...)
+		return &clientStream{r1, cs}, err
+	}
+}
+
+// clientStream provides a light wrapper over grpc.ClientStream
+// to instrument SendMsg and RecvMsg.
+type clientStream struct {
+	reg metricsregistry.Registry
+	grpc.ClientStream
+}
+
+// SendMsg implements the grpc.ClientStream interface.
+func (cs *clientStream) SendMsg(m interface{}) (err error) {
+	defer func(begin time.Time) {
+		instrumentStreamSend(cs.reg, time.Since(begin), err)
+	}(time.Now())
+
+	return cs.ClientStream.SendMsg(m)
+}
+
+// RecvMsg implements the grpc.ClientStream interface.
+func (cs *clientStream) RecvMsg(m interface{}) (err error) {
+	defer func(begin time.Time) {
+		instrumentStreamRecv(cs.reg, time.Since(begin), err)
+	}(time.Now())
+
+	return cs.ClientStream.RecvMsg(m)
+}

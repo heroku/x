@@ -55,18 +55,18 @@ type serverStream struct {
 }
 
 // RecvMsg implements the grpc.Stream interface.
-func (ss *serverStream) SendMsg(m interface{}) error {
+func (ss *serverStream) SendMsg(m interface{}) (err error) {
 	defer func(begin time.Time) {
-		instrumentStreamSend(ss.reg, time.Since(begin))
+		instrumentStreamSend(ss.reg, time.Since(begin), err)
 	}(time.Now())
 
 	return ss.ServerStream.SendMsg(m)
 }
 
 // RecvMsg implements the grpc.Stream interface.
-func (ss *serverStream) RecvMsg(m interface{}) error {
+func (ss *serverStream) RecvMsg(m interface{}) (err error) {
 	defer func(begin time.Time) {
-		instrumentStreamRecv(ss.reg, time.Since(begin))
+		instrumentStreamRecv(ss.reg, time.Since(begin), err)
 	}(time.Now())
 
 	return ss.ServerStream.RecvMsg(m)
@@ -95,14 +95,22 @@ func isCanceled(err error) bool {
 	return false
 }
 
-func instrumentStreamSend(r metricsregistry.Registry, duration time.Duration) {
+func instrumentStreamSend(r metricsregistry.Registry, duration time.Duration, err error) {
 	r.GetOrRegisterHistogram("stream.send-duration.ms", 50).Observe(ms(duration))
 	r.GetOrRegisterCounter("stream.sends").Add(1)
+
+	if err != nil && !isCanceled(err) {
+		r.GetOrRegisterCounter("stream.sends.errors").Add(1)
+	}
 }
 
-func instrumentStreamRecv(r metricsregistry.Registry, duration time.Duration) {
+func instrumentStreamRecv(r metricsregistry.Registry, duration time.Duration, err error) {
 	r.GetOrRegisterHistogram("stream.recv-duration.ms", 50).Observe(ms(duration))
 	r.GetOrRegisterCounter("stream.recvs").Add(1)
+
+	if err != nil && !isCanceled(err) {
+		r.GetOrRegisterCounter("stream.recvs.errors").Add(1)
+	}
 }
 
 func ms(d time.Duration) float64 {

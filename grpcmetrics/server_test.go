@@ -119,24 +119,26 @@ func TestInstrumentStreamSend(t *testing.T) {
 	p := testmetrics.NewProvider(t)
 	r := metricsregistry.New(p)
 
-	instrumentStreamSend(r, time.Millisecond)
-	instrumentStreamSend(r, time.Second)
-	instrumentStreamSend(r, 10*time.Second)
+	instrumentStreamSend(r, time.Millisecond, nil)
+	instrumentStreamSend(r, time.Second, nil)
+	instrumentStreamSend(r, 10*time.Second, errors.New("stream send error"))
 
 	p.CheckCounter("stream.sends", 3)
 	p.CheckObservations("stream.send-duration.ms", 1.0, 1000.0, 10000.0)
+	p.CheckCounter("stream.sends.errors", 1)
 }
 
 func TestInstrumentStreamRecv(t *testing.T) {
 	p := testmetrics.NewProvider(t)
 	r := metricsregistry.New(p)
 
-	instrumentStreamRecv(r, time.Millisecond)
-	instrumentStreamRecv(r, time.Second)
-	instrumentStreamRecv(r, 10*time.Second)
+	instrumentStreamRecv(r, time.Millisecond, nil)
+	instrumentStreamRecv(r, time.Second, nil)
+	instrumentStreamRecv(r, 10*time.Second, errors.New("stream recv error"))
 
 	p.CheckCounter("stream.recvs", 3)
 	p.CheckObservations("stream.recv-duration.ms", 1.0, 1000.0, 10000.0)
+	p.CheckCounter("stream.recvs.errors", 1)
 }
 
 type testServerStream struct {

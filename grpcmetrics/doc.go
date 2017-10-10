@@ -20,8 +20,10 @@
 //
 //		stream.clients - gauge of connected clients
 //		stream.sends - counter of sent messages
+//		stream.sends.errors - counter of message send errors
 //		stream.send-duration.ms - histogram of send durations in milliseconds
 //		stream.recvs - counter of received messages
+//		stream.recvs.errors - counter of message recv errors
 //		stream.recv-duration.ms - histogram of recv durations in milliseconds
 //
 package grpcmetrics
