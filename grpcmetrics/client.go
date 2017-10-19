@@ -4,18 +4,15 @@ import (
 	"time"
 
 	"github.com/heroku/cedar/lib/kit/metricsregistry"
-	"github.com/heroku/x/go-kit/metrics"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 
 // NewUnaryClientInterceptor returns an interceptor for unary client calls
-// which will report metrics to the given provider.
-func NewUnaryClientInterceptor(p metrics.Provider) grpc.UnaryClientInterceptor {
-	r0 := metricsregistry.New(p)
-
+// which will report metrics using the given registry.
+func NewUnaryClientInterceptor(r metricsregistry.Registry) grpc.UnaryClientInterceptor {
 	return func(ctx context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) (err error) {
-		r1 := metricsregistry.NewPrefixed(r0, metricPrefix("client", method))
+		r1 := metricsregistry.NewPrefixed(r, metricPrefix("client", method))
 
 		defer func(begin time.Time) {
 			instrumentMethod(r1, time.Since(begin), err)
@@ -26,11 +23,10 @@ func NewUnaryClientInterceptor(p metrics.Provider) grpc.UnaryClientInterceptor {
 }
 
 // NewStreamClientInterceptor returns an interceptor for stream client calls
-// which will report metrics to the given provider.
-func NewStreamClientInterceptor(p metrics.Provider) grpc.StreamClientInterceptor {
-	r0 := metricsregistry.New(p)
+// which will report metrics using the given registry.
+func NewStreamClientInterceptor(r metricsregistry.Registry) grpc.StreamClientInterceptor {
 	return func(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, streamer grpc.Streamer, opts ...grpc.CallOption) (cs grpc.ClientStream, err error) {
-		r1 := metricsregistry.NewPrefixed(r0, metricPrefix("client", method))
+		r1 := metricsregistry.NewPrefixed(r, metricPrefix("client", method))
 
 		defer func(begin time.Time) {
 			instrumentMethod(r1, time.Since(begin), err)

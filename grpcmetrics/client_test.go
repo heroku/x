@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/heroku/cedar/lib/kit/metrics/testmetrics"
+	"github.com/heroku/cedar/lib/kit/metricsregistry"
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -13,7 +14,8 @@ import (
 
 func TestUnaryClientInterceptor(t *testing.T) {
 	p := testmetrics.NewProvider(t)
-	uci := NewUnaryClientInterceptor(p)
+	r := metricsregistry.New(p)
+	uci := NewUnaryClientInterceptor(r)
 	invoker := func(err error) grpc.UnaryInvoker {
 		return func(_ context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, opts ...grpc.CallOption) error {
 			return err
@@ -34,7 +36,8 @@ func TestUnaryClientInterceptor(t *testing.T) {
 
 func TestStreamClientInterceptor(t *testing.T) {
 	p := testmetrics.NewProvider(t)
-	sci := NewStreamClientInterceptor(p)
+	r := metricsregistry.New(p)
+	sci := NewStreamClientInterceptor(r)
 	streamer := func(err, clientErr error) grpc.Streamer {
 		return func(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, opts ...grpc.CallOption) (grpc.ClientStream, error) {
 			return &testClientStream{
