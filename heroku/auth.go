@@ -1,4 +1,4 @@
-package apiauth
+package heroku
 
 import (
 	"encoding/json"
@@ -139,6 +139,15 @@ func APIEmailFromContext(ctx context.Context) (id string, ok bool) {
 // ContextWithAPIEmail adds the given user email to the context
 func ContextWithAPIEmail(ctx context.Context, email string) context.Context {
 	return context.WithValue(ctx, apiEmailContextKey, email)
+}
+
+// Creds creates a map of credentials suitible for passing with calls from the
+// passed username and token.
+func Creds(username, token string) map[string]string {
+	return map[string]string{
+		apiCredsUsername: username,
+		apiCredsToken:    token,
+	}
 }
 
 // fetchAPIAccount will call the Heroku api /account method with the passed in

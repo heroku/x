@@ -1,4 +1,4 @@
-package apiauth
+package heroku
 
 import (
 	"fmt"
@@ -45,7 +45,7 @@ func TestAPIACLAuthorizer(t *testing.T) {
 			APIExpectUser: "lstoll@heroku.com",
 			APIExpectPass: "password",
 			EmailDomains:  []string{"heroku.com"},
-			Creds:         map[string]string{apiCredsUsername: "lstoll@heroku.com", apiCredsToken: "password"},
+			Creds:         Creds("lstoll@heroku.com", "password"),
 			ExpectCTXID:   "user-id-lstoll",
 			ExpectErr:     false,
 		},
@@ -56,7 +56,7 @@ func TestAPIACLAuthorizer(t *testing.T) {
 			APIExpectUser: "lstoll@heroku.com",
 			APIExpectPass: "NOT THE SAME",
 			EmailDomains:  []string{"heroku.com"},
-			Creds:         map[string]string{apiCredsUsername: "lstoll@heroku.com", apiCredsToken: "password"},
+			Creds:         Creds("lstoll@heroku.com", "password"),
 			ExpectErr:     true,
 		},
 		{
@@ -66,7 +66,7 @@ func TestAPIACLAuthorizer(t *testing.T) {
 			APIExpectUser: "lstoll@heroku.com",
 			APIExpectPass: "password",
 			EmailDomains:  []string{"salesforce.com"},
-			Creds:         map[string]string{apiCredsUsername: "lstoll@heroku.com", apiCredsToken: "password"},
+			Creds:         Creds("lstoll@heroku.com", "password"),
 			ExpectErr:     true,
 		},
 	} {
