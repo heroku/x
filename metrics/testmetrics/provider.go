@@ -4,6 +4,7 @@ import (
 	"math"
 	"reflect"
 	"sort"
+	"strings"
 	"sync"
 	"testing"
 
@@ -86,7 +87,12 @@ func (p *Provider) CheckCounter(name string, v float64) {
 
 	c, ok := p.counters[name]
 	if !ok {
-		p.t.Fatalf("no counter named %v", name)
+		keys := make([]string, 0, len(p.counters))
+		for k := range p.counters {
+			keys = append(keys, k)
+		}
+		available := strings.Join(keys, ", ")
+		p.t.Fatalf("no counter named %s out of available counters: %s", name, available)
 	}
 
 	if c.getValue() != v {
@@ -99,7 +105,7 @@ func (p *Provider) CheckCounter(name string, v float64) {
 func (p *Provider) CheckObservationsMinMax(name string, min, max float64) {
 	for _, o := range p.getObservations(name) {
 		if o < min || o > max {
-			p.t.Fatalf("Got %f want %f..%f ", o, min, max)
+			p.t.Fatalf("got %f want %f..%f ", o, min, max)
 		}
 	}
 }
@@ -161,7 +167,12 @@ func (p *Provider) getObservations(name string) []float64 {
 
 	h, ok := p.histograms[name]
 	if !ok {
-		p.t.Fatalf("no histogram named %v", name)
+		keys := make([]string, 0, len(p.histograms))
+		for k := range p.histograms {
+			keys = append(keys, k)
+		}
+		available := strings.Join(keys, ", ")
+		p.t.Fatalf("no histogram named %s out available histograms: %s", name, available)
 	}
 
 	return h.getObservations()
