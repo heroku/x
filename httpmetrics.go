@@ -62,18 +62,37 @@ func ms(d time.Duration) float64 {
 // turn these into dashes
 var dashRe = regexp.MustCompile(`[_]+`)
 
+// nameRoutePatterns transforms route patterns into Librato metric names.
+//
+// chi.Router's inject patterns into the request context. Each router that
+// handles a request adds the pattern it used to match the request to the
+// request context. For example, a chi.Router that mounts a sub-router on / to
+// handle a set of paths might have a set of patterns like:
+//
+//    []string{"/*", "/kpi/v1/apps/:id"}
+//
+// which would be transformed into a metric called "kpi.v1.apps.id".
 func nameRoutePatterns(patterns []string) string {
-	result := make([]string, len(patterns))
-	for idx, pattern := range patterns {
-		pattern = strings.TrimPrefix(pattern, "/")
+	result := make([]string, 0, len(patterns))
+	for _, pattern := range patterns {
 		pattern = strings.TrimSuffix(pattern, "/*")
+		pattern = strings.TrimPrefix(pattern, "/")
+
+		// Certain patterns, e.g. /* will become an empty string and
+		// thus should be skipped after the first two transformations.
+		if pattern == "" {
+			continue
+		}
+
 		parts := strings.Split(pattern, "/")
 		for pidx, part := range parts {
 			part = strings.TrimPrefix(part, ":")
 			part = dashRe.ReplaceAllString(part, "-")
 			parts[pidx] = part
 		}
-		result[idx] = strings.Join(parts, ".")
+
+		result = append(result, strings.Join(parts, "."))
 	}
+
 	return strings.Join(result, ".")
 }
