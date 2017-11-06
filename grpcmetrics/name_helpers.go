@@ -1,11 +1,11 @@
 package grpcmetrics
 
 import (
+	"context"
 	"fmt"
 	"regexp"
 	"strings"
 
-	"golang.org/x/net/context"
 	"google.golang.org/grpc/status"
 )
 

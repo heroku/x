@@ -1,20 +1,17 @@
 package heroku
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
 
-	"github.com/sirupsen/logrus"
-
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-
 	"github.com/heroku/cedar/lib/grpc/tokenauth"
 	"github.com/pkg/errors"
-
-	"golang.org/x/net/context"
+	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 )
 
 type contextKey string

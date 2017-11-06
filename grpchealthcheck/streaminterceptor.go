@@ -1,10 +1,10 @@
 package grpchealthcheck
 
 import (
+	"context"
 	"time"
 
 	"github.com/pkg/errors"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 )

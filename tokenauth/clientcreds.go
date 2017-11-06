@@ -1,6 +1,6 @@
 package tokenauth
 
-import "golang.org/x/net/context"
+import "context"
 
 // RPCCredentials are a grpc.PerRPCCredentials that will be passed in RPC requests
 // to authorize the call.

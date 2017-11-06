@@ -1,9 +1,9 @@
 package grpcserver
 
 import (
+	"context"
 	"fmt"
 
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 )

@@ -1,11 +1,11 @@
 package grpcserver
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
-	"golang.org/x/net/context"
 )
 
 func TestExtractTagsWithoutLoggingTagsCompatibleValue(t *testing.T) {

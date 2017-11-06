@@ -1,6 +1,7 @@
 package grpcserver
 
 import (
+	"context"
 	"net/http"
 
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
@@ -8,7 +9,6 @@ import (
 	"github.com/lstoll/grpce/h2c"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
-	xcontext "golang.org/x/net/context"
 	"google.golang.org/grpc"
 	healthgrpc "google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
@@ -90,7 +90,7 @@ func NewStandardH2C(http11 http.Handler, opts ...ServerOption) (*grpc.Server, *h
 // unaryServerErrorUnwrapper removes errors.Wrap annotations from errors so
 // gRPC status codes are correctly returned to interceptors and clients later
 // in the chain.
-func unaryServerErrorUnwrapper(ctx xcontext.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (_ interface{}, err error) {
+func unaryServerErrorUnwrapper(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (_ interface{}, err error) {
 	res, err := handler(ctx, req)
 	return res, errors.Cause(err)
 }
@@ -105,7 +105,7 @@ func streamServerErrorUnwrapper(srv interface{}, ss grpc.ServerStream, _ *grpc.S
 
 // unaryRequestIDTagger sets a grpc_ctxtags request_id tag for logging if the
 // context includes a request ID.
-func unaryRequestIDTagger(ctx xcontext.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (_ interface{}, err error) {
+func unaryRequestIDTagger(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (_ interface{}, err error) {
 	if id, ok := requestid.FromContext(ctx); ok {
 		grpc_ctxtags.Extract(ctx).Set("request_id", id)
 	}

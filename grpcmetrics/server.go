@@ -1,12 +1,12 @@
 package grpcmetrics
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"github.com/heroku/cedar/lib/kit/metricsregistry"
 	"github.com/heroku/x/go-kit/metrics"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

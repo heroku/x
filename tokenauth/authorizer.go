@@ -1,6 +1,6 @@
 package tokenauth
 
-import "golang.org/x/net/context"
+import "context"
 
 const metadataCredsPrefix = "tokenauth-"
 

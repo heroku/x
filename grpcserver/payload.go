@@ -1,10 +1,10 @@
 package grpcserver
 
 import (
+	"context"
 	"fmt"
 
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
-	xcontext "golang.org/x/net/context"
 	"google.golang.org/grpc"
 )
 
@@ -19,7 +19,7 @@ import (
 //
 // Any request or response implementing this interface will add tags to the
 // context for logging in success and error cases.
-func UnaryPayloadLoggingTagger(ctx xcontext.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (_ interface{}, err error) {
+func UnaryPayloadLoggingTagger(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (_ interface{}, err error) {
 	tag(ctx, "request", req)
 
 	resp, err := handler(ctx, req)
@@ -34,7 +34,7 @@ type loggable interface {
 	LoggingTags() map[string]interface{}
 }
 
-func tag(ctx xcontext.Context, scope string, pb interface{}) {
+func tag(ctx context.Context, scope string, pb interface{}) {
 	tags := grpc_ctxtags.Extract(ctx)
 	extractTags(tags, scope, pb)
 }

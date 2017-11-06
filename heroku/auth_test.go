@@ -1,14 +1,13 @@
 package heroku
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/heroku/cedar/lib/grpc/tokenauth"
-
-	"golang.org/x/net/context"
 )
 
 func TestAPIACLAuthorizer(t *testing.T) {
