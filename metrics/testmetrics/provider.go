@@ -39,6 +39,8 @@ func (p *Provider) Stop() {
 
 // NewCounter implements go-kit's Provider interface.
 func (p *Provider) NewCounter(name string) metrics.Counter {
+	p.t.Helper()
+
 	p.Lock()
 	defer p.Unlock()
 
@@ -53,6 +55,8 @@ func (p *Provider) NewCounter(name string) metrics.Counter {
 
 // NewGauge implements go-kit's Provider interface.
 func (p *Provider) NewGauge(name string) metrics.Gauge {
+	p.t.Helper()
+
 	p.Lock()
 	defer p.Unlock()
 
@@ -67,6 +71,8 @@ func (p *Provider) NewGauge(name string) metrics.Gauge {
 
 // NewHistogram implements go-kit's Provider interface.
 func (p *Provider) NewHistogram(name string, _ int) metrics.Histogram {
+	p.t.Helper()
+
 	p.Lock()
 	defer p.Unlock()
 
@@ -82,6 +88,8 @@ func (p *Provider) NewHistogram(name string, _ int) metrics.Histogram {
 // CheckCounter checks that there is a registered counter
 // with the name and value provided.
 func (p *Provider) CheckCounter(name string, v float64) {
+	p.t.Helper()
+
 	p.Lock()
 	defer p.Unlock()
 
@@ -103,6 +111,8 @@ func (p *Provider) CheckCounter(name string, v float64) {
 // CheckObservationsMinMax checks that there is a histogram
 // with the name and that the values all fall within the min/max range.
 func (p *Provider) CheckObservationsMinMax(name string, min, max float64) {
+	p.t.Helper()
+
 	for _, o := range p.getObservations(name) {
 		if o < min || o > max {
 			p.t.Fatalf("got %f want %f..%f ", o, min, max)
@@ -113,6 +123,8 @@ func (p *Provider) CheckObservationsMinMax(name string, min, max float64) {
 // CheckObservations checks that there is a histogram
 // with the name and observations provided.
 func (p *Provider) CheckObservations(name string, obs ...float64) {
+	p.t.Helper()
+
 	observations := p.getObservations(name)
 	if !reflect.DeepEqual(observations, obs) {
 		p.t.Fatalf("%v = %v, want %v", name, observations, obs)
@@ -122,6 +134,8 @@ func (p *Provider) CheckObservations(name string, obs ...float64) {
 // CheckObservationsMatch checks that there is a histogram with the name and
 // observations provided, ignoring order.
 func (p *Provider) CheckObservationsMatch(name string, obs ...float64) {
+	p.t.Helper()
+
 	observations := p.getObservations(name)
 
 	got := make([]float64, len(observations))
@@ -141,6 +155,8 @@ func (p *Provider) CheckObservationsMatch(name string, obs ...float64) {
 // CheckObservationCount checks that there is a histogram
 // with the name and number of observations provided.
 func (p *Provider) CheckObservationCount(name string, n int) {
+	p.t.Helper()
+
 	observations := p.getObservations(name)
 
 	if len(observations) != n {
@@ -151,6 +167,8 @@ func (p *Provider) CheckObservationCount(name string, n int) {
 // CheckObservationAlmostEqual is used to compare a specific element in a histogram.
 // An epsilon is used because exactly matching floating point numbers is usually quite difficult.
 func (p *Provider) CheckObservationAlmostEqual(name string, n int, value, epsilon float64) {
+	p.t.Helper()
+
 	observations := p.getObservations(name)
 	if len(observations) <= n {
 		p.t.Fatalf("len(%v) = %v, want < %v", name, len(observations), n)
@@ -181,6 +199,8 @@ func (p *Provider) getObservations(name string) []float64 {
 // CheckGauge checks that there is a registered gauge
 // with the name and value provided.
 func (p *Provider) CheckGauge(name string, v float64) {
+	p.t.Helper()
+
 	p.Lock()
 	defer p.Unlock()
 
@@ -197,6 +217,8 @@ func (p *Provider) CheckGauge(name string, v float64) {
 // CheckGaugeNonZero checks that there is a registered gauge
 // with the name provided whose value is != 0.
 func (p *Provider) CheckGaugeNonZero(name string) {
+	p.t.Helper()
+
 	p.Lock()
 	defer p.Unlock()
 
@@ -212,6 +234,8 @@ func (p *Provider) CheckGaugeNonZero(name string) {
 
 // CheckStopped verifies that a provider has been Stop'd.
 func (p *Provider) CheckStopped() {
+	p.t.Helper()
+
 	if !p.stopped {
 		p.t.Fatal("provider is not stopped")
 	}
