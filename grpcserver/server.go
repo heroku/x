@@ -2,7 +2,9 @@ package grpcserver
 
 import (
 	"context"
+	"net"
 	"net/http"
+	"strconv"
 
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	"github.com/heroku/cedar/lib/grpc/requestid"
@@ -57,7 +59,7 @@ func RunStandardServer(logger log.FieldLogger, port int, serverCACerts [][]byte,
 		return err
 	}
 
-	tcp := TCP(logger, grpcsrv, port)
+	tcp := TCP(logger, grpcsrv, net.JoinHostPort("", strconv.Itoa(port)))
 	return tcp.Run()
 }
 

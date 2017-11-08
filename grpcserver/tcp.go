@@ -1,7 +1,6 @@
 package grpcserver
 
 import (
-	"fmt"
 	"net"
 
 	proxyproto "github.com/armon/go-proxyproto"
@@ -12,11 +11,11 @@ import (
 // TCP returns a TCP server for the provided gRPC server.
 //
 // The server transparently handles proxy protocol.
-func TCP(l logrus.FieldLogger, s *grpc.Server, port int) *TCPServer {
+func TCP(l logrus.FieldLogger, s *grpc.Server, addr string) *TCPServer {
 	return &TCPServer{
 		logger: l,
 		srv:    s,
-		addr:   fmt.Sprintf(":%d", port),
+		addr:   addr,
 	}
 }
 
