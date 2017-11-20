@@ -108,6 +108,20 @@ func (p *Provider) CheckCounter(name string, v float64) {
 	}
 }
 
+// CheckNoCounter checks that there is no registered counter with the name
+// provided.
+func (p *Provider) CheckNoCounter(name string) {
+	p.t.Helper()
+
+	p.Lock()
+	defer p.Unlock()
+
+	_, ok := p.counters[name]
+	if ok {
+		p.t.Fatalf("a counter named %s was found", name)
+	}
+}
+
 // CheckObservationsMinMax checks that there is a histogram
 // with the name and that the values all fall within the min/max range.
 func (p *Provider) CheckObservationsMinMax(name string, min, max float64) {
@@ -180,6 +194,8 @@ func (p *Provider) CheckObservationAlmostEqual(name string, n int, value, epsilo
 }
 
 func (p *Provider) getObservations(name string) []float64 {
+	p.t.Helper()
+
 	p.Lock()
 	defer p.Unlock()
 
