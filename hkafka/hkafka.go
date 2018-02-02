@@ -3,11 +3,20 @@ package hkafka
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"io/ioutil"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/joeshaw/envdecode"
 	"github.com/pkg/errors"
+)
+
+const (
+	DefaultClientCertFileName    = "_heroku_kafka_client.cert"
+	DefaultClientCertKeyFileName = "_heroku_kafka_client.key"
+	DefaultRootCAFileName        = "_heroku_kafka_root.ca"
 )
 
 type Config struct {
@@ -79,6 +88,32 @@ func (c Config) VerifyServers() error {
 		if err := verifyServerCert(tc, tc.RootCAs, b); err != nil {
 			return errors.Wrap(err, "verifying server cert")
 		}
+	}
+	return nil
+}
+
+func (c Config) WriteClientCert(fname string) error {
+	return ioutil.WriteFile(fname, []byte(c.ClientCert), 0666)
+}
+
+func (c Config) WriteClientKey(fname string) error {
+	return ioutil.WriteFile(fname, []byte(c.ClientCertKey), 0666)
+}
+
+func (c Config) WriteRootCA(fname string) error {
+	return ioutil.WriteFile(fname, []byte(c.TrustedCert), 0666)
+}
+
+func (c Config) WriteDefaultSSLFiles() error {
+	h := os.Getenv("HOME")
+	if err := c.WriteClientCert(filepath.Join(h, DefaultClientCertFileName)); err != nil {
+		return errors.Wrap(err, "writing client cert")
+	}
+	if err := c.WriteClientKey(filepath.Join(h, DefaultClientCertKeyFileName)); err != nil {
+		return errors.Wrap(err, "writing client key")
+	}
+	if err := c.WriteRootCA(filepath.Join(h, DefaultRootCAFileName)); err != nil {
+		return errors.Wrap(err, "writing root ca")
 	}
 	return nil
 }

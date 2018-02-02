@@ -28,3 +28,17 @@ func NewAsyncProducer(hkc hkafka.Config, sc *sarama.Config) (sarama.AsyncProduce
 
 	return sarama.NewAsyncProducer(b, sc)
 }
+
+func NewAsyncProducerFromDefaultConfig(consumerGroup string) (sarama.AsyncProducer, error) {
+	hc, err := hkafka.NewConfigFromEnv()
+	if err != nil {
+		return nil, errors.Wrap(err, "generating config from env")
+	}
+
+	sc := sarama.NewConfig()
+	sc.Producer.Return.Errors = true
+	sc.Producer.RequiredAcks = sarama.WaitForAll // Default is WaitForLocal
+	sc.ClientID = consumerGroup
+
+	return NewAsyncProducer(hc, sc)
+}
