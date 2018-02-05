@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
 	"github.com/heroku/cedar/lib/kit/metricsregistry"
 	"github.com/heroku/x/go-kit/metrics"
-	"github.com/pressly/chi"
-	"github.com/pressly/chi/middleware"
 )
 
 // NewServer returns an http.Handler which calls next for each
@@ -86,7 +86,8 @@ func nameRoutePatterns(patterns []string) string {
 
 		parts := strings.Split(pattern, "/")
 		for pidx, part := range parts {
-			part = strings.TrimPrefix(part, ":")
+			part = strings.TrimPrefix(part, "{")
+			part = strings.TrimSuffix(part, "}")
 			part = dashRe.ReplaceAllString(part, "-")
 			parts[pidx] = part
 		}

@@ -8,8 +8,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/go-chi/chi"
 	"github.com/heroku/cedar/lib/kit/metrics/testmetrics"
-	"github.com/pressly/chi"
 )
 
 func TestServer(t *testing.T) {
@@ -56,7 +56,7 @@ func TestServer_Chi(t *testing.T) {
 	r := httptest.NewRequest("GET", "http://example.org/foo/bar", nil)
 
 	rctx := chi.NewRouteContext()
-	rctx.RoutePatterns = []string{"/*", "/apps/:foo_id/bars/:bar_id"}
+	rctx.RoutePatterns = []string{"/*", "/apps/{foo_id}/bars/{bar_id}"}
 	r = r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, rctx))
 
 	w := httptest.NewRecorder()
@@ -77,7 +77,7 @@ func TestServer_NestedChiRouters(t *testing.T) {
 	p := testmetrics.NewProvider(t)
 
 	inner := chi.NewRouter()
-	inner.Get("/hello/:name", func(w http.ResponseWriter, r *http.Request) {
+	inner.Get("/hello/{name}", func(w http.ResponseWriter, r *http.Request) {
 		name := chi.URLParam(r, "id")
 		io.WriteString(w, fmt.Sprintf("Hello %s!", name))
 	})
