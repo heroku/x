@@ -18,8 +18,8 @@ import (
 type Cert tls.Certificate
 
 // CA generates a new certificate that can sign leaf & intermediary certificates. The certificate is self-signed if parent is nil.
-func CA(hostname string, parent *Cert) *Cert {
-	cert := newCert(hostname)
+func CA(commonName string, parent *Cert) *Cert {
+	cert := newCert(commonName)
 	cert.Leaf.IsCA = true
 
 	if parent == nil {
@@ -28,16 +28,18 @@ func CA(hostname string, parent *Cert) *Cert {
 	return parent.Sign(cert)
 }
 
-// Leaf generates a new leaf certificate. The certificate is self-signed if parent is nil.
-func Leaf(hostname string, parent *Cert) *Cert {
-	cert := newCert(hostname)
+// Leaf generates a new leaf certificate. The certificate is self-signed if
+// parent is nil. If opts are provided, they are invoked on the certificate
+// before it's signed
+func Leaf(commonName string, parent *Cert, opts ...func(*x509.Certificate)) *Cert {
+	cert := newCert(commonName, opts...)
 	if parent == nil {
 		return cert.Sign(cert)
 	}
 	return parent.Sign(cert)
 }
 
-func newCert(hostname string) *Cert {
+func newCert(commonName string, opts ...func(*x509.Certificate)) *Cert {
 	privateKey, err := ecdsa.GenerateKey(elliptic.P224(), rand.Reader)
 	if err != nil {
 		panic(err)
@@ -49,12 +51,16 @@ func newCert(hostname string) *Cert {
 		SubjectKeyId:          big.NewInt(serial).Bytes(),
 		SerialNumber:          big.NewInt(serial),
 		Subject: pkix.Name{
-			CommonName: hostname,
+			CommonName: commonName,
 		},
 		NotBefore:   time.Now().Add(-5 * time.Minute),
 		NotAfter:    time.Now().Add(5 * time.Minute),
-		DNSNames:    []string{hostname},
+		DNSNames:    []string{commonName},
 		IPAddresses: []net.IP{net.ParseIP("0.0.0.0"), net.ParseIP("127.0.0.1"), net.ParseIP("::")},
+	}
+
+	for _, o := range opts {
+		o(x509Cert)
 	}
 
 	return &Cert{
