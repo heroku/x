@@ -40,7 +40,7 @@ func Leaf(commonName string, parent *Cert, opts ...func(*x509.Certificate)) *Cer
 }
 
 func newCert(commonName string, opts ...func(*x509.Certificate)) *Cert {
-	privateKey, err := ecdsa.GenerateKey(elliptic.P224(), rand.Reader)
+	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		panic(err)
 	}
