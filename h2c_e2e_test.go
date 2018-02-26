@@ -34,7 +34,12 @@ func TestH2CE2E(t *testing.T) {
 	defer hSrv.Shutdown(context.TODO())
 	defer gSrv.GracefulStop()
 
-	resp, err := http.Get("http://" + lis.Addr().String())
+	tr := &http.Transport{}
+	defer tr.CloseIdleConnections()
+
+	cl := &http.Client{Transport: tr}
+
+	resp, err := cl.Get("http://" + lis.Addr().String())
 	if err != nil {
 		t.Errorf("Error making HTTP/1.1 call to H2C Server [%+v]", err)
 	}
@@ -49,10 +54,11 @@ func TestH2CE2E(t *testing.T) {
 		t.Errorf("Expected HTTP/1.1 call to return %q, got %q", handle11resp, string(bb))
 	}
 
-	conn, err := grpcclient.DialH2C("http://" + lis.Addr().String())
+	conn, err := grpcclient.DialH2C("http://"+lis.Addr().String(), grpc.WithWaitForHandshake())
 	if err != nil {
 		t.Fatalf("Error dialing server [%+v]", err)
 	}
+	defer conn.Close()
 
 	hc := healthpb.NewHealthClient(conn)
 
