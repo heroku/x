@@ -1,12 +1,19 @@
+/* Copyright (c) 2018 Salesforce
+ * All rights reserved.
+ * Licensed under the BSD 3-Clause license.
+ * For full license text, see LICENSE.txt file in the repo root  or https://opensource.org/licenses/BSD-3-Clause
+ */
 package hmetrics
 
 import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"runtime"
 	"sync"
@@ -59,36 +66,48 @@ var (
 	started bool
 )
 
-// Report go metrics to Heroku until the context is canceled.
+// Report go metrics to the endpoint until the context is canceled.
 //
 // Only one call to the ErrHandler will happen at a time. Metrics can be dropped
 // or delayed if a call to ErrHandler takes longer than the reprting interval.
 // Processing of metrics continues if the ErrHandler returns nil, but aborts if
 // the ErrHandler itself returns an error. It is safe to pass a nil ErrHandler.
 //
-// Report is safe for concurrent usage, but calling it more than once w/o
-// canceling the context returns an AlreadyStarted error. This is to ensure that
-// metrics aren't duplicated. Report can be called again to restart reporting
-// after the context is canceled.
-func Report(ctx context.Context, ef ErrHandler) error {
-	mu.Lock()
-	if started {
-		mu.Unlock()
-		return AlreadyStarted{}
+// Report is safe for concurrent usage, but calling it again w/o canceling the
+// context passed previously returns an AlreadyStarted error. This is to ensure
+// that metrics aren't duplicated. Report can be called again to restart
+// reporting after the context is canceled.
+func Report(ctx context.Context, endpoint string, ef ErrHandler) error {
+	if err := startable(endpoint); err != nil {
+		return err
 	}
-	endpoint := DefaultEndpoint
-	if endpoint == "" {
-		mu.Unlock()
-		return HerokuMetricsURLUnset{}
-	}
-	started = true
-	mu.Unlock()
 
 	report(ctx, &http.Client{Timeout: 20 * time.Second}, endpoint, errorHandler(ef))
 
 	mu.Lock()
+	defer mu.Unlock()
 	started = false
-	mu.Unlock()
+	return nil
+}
+
+// err if not startable, otherwise start
+func startable(endpoint string) error {
+	mu.Lock()
+	defer mu.Unlock()
+	if started {
+		return AlreadyStarted{}
+	}
+	if endpoint == "" {
+		return &url.Error{
+			Op:  "Empty",
+			URL: endpoint,
+			Err: errors.New("Empty string"),
+		}
+	}
+	if _, err := url.Parse(endpoint); err != nil {
+		return err
+	}
+	started = true
 	return nil
 }
 
