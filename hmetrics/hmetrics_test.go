@@ -3,19 +3,13 @@
  * Licensed under the BSD 3-Clause license.
  * For full license text, see LICENSE.txt file in the repo root  or https://opensource.org/licenses/BSD-3-Clause
  */
-package main
+package hmetrics
 
-import (
-	"net/http"
-	"os"
+import "testing"
 
-	_ "github.com/heroku/x/hmetrics/onload"
-)
-
-func main() {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
+func TestStartable_EmptyEndpoint(t *testing.T) {
+	err := startable("")
+	if err == nil {
+		t.Errorf("Expected an error, but got nil instead")
 	}
-	http.ListenAndServe(":"+port, nil)
 }
