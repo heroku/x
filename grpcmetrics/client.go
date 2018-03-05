@@ -2,6 +2,7 @@ package grpcmetrics
 
 import (
 	"context"
+	"net"
 	"time"
 
 	"github.com/heroku/cedar/lib/kit/metricsregistry"
@@ -60,4 +61,29 @@ func (cs *clientStream) RecvMsg(m interface{}) (err error) {
 	}(time.Now())
 
 	return cs.ClientStream.RecvMsg(m)
+}
+
+// InstrumentedDialer returns an instrumented dialer for use with grpc.WithDialer,
+// reporting dialing metrics using the given id, metricsNamespace, and registry.
+func InstrumentedDialer(id, metricsNamespace string, r metricsregistry.Registry) func(string, time.Duration) (net.Conn, error) {
+	r = metricsregistry.NewPrefixed(r, "grpc.client-dialer."+metricsNamespace+"."+id)
+
+	return func(addr string, timeout time.Duration) (net.Conn, error) {
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+
+		d := &net.Dialer{}
+
+		r.GetOrRegisterCounter("dials").Add(1)
+
+		t0 := time.Now()
+		conn, err := d.DialContext(ctx, "tcp", addr)
+		r.GetOrRegisterHistogram("dial-duration.ms", 50).Observe(float64(time.Since(t0)) / float64(time.Millisecond))
+
+		if err != nil {
+			r.GetOrRegisterCounter("dial-errors").Add(1)
+		}
+
+		return conn, err
+	}
 }

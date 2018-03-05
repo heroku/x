@@ -3,7 +3,9 @@ package grpcmetrics
 import (
 	"context"
 	"errors"
+	"net"
 	"testing"
+	"time"
 
 	"github.com/heroku/cedar/lib/kit/metrics/testmetrics"
 	"github.com/heroku/cedar/lib/kit/metricsregistry"
@@ -72,6 +74,52 @@ func TestStreamClientInterceptor(t *testing.T) {
 	p.CheckCounter("grpc.client.hello.client-stream.stream.recvs", 2)
 	p.CheckObservationCount("grpc.client.hello.client-stream.stream.recv-duration.ms", 2)
 	p.CheckCounter("grpc.client.hello.client-stream.stream.recvs.errors", 1)
+}
+
+func TestInstrumentedDialer(t *testing.T) {
+	p := testmetrics.NewProvider(t)
+	r := metricsregistry.New(p)
+	d := InstrumentedDialer("st01", "foo-bars", r)
+
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ln.Close()
+
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+
+		for {
+			c, err := ln.Accept()
+			if err != nil {
+				return
+			}
+			c.Close()
+		}
+	}()
+
+	c, err := d(ln.Addr().String(), time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c.Close()
+
+	p.CheckCounter("grpc.client-dialer.foo-bars.st01.dials", 1)
+	p.CheckObservationCount("grpc.client-dialer.foo-bars.st01.dial-duration.ms", 1)
+
+	ln.Close()
+	<-done
+
+	_, err = d(ln.Addr().String(), time.Second)
+	if err == nil {
+		t.Fatal("wanted error dialing to closed listener")
+	}
+
+	p.CheckCounter("grpc.client-dialer.foo-bars.st01.dials", 2)
+	p.CheckCounter("grpc.client-dialer.foo-bars.st01.dial-errors", 1)
+	p.CheckObservationCount("grpc.client-dialer.foo-bars.st01.dial-duration.ms", 2)
 }
 
 type testClientStream struct {
