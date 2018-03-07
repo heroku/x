@@ -13,9 +13,9 @@ endpoint, or being notified of any reporting errors.
 
 usage:
 
-import (
+  import (
 	_ "github.com/heroku/x/hmetrics/onload"
-)
+  )
 
 See github.com/heroku/x/hmetrics documentation for more info about Heroku Go
 metrics and advanced usage.
