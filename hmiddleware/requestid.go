@@ -10,12 +10,13 @@ import (
 	"net/http"
 
 	"github.com/heroku/metaas/context/requestid"
+	"github.com/heroku/x/hcontext"
 )
 
 // RequestID extracts, or creates a request ID and adds it to the context
 func RequestID(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		reqID, _ := requestid.FromRequest(r)
+		reqID, _ := hcontext.FromRequest(r)
 		w.Header().Add("X-Request-Id", reqID) // give request ID to user so things can be debugged easier
 		next.ServeHTTP(w, r.WithContext(requestid.WithRequestID(r.Context(), reqID)))
 	})
