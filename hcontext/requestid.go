@@ -15,13 +15,14 @@ import (
 
 type idkey int
 
-var key idkey
+var ridKey idkey
 
 var headersToSearch = []string{
-	"Request-ID", "X-Request-ID",
+	"Request-Id", "X-Request-Id",
 }
 
-// FromRequest ...
+// FromRequest fetches the given request's request ID if it has one,
+// and returns a new random request ID if it does not.
 func FromRequest(r *http.Request) (id string, ok bool) {
 	for _, try := range headersToSearch {
 		if id = r.Header.Get(try); id != "" {
@@ -29,16 +30,19 @@ func FromRequest(r *http.Request) (id string, ok bool) {
 		}
 	}
 
-	return uuid.NewRandom().String(), false
+	newRID := uuid.New()
+	r.Header.Set("X-Request-Id", newRID)
+	return newRID, false
 }
 
-// WithRequestID ...
+// WithRequestID adds the given request ID to a context for processing later
+// down the chain.
 func WithRequestID(ctx context.Context, id string) context.Context {
-	return context.WithValue(ctx, key, id)
+	return context.WithValue(ctx, ridKey, id)
 }
 
-// FromContext ...
-func FromContext(ctx context.Context) (id string, ok bool) {
-	id, ok = ctx.Value(key).(string)
+// RequestIDFromContext fetches a request ID from the given context if it exists.
+func RequestIDFromContext(ctx context.Context) (id string, ok bool) {
+	id, ok = ctx.Value(ridKey).(string)
 	return
 }
