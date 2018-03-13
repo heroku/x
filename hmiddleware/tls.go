@@ -13,7 +13,10 @@ import (
 
 const maxAge = 31536000 // 1 year in seconds.
 
-// EnsureTLS ...
+// EnsureTLS ensures all incoming requests identify as having been proxied via
+// https from the upstream reverse proxy. The way that this uses to check relies
+// on the `X-Forwarded-Proto` header which is not defined by any formal standard. 
+// For more information on this header, see https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/X-Forwarded-Proto.
 func EnsureTLS(next http.Handler) http.Handler {
 	hstsValue := fmt.Sprintf("max-age=%d; includeSubDomains", maxAge)
 

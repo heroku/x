@@ -7,12 +7,14 @@
 package hmiddleware
 
 import (
-	"context"
 	"net/http"
 )
 
-// DisableKeepalive ...
-func DisableKeepalive(ctx context.Context, w http.ResponseWriter, r *http.Request) context.Context {
-	w.Header().Set("Connection", "close")
-	return ctx
+// DisableKeepalive instructs the Go HTTP stack to close the incoming HTTP
+// connection once all requests processed by this middleware are complete.
+func DisableKeepalive(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Add("Connection", "close")
+		next.ServeHTTP(w, r)
+	})
 }

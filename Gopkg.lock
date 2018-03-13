@@ -51,6 +51,12 @@
   version = "v1.6.0"
 
 [[projects]]
+  name = "github.com/go-chi/chi"
+  packages = ["."]
+  revision = "e83ac2304db3c50cf03d96a2fcd39009d458bc35"
+  version = "v3.3.2"
+
+[[projects]]
   name = "github.com/go-ini/ini"
   packages = ["."]
   revision = "6333e38ac20b8949a8dd68baa3650f4dee8f39f0"
@@ -105,6 +111,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "5cba6719683d9681393931aa73d786d0bc8277ae5ec0dcb6548c5bf1f63dad17"
+  inputs-digest = "0ab4c15af04434ee67bd4ea549790ebcf0e84e951da9802eb70b852e3ecdd9c7"
   solver-name = "gps-cdcl"
   solver-version = 1
