@@ -16,31 +16,35 @@ import (
 )
 
 func TestFromRequest(t *testing.T) {
-	cases := []struct {
-		name       string
-		doer       func() *http.Request
-		shouldWork bool
-	}{
-		{
-			name: "everything works as normal",
-			doer: func() *http.Request {
-				req := httptest.NewRequest("GET", "/", nil)
-				req.Header.Set("X-Request-Id", uuid.New())
-				return req
-			},
-		},
-		{
-			name:       "everything doesn't work",
-			doer:       func() *http.Request { return httptest.NewRequest("GET", "/", nil) },
-			shouldWork: false,
-		},
-	}
+	for _, h := range headersToSearch {
+		t.Run(h, func(t *testing.T) {
+			cases := []struct {
+				name       string
+				doer       func() *http.Request
+				shouldWork bool
+			}{
+				{
+					name: "everything works as normal",
+					doer: func() *http.Request {
+						req := httptest.NewRequest("GET", "/", nil)
+						req.Header.Set(h, uuid.New())
+						return req
+					},
+				},
+				{
+					name:       "everything doesn't work",
+					doer:       func() *http.Request { return httptest.NewRequest("GET", "/", nil) },
+					shouldWork: false,
+				},
+			}
 
-	for _, cs := range cases {
-		t.Run(cs.name, func(t *testing.T) {
-			_, ok := FromRequest(cs.doer())
-			if !ok && cs.shouldWork {
-				t.Fatalf("expected to fetch request ID, but couldn't")
+			for _, cs := range cases {
+				t.Run(cs.name, func(t *testing.T) {
+					_, ok := FromRequest(cs.doer())
+					if !ok && cs.shouldWork {
+						t.Fatalf("expected to fetch request ID, but couldn't")
+					}
+				})
 			}
 		})
 	}

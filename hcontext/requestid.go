@@ -19,6 +19,7 @@ var ridKey idkey
 
 var headersToSearch = []string{
 	"Request-Id", "X-Request-Id",
+	"Request-ID", "X-Request-ID",
 }
 
 // FromRequest fetches the given request's request ID if it has one,
