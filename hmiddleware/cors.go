@@ -13,7 +13,9 @@ const (
 	allowHeaders = "Location, X-Request-ID"
 )
 
-// CORS adds the proper headers to the response.
+// CORS adds Cross-Origin Resource Sharing headers to all outgoing requests.
+// This is known as something that is kind of hard to get right. See docs at
+// https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS for more information.
 func CORS(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if origin := r.Header.Get("Origin"); origin != "" {
