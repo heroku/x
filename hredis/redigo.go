@@ -9,7 +9,7 @@ package hredis
 import (
 	"time"
 
-	"github.com/garyburd/redigo/redis"
+	"github.com/gomodule/redigo/redis"
 )
 
 // WaitFunc to be executed occasionally by something that is waiting.
