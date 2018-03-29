@@ -13,7 +13,6 @@ import (
 
 // The list of URL parameter names that will have their contents scrubbed of sensitive data.
 var (
-	// copy from https://github.com/heroku/rollbar-blanket/blob/master/lib/rollbar/blanket/fields.rb
 	RestrictedParams = map[string]bool{
 		"access_token":                                true,
 		"api_key":                                     true,

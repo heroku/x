@@ -19,7 +19,6 @@ const (
 
 // The list of HTTP header names that will have their contents scrubbed of sensitive data.
 var (
-	// copied from https://github.com/heroku/rollbar-blanket/blob/master/lib/rollbar/blanket/headers.rb
 	RestrictedHeaders = map[string]bool{
 		"cookie":                      true,
 		"heroku-authorization-token":  true,
