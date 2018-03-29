@@ -1,3 +1,9 @@
+/* Copyright (c) 2018 Salesforce
+ * All rights reserved.
+ * Licensed under the BSD 3-Clause license.
+ * For full license text, see LICENSE.txt file in the repo root  or https://opensource.org/licenses/BSD-3-Clause
+ */
+
 package scrub
 
 import (
@@ -13,7 +19,6 @@ const (
 
 // The list of HTTP header names that will have their contents scrubbed of sensitive data.
 var (
-	// copied from https://github.com/heroku/rollbar-blanket/blob/master/lib/rollbar/blanket/headers.rb
 	RestrictedHeaders = map[string]bool{
 		"cookie":                      true,
 		"heroku-authorization-token":  true,
