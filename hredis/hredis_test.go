@@ -6,7 +6,10 @@
 
 package hredis
 
-import "testing"
+import (
+	"net/url"
+	"testing"
+)
 
 func TestRedissURL(t *testing.T) {
 	cases := []struct {
@@ -21,7 +24,7 @@ func TestRedissURL(t *testing.T) {
 
 	for _, cs := range cases {
 		t.Run(cs.url, func(t *testing.T) {
-			_, err := RedissURL(cs.url)
+			u, err := RedissURL(cs.url)
 
 			if err == nil && cs.shouldErr {
 				t.Fatal("wanted non-nil error but got nil error")
@@ -29,6 +32,11 @@ func TestRedissURL(t *testing.T) {
 
 			if err != nil && !cs.shouldErr {
 				t.Fatalf("wanted nil error but got: %v", err)
+			}
+
+			_, err = url.Parse(u)
+			if err != nil {
+				t.Fatal(err)
 			}
 		})
 	}

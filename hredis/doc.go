@@ -4,6 +4,5 @@
  * For full license text, see LICENSE.txt file in the repo root  or https://opensource.org/licenses/BSD-3-Clause
  */
 
-// Package hredis is a small set of utilities and useful functions for dealing
-// with Redis on Heroku.
+// Package hredis contains functions that are useful when using Heroku's Redis Addons.
 package hredis

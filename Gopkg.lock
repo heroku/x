@@ -117,6 +117,12 @@
   revision = "e57e3eeb33f795204c1ca35f56c44f83227c6e66"
   version = "v1.0.0"
 
+[[projects]]
+  branch = "master"
+  name = "github.com/tidwall/redcon"
+  packages = ["."]
+  revision = "56b016127ae730019c5e3073a413ad9526440c38"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1

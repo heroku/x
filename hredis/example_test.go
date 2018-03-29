@@ -45,6 +45,6 @@ func ExampleNewRedisPoolFromURL() {
 		log.Fatal(err)
 	}
 
-	// do something with pool `p`
+	// do something with pool 'p'
 	p.Close()
 }
