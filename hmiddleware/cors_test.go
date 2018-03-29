@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/gorilla/mux"
 )
 
 func TestCORSHeaders(t *testing.T) {
@@ -59,4 +61,49 @@ func TestCORSShortCircuitOnOptions(t *testing.T) {
 	if resp.Code != http.StatusOK {
 		t.Fatalf("wanted response code of %d, got: %d", http.StatusOK, resp.Code)
 	}
+}
+
+func TestCORSRaw(t *testing.T) {
+	var h http.Handler
+	h = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "ok", http.StatusTeapot)
+	})
+	h = CORS(h)
+
+	req := httptest.NewRequest(http.MethodOptions, "/", nil)
+	rw := httptest.NewRecorder()
+
+	h.ServeHTTP(rw, req)
+
+	switch rw.Code {
+	case http.StatusTeapot:
+		t.Fatal("CORS middleware did not get triggered")
+	case http.StatusOK:
+	default:
+		t.Fatalf("expected %d, got: %d", http.StatusOK, rw.Code)
+	}
+}
+
+func TestCORSGorillaAsMiddleware(t *testing.T) {
+	m := mux.NewRouter()
+	m.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "ok", http.StatusTeapot)
+	})
+	m.Use(CORS)
+
+	req := httptest.NewRequest(http.MethodOptions, "/", nil)
+	rw := httptest.NewRecorder()
+
+	m.ServeHTTP(rw, req)
+
+	switch rw.Code {
+	case http.StatusTeapot:
+		t.Fatal("CORS middleware did not get triggered")
+	case http.StatusOK:
+	default:
+		t.Fatalf("expected %d, got: %d", http.StatusOK, rw.Code)
+	}
+
+	hdr := rw.Header()
+
 }

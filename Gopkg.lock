@@ -74,6 +74,18 @@
   version = "v0.6.0"
 
 [[projects]]
+  name = "github.com/gorilla/context"
+  packages = ["."]
+  revision = "1ea25387ff6f684839d82767c1733ff4d4d15d0a"
+  version = "v1.1"
+
+[[projects]]
+  name = "github.com/gorilla/mux"
+  packages = ["."]
+  revision = "53c1911da2b537f792e7cafcb446b05ffe33b996"
+  version = "v1.6.1"
+
+[[projects]]
   name = "github.com/inconshreveable/mousetrap"
   packages = ["."]
   revision = "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75"
@@ -111,6 +123,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "0ab4c15af04434ee67bd4ea549790ebcf0e84e951da9802eb70b852e3ecdd9c7"
+  inputs-digest = "fb1347ad1e5f0c98ce53f478e6cf2356cbf800e23d33a0eed09e5f31ed6e7175"
   solver-name = "gps-cdcl"
   solver-version = 1
