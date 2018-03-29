@@ -11,10 +11,10 @@ retrying reporting, backing off in 10 second increments.
 Use this package when you don't care about stopping reporting, specifying the
 endpoint, or being notified of any reporting errors.
 
-This package additionally will report all metrics reporting errors using package
-log to the standard error file descriptor if you set the environment variable
-`HMETRICS_VERBOSE` to `1` or another true-like value as defined by
-https://godoc.org/strconv#ParseBool.
+This package will log all reporting errors via the stdlib log package if the
+environment variable HMETRICS_VERBOSE is set to "1", or any other true-like
+value as defined by strconv#ParseBool (see $ godoc strconv for more
+information).
 
 usage:
 
@@ -43,29 +43,27 @@ const (
 )
 
 func init() {
+	var logger hmetrics.ErrHandler = func(_ error) error { return nil }
+
+	val := os.Getenv("HMETRICS_VERBOSE")
+	should, err := strconv.ParseBool(val)
+	if err == nil && should {
+		logger = func(err error) error {
+			log.Printf("[hmetrics] error: %v", err)
+			return nil
+		}
+	}
+
 	go func() {
 		var backoff int64
 		for backoff = 1; ; backoff++ {
 			start := time.Now()
 
-			var logger hmetrics.ErrHandler
-
-			val := os.Getenv("HMETRICS_VERBOSE")
-			should, err := strconv.ParseBool(val)
-			if err == nil && should {
-				logger = func(err error) error {
-					log.Printf("[hmetrics] error: %v", err)
-					return nil
-				}
-			}
-
 			err = hmetrics.Report(context.Background(), hmetrics.DefaultEndpoint, logger)
 			if time.Since(start) > 5*time.Minute {
 				backoff = 1
 			}
-			if logger != nil {
-				logger(err)
-			}
+			_ = logger(err)
 
 			time.Sleep(time.Duration(backoff*interval) * time.Second)
 		}
