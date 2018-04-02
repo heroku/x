@@ -63,7 +63,7 @@ func init() {
 			if time.Since(start) > 5*time.Minute {
 				backoff = 1
 			}
-			_ = logger(err)
+			logger(err)
 
 			time.Sleep(time.Duration(backoff*interval) * time.Second)
 		}
