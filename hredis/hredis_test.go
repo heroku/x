@@ -8,6 +8,7 @@ package hredis
 
 import (
 	"net/url"
+	"strings"
 	"testing"
 )
 
@@ -34,9 +35,13 @@ func TestRedissURL(t *testing.T) {
 				t.Fatalf("wanted nil error but got: %v", err)
 			}
 
-			_, err = url.Parse(u)
+			uu, err := url.Parse(u)
 			if err != nil {
 				t.Fatal(err)
+			}
+
+			if strings.HasPrefix(cs.url, "redis") && uu.Scheme != "rediss" {
+				t.Fatalf("expected uu.Scheme to be %s, got: %s", "redis", uu.Scheme)
 			}
 		})
 	}
