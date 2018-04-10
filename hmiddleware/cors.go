@@ -10,7 +10,7 @@ import "net/http"
 
 const (
 	allowMethods = "POST, GET, OPTIONS, PUT, DELETE, PATCH"
-	allowHeaders = "Location, X-Request-ID"
+	allowHeaders = "Location, X-Request-Id"
 )
 
 // CORS adds Cross-Origin Resource Sharing headers to all outgoing requests.
