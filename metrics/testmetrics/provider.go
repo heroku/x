@@ -248,6 +248,20 @@ func (p *Provider) CheckGaugeNonZero(name string) {
 	}
 }
 
+// CheckNoGauge checks that there is no registered gauge with the name
+// provided.
+func (p *Provider) CheckNoGauge(name string) {
+	p.t.Helper()
+
+	p.Lock()
+	defer p.Unlock()
+
+	_, ok := p.gauges[name]
+	if ok {
+		p.t.Fatalf("a gauge named %s was found", name)
+	}
+}
+
 // CheckStopped verifies that a provider has been Stop'd.
 func (p *Provider) CheckStopped() {
 	p.t.Helper()
