@@ -47,9 +47,9 @@ func BenchmarkEstimateViaClone(b *testing.B) {
 	hc := NewHLLCounter("foo")
 
 	for i := 0; i < b.N; i++ {
-		hc.mu.RLock()
+		hc.mu.Lock()
 		d := hc.counter.Clone()
-		hc.mu.RUnlock()
+		hc.mu.Unlock()
 
 		d.Estimate()
 	}

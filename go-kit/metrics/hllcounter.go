@@ -21,10 +21,11 @@ var (
 type HLLCounter struct {
 	Name    string
 	lvs     []string
-	mu      sync.RWMutex
+	mu      sync.Mutex
 	counter *hll.Sketch
 }
 
+// NewHLLCounter creates a new HyperLogLog based counter.
 func NewHLLCounter(name string) *HLLCounter {
 	return &HLLCounter{
 		Name:    name,
@@ -39,8 +40,8 @@ func (c *HLLCounter) With(labelValues ...string) CardinalityCounter {
 	nlv = append(nlv, c.lvs...)
 	nlv = append(nlv, labelValues...)
 
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	return &HLLCounter{
 		Name:    c.Name,
 		lvs:     nlv,
@@ -58,8 +59,8 @@ func (c *HLLCounter) Insert(i []byte) {
 // Estimate the cardinality of the inserted items.
 // Safe for concurrent use.
 func (c *HLLCounter) Estimate() uint64 {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
 	return c.counter.Estimate()
 }
@@ -67,8 +68,8 @@ func (c *HLLCounter) Estimate() uint64 {
 // EstimateReset returns the cardinality estimate, and resets the estimate to zero allowing a new set to be counted.
 // Safe for concurrent use.
 func (c *HLLCounter) EstimateReset() uint64 {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 
 	val := c.counter.Estimate()
 	c.counter = hll.New()
