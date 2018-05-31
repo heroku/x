@@ -42,6 +42,18 @@
   version = "v1.13.10"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/axiomhq/hyperloglog"
+  packages = ["."]
+  revision = "fe9507de02284497dca36b7bb982cb4881a35837"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/dgryski/go-metro"
+  packages = ["."]
+  revision = "280f6062b5bc97ee9b9afe7f2ccb361e59845baa"
+
+[[projects]]
   name = "github.com/garyburd/redigo"
   packages = [
     "internal",
@@ -111,6 +123,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "0ab4c15af04434ee67bd4ea549790ebcf0e84e951da9802eb70b852e3ecdd9c7"
+  inputs-digest = "e1a975f2cda603ca7d0d8e12ee3a3fc1d844c99a62009b5f5cf392eb02e6512d"
   solver-name = "gps-cdcl"
   solver-version = 1
