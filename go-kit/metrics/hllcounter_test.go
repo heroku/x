@@ -34,3 +34,31 @@ func TestHLLCounterEstimateReset(t *testing.T) {
 		t.Errorf("got %d, want 0", val)
 	}
 }
+
+// Benchmarks how we write Estimate.
+// Because Estimate is wrapped in a mutex, it may actually
+// be cheaper to clone the underlying HLL counter and estimate
+// on that, instead of staying locked against the expensive
+// Estimate call.
+//
+// BenchmarkEstimateViaClone-4     10000000               197 ns/op             128 B/op          3 allocs/op
+// BenchmarkEstimate-4             20000000                80.0 ns/op             0 B/op          0 allocs/op
+func BenchmarkEstimateViaClone(b *testing.B) {
+	hc := NewHLLCounter("foo")
+
+	for i := 0; i < b.N; i++ {
+		hc.mu.RLock()
+		d := hc.counter.Clone()
+		hc.mu.RUnlock()
+
+		d.Estimate()
+	}
+}
+
+func BenchmarkEstimate(b *testing.B) {
+	hc := NewHLLCounter("foo")
+
+	for i := 0; i < b.N; i++ {
+		hc.Estimate()
+	}
+}
