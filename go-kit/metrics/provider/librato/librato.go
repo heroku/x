@@ -14,6 +14,7 @@ import (
 	kmetrics "github.com/go-kit/kit/metrics"
 	"github.com/go-kit/kit/metrics/generic"
 	"github.com/heroku/x/go-kit/metrics"
+	xmetrics "github.com/heroku/x/go-kit/metrics"
 )
 
 const (
@@ -49,10 +50,11 @@ type Provider struct {
 	once          sync.Once
 	done, stopped chan struct{}
 
-	mu         sync.Mutex
-	counters   []*generic.Counter
-	gauges     []*generic.Gauge
-	histograms []*Histogram
+	mu             sync.Mutex
+	counters       []*generic.Counter
+	gauges         []*generic.Gauge
+	histograms     []*Histogram
+	uniqueCounters []*HLLCounter
 }
 
 // OptionFunc used to set options on a librato provider
@@ -235,4 +237,11 @@ func (p *Provider) NewHistogram(name string, buckets int) kmetrics.Histogram {
 	return &h
 }
 
+// NewUniqueCounter that will be reported by the provider.
+func (p *Provider) NewUniqueCounter(name string) xmetrics.UniqueCounter {
+	c := NewHLLCounter(name)
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.uniqueCounters = append(p.uniqueCounters, c)
+	return c
 }

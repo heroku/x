@@ -44,11 +44,13 @@ func ExampleNew() {
 	c := p.NewCounter("i.am.a.counter")
 	h := p.NewHistogram("i.am.a.histogram", DefaultBucketCount)
 	g := p.NewGauge("i.am.a.gauge")
+	uc := p.NewUniqueCounter("i.am.a.cardinality.estimate.counter")
 
 	// Pretend applicaion logic....
 	c.Add(1)
 	h.Observe(time.Since(start).Seconds()) // how long did it take the program to get here.
 	g.Set(1000)
+	uc.Insert([]byte("count this as 1"))
 	// /Pretend
 
 	// block until we report one final time
@@ -282,11 +284,13 @@ func TestLibratoSingleReport(t *testing.T) {
 	c := p.NewCounter("test.counter")
 	g := p.NewGauge("test.gauge")
 	h := p.NewHistogram("test.histogram", DefaultBucketCount)
+	uc := p.NewUniqueCounter("test.uniquecounter")
 	c.Add(float64(time.Now().Unix())) // increasing value
 	g.Set(rand.Float64())
 	h.Observe(10)
 	h.Observe(100)
 	h.Observe(150)
+	uc.Insert([]byte("foo.bar"))
 	p.Stop() // does a final report
 }
 
@@ -311,6 +315,7 @@ func TestLibratoReport(t *testing.T) {
 	c := p.NewCounter("test.counter")
 	g := p.NewGauge("test.gauge")
 	h := p.NewHistogram("test.histogram", DefaultBucketCount)
+	uc := p.NewUniqueCounter("test.uniquecounter")
 
 	done := make(chan struct{})
 
@@ -321,6 +326,7 @@ func TestLibratoReport(t *testing.T) {
 			h.Observe(rand.Float64() * 100)
 			h.Observe(rand.Float64() * 100)
 			h.Observe(rand.Float64() * 100)
+			uc.Insert([]byte("something"))
 			time.Sleep(100 * time.Millisecond)
 		}
 		p.Stop()
@@ -527,6 +533,50 @@ func TestWithResetCounters(t *testing.T) {
 				Value() float64
 			}
 			if v := foo.(valuer).Value(); v != expected {
+				t.Errorf("expected %f, got %f", expected, v)
+			}
+		})
+	}
+}
+
+func TestWithResetCountersUniqueCounters(t *testing.T) {
+	//	for _, reset := range []bool{true, false} {
+	for _, reset := range []bool{true} {
+		t.Run(fmt.Sprintf("%t", reset), func(t *testing.T) {
+			t.Parallel()
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusOK)
+			}))
+			defer srv.Close()
+			u, err := url.Parse(srv.URL)
+			if err != nil {
+				t.Fatal(err)
+			}
+			p := New(u, doesntmatter, func(p *Provider) { p.resetCounters = reset }).(*Provider)
+			p.Stop()
+
+			foo := p.NewUniqueCounter("foo")
+			foo.Insert([]byte("foo"))
+
+			reqs, err := p.batch(u, doesntmatter)
+			if err != nil {
+				t.Fatal("unexpected error batching", err)
+			}
+			if len(reqs) != 1 {
+				t.Errorf("expected 1 request, got %d", len(reqs))
+			}
+			p.report(reqs[0])
+
+			var expected float64
+			if reset {
+				expected = 0
+			} else {
+				expected = 1
+			}
+			type estimater interface {
+				Estimate() uint64
+			}
+			if v := float64(foo.(estimater).Estimate()); v != expected {
 				t.Errorf("expected %f, got %f", expected, v)
 			}
 		})
