@@ -44,7 +44,7 @@ func ExampleNew() {
 	c := p.NewCounter("i.am.a.counter")
 	h := p.NewHistogram("i.am.a.histogram", DefaultBucketCount)
 	g := p.NewGauge("i.am.a.gauge")
-	uc := p.NewUniqueCounter("i.am.a.cardinality.estimate.counter")
+	uc := p.NewCardinalityCounter("i.am.a.cardinality.estimate.counter")
 
 	// Pretend applicaion logic....
 	c.Add(1)
@@ -284,7 +284,7 @@ func TestLibratoSingleReport(t *testing.T) {
 	c := p.NewCounter("test.counter")
 	g := p.NewGauge("test.gauge")
 	h := p.NewHistogram("test.histogram", DefaultBucketCount)
-	uc := p.NewUniqueCounter("test.uniquecounter")
+	uc := p.NewCardinalityCounter("test.uniquecounter")
 	c.Add(float64(time.Now().Unix())) // increasing value
 	g.Set(rand.Float64())
 	h.Observe(10)
@@ -315,7 +315,7 @@ func TestLibratoReport(t *testing.T) {
 	c := p.NewCounter("test.counter")
 	g := p.NewGauge("test.gauge")
 	h := p.NewHistogram("test.histogram", DefaultBucketCount)
-	uc := p.NewUniqueCounter("test.uniquecounter")
+	uc := p.NewCardinalityCounter("test.uniquecounter")
 
 	done := make(chan struct{})
 
@@ -540,8 +540,7 @@ func TestWithResetCounters(t *testing.T) {
 }
 
 func TestWithResetCountersUniqueCounters(t *testing.T) {
-	//	for _, reset := range []bool{true, false} {
-	for _, reset := range []bool{true} {
+	for _, reset := range []bool{true, false} {
 		t.Run(fmt.Sprintf("%t", reset), func(t *testing.T) {
 			t.Parallel()
 			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -555,7 +554,7 @@ func TestWithResetCountersUniqueCounters(t *testing.T) {
 			p := New(u, doesntmatter, func(p *Provider) { p.resetCounters = reset }).(*Provider)
 			p.Stop()
 
-			foo := p.NewUniqueCounter("foo")
+			foo := p.NewCardinalityCounter("foo")
 			foo.Insert([]byte("foo"))
 
 			reqs, err := p.batch(u, doesntmatter)

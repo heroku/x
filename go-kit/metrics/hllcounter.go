@@ -4,17 +4,16 @@
  * For full license text, see LICENSE.txt file in the repo root  or https://opensource.org/licenses/BSD-3-Clause
  */
 
-package librato
+package metrics
 
 import (
 	"sync"
 
 	hll "github.com/axiomhq/hyperloglog"
-	xmetrics "github.com/heroku/x/go-kit/metrics"
 )
 
 var (
-	_ xmetrics.UniqueCounter = &HLLCounter{}
+	_ CardinalityCounter = &HLLCounter{}
 )
 
 // HLLCounter provides a wrapper around a HyperLogLog probabalistic
@@ -34,8 +33,8 @@ func NewHLLCounter(name string) *HLLCounter {
 }
 
 // With returns a new UniqueCounter with the passed in label values merged
-// with the previous label values. The counter value is forked.
-func (c *HLLCounter) With(labelValues ...string) xmetrics.UniqueCounter {
+// with the previous label values. The counter's values are copied.
+func (c *HLLCounter) With(labelValues ...string) CardinalityCounter {
 	nlv := make([]string, len(c.lvs)+len(labelValues), 0)
 	nlv = append(nlv, c.lvs...)
 	nlv = append(nlv, labelValues...)
@@ -56,7 +55,8 @@ func (c *HLLCounter) Insert(x []byte) {
 	c.counter.Insert(x)
 }
 
-// Estimate provides the counter's current estimate of cardinality.
+// Estimate the cardinality of the inserted items.
+// Safe for concurrent use.
 func (c *HLLCounter) Estimate() uint64 {
 	c.mu.RLock()
 	defer c.mu.RUnlock()

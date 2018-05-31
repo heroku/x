@@ -6,9 +6,9 @@
 
 package metrics
 
-// UniqueCounter describes a metric that reports a count of the number of
-// unique values seen.
-type UniqueCounter interface {
-	With(labelValues ...string) UniqueCounter
+// CardinalityCounter describes a metric that reports a count of the
+// number of unique values inserted.
+type CardinalityCounter interface {
+	With(labelValues ...string) CardinalityCounter
 	Insert(b []byte)
 }

@@ -75,9 +75,9 @@ type gauge struct {
 // sample the metrics
 func (p *Provider) sample(period float64) []gauge {
 	p.mu.Lock()
-	defer p.mu.Unlock() // should only block New{Histogram,Counter,Gauge,UniqueCounter}
+	defer p.mu.Unlock() // should only block New{Histogram,Counter,Gauge,Cardinalityounter}
 
-	if len(p.counters) == 0 && len(p.histograms) == 0 && len(p.gauges) == 0 && len(p.uniqueCounters) == 0 {
+	if len(p.counters) == 0 && len(p.histograms) == 0 && len(p.gauges) == 0 && len(p.cardinalityCounters) == 0 {
 		return nil
 	}
 
@@ -100,7 +100,7 @@ func (p *Provider) sample(period float64) []gauge {
 		gauges = append(gauges, h.measures(period)...)
 	}
 
-	for _, c := range p.uniqueCounters {
+	for _, c := range p.cardinalityCounters {
 		var v float64
 		if p.resetCounters {
 			v = float64(c.EstimateReset())

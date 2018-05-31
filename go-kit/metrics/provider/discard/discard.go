@@ -33,20 +33,20 @@ func (discardProvider) NewGauge(string) metrics.Gauge { return discard.NewGauge(
 // NewHistogram implements Provider.
 func (discardProvider) NewHistogram(string, int) metrics.Histogram { return discard.NewHistogram() }
 
-// NewUniqueCounter implements Provider.
-func (discardProvider) NewUniqueCounter(string) xmetrics.UniqueCounter {
-	return discardUniqueCounter{}
+// NewCardinalityCounter implements Provider.
+func (discardProvider) NewCardinalityCounter(string) xmetrics.CardinalityCounter {
+	return discardCardinalityCounter{}
 }
 
 // Stop implements Provider.
 func (discardProvider) Stop() {}
 
-type discardUniqueCounter struct{}
+type discardCardinalityCounter struct{}
 
-// With implements UniqueCounter.
-func (d discardUniqueCounter) With(labelValues ...string) xmetrics.UniqueCounter {
+// With implements CardinalityCounter.
+func (d discardCardinalityCounter) With(labelValues ...string) xmetrics.CardinalityCounter {
 	return d
 }
 
-// Insert implements UniqueCounter.
-func (d discardUniqueCounter) Insert(x []byte) {}
+// Insert implements CardinalityCounter.
+func (d discardCardinalityCounter) Insert(x []byte) {}
