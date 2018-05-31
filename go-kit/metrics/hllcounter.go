@@ -48,11 +48,11 @@ func (c *HLLCounter) With(labelValues ...string) CardinalityCounter {
 	}
 }
 
-// Insert counts x as a unique value.
-func (c *HLLCounter) Insert(x []byte) {
+// Insert adds the item to the set to be counted.
+func (c *HLLCounter) Insert(i []byte) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.counter.Insert(x)
+	c.counter.Insert(i)
 }
 
 // Estimate the cardinality of the inserted items.
@@ -64,7 +64,8 @@ func (c *HLLCounter) Estimate() uint64 {
 	return c.counter.Estimate()
 }
 
-// EstimateReset calculates the final estimate, and resets the counter
+// EstimateReset returns the cardinality estimate, and resets the estimate to zero allowing a new set to be counted.
+// Safe for concurrent use.
 func (c *HLLCounter) EstimateReset() uint64 {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
