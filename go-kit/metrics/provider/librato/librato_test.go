@@ -539,7 +539,7 @@ func TestWithResetCounters(t *testing.T) {
 	}
 }
 
-func TestWithResetCountersUniqueCounters(t *testing.T) {
+func TestWithResetCountersCardinalityCounters(t *testing.T) {
 	for _, reset := range []bool{true, false} {
 		t.Run(fmt.Sprintf("%t", reset), func(t *testing.T) {
 			t.Parallel()
