@@ -20,7 +20,7 @@ import (
 // can expose. We duplicate the definition from go-kit for 2 reasons:
 //
 //  1. A little copying never hurt anyone (and in copying, we avoid the
-//       need to import and vendor all of go-kit's supported providers
+//     need to import and vendor all of go-kit's supported providers
 //  2. It provides us an extension mechanism for our own custom metric
 //     types that we can implement without go-kit's approval.
 type Provider interface {
