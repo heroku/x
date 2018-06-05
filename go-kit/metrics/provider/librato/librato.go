@@ -244,7 +244,7 @@ func (p *Provider) NewHistogram(name string, buckets int) kmetrics.Histogram {
 
 // NewCardinalityCounter that will be reported by the provider.
 func (p *Provider) NewCardinalityCounter(name string) xmetrics.CardinalityCounter {
-	c := xmetrics.NewHLLCounter(name)
+	c := xmetrics.NewHLLCounter(prefixName(p.prefix, name))
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	p.cardinalityCounters = append(p.cardinalityCounters, c)
