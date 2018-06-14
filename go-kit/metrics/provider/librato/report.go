@@ -90,11 +90,12 @@ func (p *Provider) sample(period float64) []gauge {
 		} else {
 			v = c.Value()
 		}
-		gauges = append(gauges, gauge{Name: c.Name, Period: period, Count: 1, Sum: v, Min: v, Max: v, SumSq: v * v})
+		gauges = append(gauges, gauge{Name: c.metricName(), Period: period, Count: 1, Sum: v, Min: v, Max: v, SumSq: v * v})
 	}
 	for _, g := range p.gauges {
 		v := g.Value()
-		gauges = append(gauges, gauge{Name: g.Name, Period: period, Count: 1, Sum: v, Min: v, Max: v, SumSq: v * v})
+
+		gauges = append(gauges, gauge{Name: g.metricName(), Period: period, Count: 1, Sum: v, Min: v, Max: v, SumSq: v * v})
 	}
 	for _, h := range p.histograms {
 		gauges = append(gauges, h.measures(period)...)
