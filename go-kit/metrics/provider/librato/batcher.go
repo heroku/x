@@ -28,7 +28,11 @@ func (b *oldBatcher) Batch(u *url.URL, interval time.Duration) ([]*http.Request,
 	st := time.Now().Truncate(interval).Unix()
 
 	// Sample the metrics.
-	gauges := b.sample(int(interval.Seconds()))
+	measurements := b.p.sample(int(interval.Seconds()))
+	gauges := make([]gauge, len(measurements))
+	for i, m := range measurements {
+		gauges[i] = m.Gauge()
+	}
 
 	if len(gauges) == 0 { // no data to report
 		return nil, nil
@@ -95,50 +99,6 @@ type gauge struct {
 	SumSq  float64 `json:"sum_squares"`
 }
 
-// sample the metrics
-func (b *oldBatcher) sample(period int) []gauge {
-	b.p.mu.Lock()
-	defer b.p.mu.Unlock() // should only block New{Histogram,Counter,Gauge,Cardinalityounter}
-
-	if len(b.p.counters) == 0 && len(b.p.histograms) == 0 && len(b.p.gauges) == 0 && len(b.p.cardinalityCounters) == 0 {
-		return nil
-	}
-
-	// Assemble all the data we have to send
-	var gauges []gauge
-	for _, c := range b.p.counters {
-		var v float64
-		if b.p.resetCounters {
-			v = c.ValueReset()
-		} else {
-			v = c.Value()
-		}
-		gauges = append(gauges, gauge{Name: c.metricName(), Period: period, Count: 1, Sum: v, Min: v, Max: v, SumSq: v * v})
-	}
-
-	for _, g := range b.p.gauges {
-		v := g.Value()
-
-		gauges = append(gauges, gauge{Name: g.metricName(), Period: period, Count: 1, Sum: v, Min: v, Max: v, SumSq: v * v})
-	}
-
-	for _, h := range b.p.histograms {
-		gauges = append(gauges, b.histogramMeasures(h, period)...)
-	}
-
-	for _, c := range b.p.cardinalityCounters {
-		var v float64
-		if b.p.resetCounters {
-			v = float64(c.EstimateReset())
-		} else {
-			v = float64(c.Estimate())
-		}
-		gauges = append(gauges, gauge{Name: c.Name, Period: period, Count: 1, Sum: v, Min: v, Max: v, SumSq: v * v})
-	}
-
-	return gauges
-}
-
 // the json marshalers for the histograms 4 different gauges
 func (b *oldBatcher) histogramMeasures(h *Histogram, period int) []gauge {
 	h.mu.Lock()
@@ -180,7 +140,7 @@ type taggedBatcher struct {
 
 func (b *taggedBatcher) Batch(u *url.URL, interval time.Duration) ([]*http.Request, error) {
 	// Sample the metrics.
-	measurements := b.sample(int(interval.Seconds()))
+	measurements := b.p.sample(int(interval.Seconds()))
 
 	if len(measurements) == 0 { // no data to report
 		return nil, nil
@@ -228,144 +188,6 @@ func (b *taggedBatcher) Batch(u *url.URL, interval time.Duration) ([]*http.Reque
 	return requests, nil
 }
 
-func (b *taggedBatcher) tagsFor(labelValues ...string) map[string]string {
-	if len(labelValues) == 0 {
-		return map[string]string{"source": b.p.source}
-	}
-	return labelValuesToTags(labelValues...)
-}
-
-// sample the metrics
-func (b *taggedBatcher) sample(period int) []measurement {
-	b.p.mu.Lock()
-	defer b.p.mu.Unlock() // should only block New{Histogram,Counter,Gauge,Cardinalityounter}
-
-	// TODO: also add cardinality counters.
-	if len(b.p.counters) == 0 && len(b.p.histograms) == 0 && len(b.p.gauges) == 0 {
-		return nil
-	}
-
-	var attrs map[string]interface{}
-	if b.p.ssa {
-		attrs = map[string]interface{}{"aggregate": true}
-	}
-
-	ts := time.Now().Truncate(time.Second * time.Duration(period))
-
-	// Assemble all the data we have to send
-	var measurements []measurement
-	for _, c := range b.p.counters {
-		var v float64
-		if b.p.resetCounters {
-			v = c.ValueReset()
-		} else {
-			v = c.Value()
-		}
-
-		measurements = append(measurements, measurement{
-			Name:       c.Name,
-			Time:       ts.Unix(),
-			Period:     period,
-			Count:      1,
-			Sum:        v,
-			Min:        v,
-			Max:        v,
-			Last:       v,
-			StdDev:     0,
-			Tags:       b.tagsFor(c.LabelValues()...),
-			Attributes: attrs,
-		})
-	}
-
-	for _, g := range b.p.gauges {
-		v := g.Value()
-		measurements = append(measurements, measurement{
-			Name:       g.Name,
-			Time:       ts.Unix(),
-			Period:     period,
-			Count:      1,
-			Sum:        v,
-			Min:        v,
-			Max:        v,
-			Last:       v,
-			StdDev:     0,
-			Tags:       b.tagsFor(g.LabelValues()...),
-			Attributes: attrs,
-		})
-	}
-
-	for _, h := range b.p.histograms {
-		measurements = append(measurements, b.histogramMeasures(h, period)...)
-	}
-
-	return measurements
-}
-
-// the json marshalers for the histograms 4 different gauges
-func (b *taggedBatcher) histogramMeasures(h *Histogram, period int) []measurement {
-	h.mu.Lock()
-	if h.count == 0 {
-		h.mu.Unlock()
-		return nil
-	}
-	count := h.count
-	sum := h.sum
-	min := h.min
-	max := h.max
-	sumsq := h.sumsq
-	stddev := stddev(sum, sumsq, count)
-	last := h.last
-	name := h.metricName()
-	ts := time.Now().Truncate(time.Second * time.Duration(period))
-
-	var attrs map[string]interface{}
-	if b.p.ssa {
-		attrs = map[string]interface{}{"aggregate": true}
-	}
-
-	percs := []struct {
-		n string
-		v float64
-	}{
-		{name + h.percentilePrefix + "99", h.h.Quantile(.99)},
-		{name + h.percentilePrefix + "95", h.h.Quantile(.95)},
-		{name + h.percentilePrefix + "50", h.h.Quantile(.50)},
-	}
-	h.reset()
-	h.mu.Unlock()
-
-	m := make([]measurement, 0, 4)
-	m = append(m, measurement{
-		Name:       name,
-		Period:     period,
-		Time:       ts.Unix(),
-		Count:      count,
-		Sum:        sum,
-		Min:        min,
-		Max:        max,
-		Last:       last,
-		StdDev:     stddev,
-		Attributes: attrs,
-		Tags:       b.tagsFor(h.labelValues...),
-	})
-
-	for _, perc := range percs {
-		m = append(m, measurement{
-			Name:   perc.n,
-			Period: period,
-			Time:   ts.Unix(),
-			Count:  1,
-			Sum:    perc.v,
-			Min:    perc.v,
-			Max:    perc.v,
-			Last:   perc.v,
-			StdDev: 0,
-		})
-	}
-
-	return m
-}
-
 type measurement struct {
 	Name   string `json:"name"`
 	Time   int64  `json:"time"`
@@ -375,11 +197,24 @@ type measurement struct {
 	Tags       map[string]string      `json:"tags"`
 
 	Sum    float64 `json:"sum"`
+	SumSq  float64 `json:"-"`
 	Count  int64   `json:"count"`
 	Min    float64 `json:"min"`
 	Max    float64 `json:"max"`
 	Last   float64 `json:"last"`
 	StdDev float64 `json:"stddev"`
+}
+
+func (m *measurement) Gauge() gauge {
+	return gauge{
+		Name:   m.Name,
+		Period: m.Period,
+		Count:  m.Count,
+		Sum:    m.Sum,
+		Min:    m.Min,
+		Max:    m.Max,
+		SumSq:  m.SumSq,
+	}
 }
 
 func labelValuesToTags(labelValues ...string) map[string]string {
