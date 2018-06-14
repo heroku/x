@@ -18,6 +18,7 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -294,6 +295,35 @@ func TestLibratoSingleReport(t *testing.T) {
 	p.Stop() // does a final report
 }
 
+func TestLibratoSingleReportWithLabelValuesOnSourceBasedAccount(t *testing.T) {
+	user := os.Getenv("LIBRATO_TEST_USER")
+	pwd := os.Getenv("LIBRATO_TEST_PWD")
+	if user == "" || pwd == "" {
+		t.Skip("LIBRATO_TEST_USER || LIBRATO_TEST_PWD unset")
+	}
+	rand.Seed(time.Now().UnixNano())
+	u, err := url.Parse(DefaultURL)
+	if err != nil {
+		t.Fatalf("expected nil, got %q", err)
+	}
+	u.User = url.UserPassword(user, pwd)
+
+	errs := func(err error) {
+		t.Fatal("unexpected error reporting metrics", err)
+	}
+
+	p := New(u, doesntmatter, WithSource("test.source"), WithErrorHandler(errs))
+	c := p.NewCounter("test.counter")
+	g := p.NewGauge("test.gauge")
+	h := p.NewHistogram("test.histogram", DefaultBucketCount)
+	c.With("region", "us").With("space", "myspace").Add(float64(time.Now().Unix())) // increasing value
+	g.With("region", "us").With("space", "myspace").Set(rand.Float64())
+	h.With("region", "us").With("space", "myspace").Observe(10)
+	h.With("region", "us").With("space", "myspace").Observe(100)
+	h.With("region", "us").With("space", "myspace").Observe(150)
+	p.Stop() // does a final report
+}
+
 func TestLibratoReport(t *testing.T) {
 	user := os.Getenv("LIBRATO_TEST_USER")
 	pwd := os.Getenv("LIBRATO_TEST_PWD")
@@ -338,7 +368,8 @@ func TestLibratoReport(t *testing.T) {
 }
 
 func TestLibratoHistogramJSONMarshalers(t *testing.T) {
-	h := Histogram{name: "test.histogram", buckets: DefaultBucketCount, percentilePrefix: ".p"}
+	p := &Provider{}
+	h := &Histogram{p: p, name: "test.histogram", buckets: DefaultBucketCount, percentilePrefix: ".p"}
 	h.reset()
 	h.Observe(10)
 	h.Observe(100)
@@ -579,5 +610,144 @@ func TestWithResetCountersCardinalityCounters(t *testing.T) {
 				t.Errorf("expected %f, got %f", expected, v)
 			}
 		})
+	}
+}
+
+func TestProviderMetricName(t *testing.T) {
+	tests := []struct {
+		p           Provider
+		scenario    string
+		name        string
+		labelValues []string
+		want        string
+	}{
+		{
+			scenario: "tags disabled, no label values",
+			name:     "http_requests",
+			want:     "http_requests",
+		},
+
+		{
+			scenario:    "tags disabled, with label values",
+			name:        "http_requests",
+			labelValues: []string{"region", "us", "app", "myapp"},
+			want:        "http_requests.region:us.app:myapp",
+		},
+
+		{
+			scenario: "tags enabled, no label values",
+			p:        Provider{tagsEnabled: true},
+			name:     "http_requests",
+			want:     "http_requests",
+		},
+
+		{
+			scenario:    "tags enabled, with label values",
+			p:           Provider{tagsEnabled: true},
+			name:        "http_requests",
+			labelValues: []string{"region", "us", "app", "myapp"},
+			want:        "http_requests",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.scenario, func(t *testing.T) {
+			if got := test.p.metricName(test.name, test.labelValues...); test.want != got {
+				t.Errorf("want: %q, got %q", test.want, got)
+			}
+		})
+	}
+}
+
+func TestHistogramLabelValues(t *testing.T) {
+	p := &Provider{histograms: make(map[string]*Histogram)}
+	h := p.NewHistogram("test.histogram", DefaultBucketCount).(*Histogram)
+
+	if len(h.labelValues) != 0 {
+		t.Fatalf("want no label values, got %#v", h.labelValues)
+	}
+
+	h2 := h.With("region", "us").(*Histogram)
+
+	want := []string{"region", "us"}
+	if !reflect.DeepEqual(want, h2.labelValues) {
+		t.Fatalf("want label values: %#v, got %#v", want, h2.labelValues)
+	}
+
+	if h2.metricName() != "test.histogram.region:us" {
+		t.Fatalf("want name %q, got %q", "test.histogram.region:us", h2.metricName())
+	}
+
+	h3 := h2.With("space", "myspace").(*Histogram)
+
+	want = []string{"region", "us", "space", "myspace"}
+	if !reflect.DeepEqual(want, h3.labelValues) {
+		t.Fatalf("want label values: %#v, got %#v", want, h3.labelValues)
+	}
+
+	if h3.metricName() != "test.histogram.region:us.space:myspace" {
+		t.Fatalf("want name %q, got %q", "test.histogram.region:us.space:myspace", h3.metricName())
+	}
+}
+
+func TestCounterLabelValues(t *testing.T) {
+	p := &Provider{counters: make(map[string]*Counter)}
+	c := p.NewCounter("test.counter").(*Counter)
+
+	if len(c.LabelValues()) != 0 {
+		t.Fatalf("want no label values, got %#v", c.LabelValues())
+	}
+
+	c2 := c.With("region", "us").(*Counter)
+
+	want := []string{"region", "us"}
+	if !reflect.DeepEqual(want, c2.LabelValues()) {
+		t.Fatalf("want label values: %#v, got %#v", want, c2.LabelValues())
+	}
+
+	if c2.metricName() != "test.counter.region:us" {
+		t.Fatalf("want name %q, got %q", "test.counter.region:us", c2.metricName())
+	}
+
+	c3 := c2.With("space", "myspace").(*Counter)
+
+	want = []string{"region", "us", "space", "myspace"}
+	if !reflect.DeepEqual(want, c3.LabelValues()) {
+		t.Fatalf("want label values: %#v, got %#v", want, c3.LabelValues())
+	}
+
+	if c3.metricName() != "test.counter.region:us.space:myspace" {
+		t.Fatalf("want name %q, got %q", "test.counter.region:us.space:myspace", c3.metricName())
+	}
+}
+
+func TestGaugeLabelValues(t *testing.T) {
+	p := &Provider{gauges: make(map[string]*Gauge)}
+	g := p.NewGauge("test.gauge").(*Gauge)
+
+	if len(g.LabelValues()) != 0 {
+		t.Fatalf("want no label values, got %#v", g.LabelValues())
+	}
+
+	g2 := g.With("region", "us").(*Gauge)
+
+	want := []string{"region", "us"}
+	if !reflect.DeepEqual(want, g2.LabelValues()) {
+		t.Fatalf("want label values: %#v, got %#v", want, g2.LabelValues())
+	}
+
+	if g2.metricName() != "test.gauge.region:us" {
+		t.Fatalf("want name %q, got %q", "test.gauge.region:us", g2.metricName())
+	}
+
+	g3 := g2.With("space", "myspace").(*Gauge)
+
+	want = []string{"region", "us", "space", "myspace"}
+	if !reflect.DeepEqual(want, g3.LabelValues()) {
+		t.Fatalf("want label values: %#v, got %#v", want, g3.LabelValues())
+	}
+
+	if g3.metricName() != "test.gauge.region:us.space:myspace" {
+		t.Fatalf("want name %q, got %q", "test.gauge.region:us.space:myspace", g3.metricName())
 	}
 }

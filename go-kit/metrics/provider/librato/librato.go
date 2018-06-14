@@ -8,6 +8,7 @@ package librato
 
 import (
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -51,14 +52,15 @@ type Provider struct {
 	resetCounters                    bool
 	ssa                              bool
 	requestDebugging                 bool
+	tagsEnabled                      bool
 
 	once          sync.Once
 	done, stopped chan struct{}
 
 	mu                  sync.Mutex
-	counters            []*generic.Counter
-	gauges              []*generic.Gauge
-	histograms          []*Histogram
+	counters            map[string]*Counter
+	gauges              map[string]*Gauge
+	histograms          map[string]*Histogram
 	cardinalityCounters []*xmetrics.HLLCounter
 }
 
@@ -91,6 +93,14 @@ func WithRequestDebugging() OptionFunc {
 func WithSSA() OptionFunc {
 	return func(p *Provider) {
 		p.ssa = true
+	}
+}
+
+// WithTags allows the use of tags when submitting measurements. The default
+// is to not allow it, and fall back to just sources.
+func WithTags() OptionFunc {
+	return func(p *Provider) {
+		p.tagsEnabled = true
 	}
 }
 
@@ -165,6 +175,10 @@ func New(URL *url.URL, interval time.Duration, opts ...OptionFunc) metrics.Provi
 		percentilePrefix: DefaultPercentilePrefix,
 		numRetries:       DefaultNumRetries,
 		batchSize:        DefaultBatchSize,
+
+		counters:   make(map[string]*Counter),
+		gauges:     make(map[string]*Gauge),
+		histograms: make(map[string]*Histogram),
 	}
 
 	for _, opt := range opts {
@@ -211,35 +225,119 @@ func prefixName(prefix, name string) string {
 	return prefix + "." + name
 }
 
+// keyName is used as the map key for counters, gauges, and histograms
+// and incorporates the name and the labelValues.
+func keyName(name string, labelValues ...string) string {
+	if len(labelValues) == 0 {
+		return name
+	}
+
+	l := len(labelValues)
+	parts := make([]string, 0, l/2)
+	for i := 0; i < l; i += 2 {
+		parts = append(parts, labelValues[i]+":"+labelValues[i+1])
+	}
+	return name + "." + strings.Join(parts, ".")
+}
+
+// metricName returns the name we'll use for the metric depending on
+// whether we're using tags or not.
+//
+// GIVEN
+//   name = requests
+//   tags = { region = us, app = myapp }
+//
+// TAGS ENABLED:
+//   requests
+//
+// TAGS DISABLED:
+//   requests.region:us.app:myapp
+func (p *Provider) metricName(name string, labelValues ...string) string {
+	if p.tagsEnabled {
+		return name
+	}
+	return keyName(name, labelValues...)
+}
+
 // NewCounter that will be reported by the provider. Becuase of the way librato
 // works, they are reported as gauges. If you require a counter reset every
 // report use the WithResetCounters option function, otherwise the counter's
 // value will increase until restart.
 func (p *Provider) NewCounter(name string) kmetrics.Counter {
-	c := generic.NewCounter(prefixName(p.prefix, name))
+	return p.newCounter(name)
+}
+
+func (p *Provider) newCounter(name string, labelValues ...string) kmetrics.Counter {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	p.counters = append(p.counters, c)
-	return c
+
+	k := keyName(name, labelValues...)
+	if _, ok := p.counters[k]; !ok {
+		gc := generic.NewCounter(prefixName(p.prefix, name))
+
+		if len(labelValues) > 0 {
+			gc = gc.With(labelValues...).(*generic.Counter)
+		}
+
+		p.counters[k] = &Counter{
+			Counter: gc,
+			p:       p,
+		}
+	}
+
+	return p.counters[k]
 }
 
 // NewGauge that will be reported by the provider.
 func (p *Provider) NewGauge(name string) kmetrics.Gauge {
-	g := generic.NewGauge(prefixName(p.prefix, name))
+	return p.newGauge(name)
+}
+
+func (p *Provider) newGauge(name string, labelValues ...string) kmetrics.Gauge {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	p.gauges = append(p.gauges, g)
-	return g
+
+	k := keyName(name, labelValues...)
+	if _, ok := p.gauges[k]; !ok {
+		gg := generic.NewGauge(prefixName(p.prefix, name))
+
+		if len(labelValues) > 0 {
+			gg = gg.With(labelValues...).(*generic.Gauge)
+		}
+
+		p.gauges[k] = &Gauge{
+			Gauge: gg,
+			p:     p,
+		}
+	}
+
+	return p.gauges[k]
 }
 
 // NewHistogram that will be reported by the provider.
 func (p *Provider) NewHistogram(name string, buckets int) kmetrics.Histogram {
-	h := Histogram{name: prefixName(p.prefix, name), buckets: buckets, percentilePrefix: p.percentilePrefix}
-	h.reset()
+	return p.newHistogram(name, buckets)
+}
+
+func (p *Provider) newHistogram(name string, buckets int, labelValues ...string) kmetrics.Histogram {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	p.histograms = append(p.histograms, &h)
-	return &h
+
+	k := keyName(name, labelValues...)
+	if _, ok := p.histograms[k]; !ok {
+		h := &Histogram{
+			p:                p,
+			name:             prefixName(p.prefix, name),
+			buckets:          buckets,
+			percentilePrefix: p.percentilePrefix,
+			labelValues:      labelValues,
+		}
+		h.reset()
+
+		p.histograms[k] = h
+	}
+
+	return p.histograms[k]
 }
 
 // NewCardinalityCounter that will be reported by the provider.
@@ -255,9 +353,12 @@ func (p *Provider) NewCardinalityCounter(name string) xmetrics.CardinalityCounte
 // reports p99, p95 and p50 values as gauges in addition to a gauge for the
 // histogram itself.
 type Histogram struct {
+	p *Provider
+
 	buckets          int
 	name             string
 	percentilePrefix string
+	labelValues      []string
 
 	mu sync.RWMutex
 	// I would prefer to use hdrhistogram, but that's incompatible with the
@@ -265,6 +366,10 @@ type Histogram struct {
 	h                    gohistogram.Histogram
 	sum, min, max, sumsq float64
 	count                int64
+}
+
+func (h *Histogram) metricName() string {
+	return h.p.metricName(h.name, h.labelValues...)
 }
 
 // the json marshalers for the histograms 4 different gauges
@@ -279,7 +384,7 @@ func (h *Histogram) measures(period float64) []gauge {
 	min := h.min
 	max := h.max
 	sumsq := h.sumsq
-	name := h.name
+	name := h.metricName()
 	percs := []struct {
 		n string
 		v float64
@@ -320,10 +425,9 @@ func (h *Histogram) Observe(value float64) {
 
 // With returns a new LibratoHistogram with the same name / buckets but it is
 // otherwise a noop
-func (h *Histogram) With(lv ...string) kmetrics.Histogram {
-	n := Histogram{name: h.name, buckets: h.buckets}
-	n.reset()
-	return &n
+func (h *Histogram) With(labelValues ...string) kmetrics.Histogram {
+	lvs := append(append([]string(nil), h.labelValues...), labelValues...)
+	return h.p.newHistogram(h.name, h.buckets, lvs...)
 }
 
 func (h *Histogram) reset() {
@@ -376,4 +480,40 @@ func (h *Histogram) SumSq() float64 {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	return h.sumsq
+}
+
+// Counter is a wrapper on generic.Counter which stores a reference to the
+// underlying Provider.
+type Counter struct {
+	*generic.Counter
+	p *Provider
+}
+
+// With returns a Counter with the label values applied. Depending on whether
+// you're using tags or not, the label values may be applied to the name.
+func (c *Counter) With(labelValues ...string) kmetrics.Counter {
+	lvs := append(append([]string(nil), c.LabelValues()...), labelValues...)
+	return c.p.newCounter(c.Counter.Name, lvs...)
+}
+
+func (c *Counter) metricName() string {
+	return c.p.metricName(c.Name, c.LabelValues()...)
+}
+
+// Gauge is a wrapper on generic.Gauge which stores a reference to the
+// underlying Provider.
+type Gauge struct {
+	*generic.Gauge
+	p *Provider
+}
+
+// With returns a Gauge with the label values applied. Depending on whether
+// you're using tags or not, the label values may be applied to the name.
+func (g *Gauge) With(labelValues ...string) kmetrics.Gauge {
+	lvs := append(append([]string(nil), g.LabelValues()...), labelValues...)
+	return g.p.newGauge(g.Gauge.Name, lvs...)
+}
+
+func (g *Gauge) metricName() string {
+	return g.p.metricName(g.Name, g.LabelValues()...)
 }
