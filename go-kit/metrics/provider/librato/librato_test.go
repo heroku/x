@@ -73,7 +73,7 @@ func TestLibratoReportRequestDebugging(t *testing.T) {
 			p := New(u, doesntmatter, func(p *Provider) { p.requestDebugging = debug }).(*Provider)
 			p.Stop()
 			p.NewCounter("foo").Add(1) // need at least one metric in order to report
-			reqs, err := p.batch(u, doesntmatter)
+			reqs, err := p.batcher.Batch(u, doesntmatter)
 			if err != nil {
 				t.Fatal("unexpected error", err)
 			}
@@ -324,6 +324,35 @@ func TestLibratoSingleReportWithLabelValuesOnSourceBasedAccount(t *testing.T) {
 	p.Stop() // does a final report
 }
 
+func TestLibratoSingleReportWithLabelValuesOnTagBasedAccount(t *testing.T) {
+	user := os.Getenv("LIBRATO_TEST_USER")
+	pwd := os.Getenv("LIBRATO_TEST_PWD")
+	if user == "" || pwd == "" {
+		t.Skip("LIBRATO_TEST_USER || LIBRATO_TEST_PWD unset")
+	}
+	rand.Seed(time.Now().UnixNano())
+	u, err := url.Parse(DefaultURL)
+	if err != nil {
+		t.Fatalf("expected nil, got %q", err)
+	}
+	u.User = url.UserPassword(user, pwd)
+
+	errs := func(err error) {
+		t.Fatal("unexpected error reporting metrics", err)
+	}
+
+	p := New(u, doesntmatter, WithTags(), WithSource("test.source"), WithErrorHandler(errs))
+	c := p.NewCounter("test.counter")
+	g := p.NewGauge("test.gauge")
+	h := p.NewHistogram("test.histogram", DefaultBucketCount)
+	c.With("region", "us").With("space", "myspace").Add(float64(time.Now().Unix())) // increasing value
+	g.With("region", "us").With("space", "myspace").Set(rand.Float64())
+	h.With("region", "us").With("space", "myspace").Observe(10)
+	h.With("region", "us").With("space", "myspace").Observe(100)
+	h.With("region", "us").With("space", "myspace").Observe(150)
+	p.Stop() // does a final report
+}
+
 func TestLibratoReport(t *testing.T) {
 	user := os.Getenv("LIBRATO_TEST_USER")
 	pwd := os.Getenv("LIBRATO_TEST_PWD")
@@ -374,8 +403,9 @@ func TestLibratoHistogramJSONMarshalers(t *testing.T) {
 	h.Observe(10)
 	h.Observe(100)
 	h.Observe(150)
-	ePeriod := 1.0
-	d := h.measures(ePeriod)
+	ePeriod := 1
+	b := &oldBatcher{p: p}
+	d := b.histogramMeasures(h, ePeriod)
 	if len(d) != 4 {
 		t.Fatalf("expected length of parts to be 4, got %d", len(d))
 	}
@@ -449,7 +479,7 @@ func TestLibratoHistogramJSONMarshalers(t *testing.T) {
 				t.Errorf("expected %d, got %d", tc.eCount, tg.Count)
 			}
 			if tg.Period != ePeriod {
-				t.Errorf("expected %f, got %f", ePeriod, tg.Period)
+				t.Errorf("expected %d, got %d", ePeriod, tg.Period)
 			}
 			if math.Float64bits(tg.Sum) != math.Float64bits(tc.eSum) {
 				t.Errorf("expected %f, got %f", tc.eSum, tg.Sum)
@@ -545,7 +575,7 @@ func TestWithResetCounters(t *testing.T) {
 
 			foo := p.NewCounter("foo")
 			foo.Add(1)
-			reqs, err := p.batch(u, doesntmatter)
+			reqs, err := p.batcher.Batch(u, doesntmatter)
 			if err != nil {
 				t.Fatal("unexpected error batching", err)
 			}
@@ -588,7 +618,7 @@ func TestWithResetCountersCardinalityCounters(t *testing.T) {
 			foo := p.NewCardinalityCounter("foo")
 			foo.Insert([]byte("foo"))
 
-			reqs, err := p.batch(u, doesntmatter)
+			reqs, err := p.batcher.Batch(u, doesntmatter)
 			if err != nil {
 				t.Fatal("unexpected error batching", err)
 			}

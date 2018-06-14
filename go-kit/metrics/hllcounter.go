@@ -75,3 +75,8 @@ func (c *HLLCounter) EstimateReset() uint64 {
 	c.counter = hll.New()
 	return val
 }
+
+// LabelValues returns the label values for this HLLCounter.
+func (c *HLLCounter) LabelValues() []string {
+	return c.lvs
+}
