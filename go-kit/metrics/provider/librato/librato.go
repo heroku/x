@@ -52,7 +52,9 @@ type Provider struct {
 	resetCounters                    bool
 	ssa                              bool
 	requestDebugging                 bool
-	tagsEnabled                      bool
+
+	tagsEnabled bool
+	batcher     batcher
 
 	once          sync.Once
 	done, stopped chan struct{}
@@ -101,6 +103,7 @@ func WithSSA() OptionFunc {
 func WithTags() OptionFunc {
 	return func(p *Provider) {
 		p.tagsEnabled = true
+		p.batcher = &taggedBatcher{p: p}
 	}
 }
 
@@ -180,6 +183,10 @@ func New(URL *url.URL, interval time.Duration, opts ...OptionFunc) metrics.Provi
 		gauges:     make(map[string]*Gauge),
 		histograms: make(map[string]*Histogram),
 	}
+
+	// Defaults to the old batcher. Can be overridden if WithTags
+	// is called.
+	p.batcher = &oldBatcher{p: &p}
 
 	for _, opt := range opts {
 		opt(&p)
@@ -353,48 +360,13 @@ type Histogram struct {
 	mu sync.RWMutex
 	// I would prefer to use hdrhistogram, but that's incompatible with the
 	// go-metrics Histogram interface (int64 vs float64).
-	h                    gohistogram.Histogram
-	sum, min, max, sumsq float64
-	count                int64
+	h                          gohistogram.Histogram
+	sum, min, max, sumsq, last float64
+	count                      int64
 }
 
 func (h *Histogram) metricName() string {
 	return h.p.metricName(h.name, h.labelValues...)
-}
-
-// the json marshalers for the histograms 4 different gauges
-func (h *Histogram) measures(period float64) []gauge {
-	h.mu.Lock()
-	if h.count == 0 {
-		h.mu.Unlock()
-		return nil
-	}
-	count := h.count
-	sum := h.sum
-	min := h.min
-	max := h.max
-	sumsq := h.sumsq
-	name := h.metricName()
-	percs := []struct {
-		n string
-		v float64
-	}{
-		{name + h.percentilePrefix + "99", h.h.Quantile(.99)},
-		{name + h.percentilePrefix + "95", h.h.Quantile(.95)},
-		{name + h.percentilePrefix + "50", h.h.Quantile(.50)},
-	}
-	h.reset()
-	h.mu.Unlock()
-
-	m := make([]gauge, 0, 4)
-	m = append(m,
-		gauge{Name: name, Period: period, Count: count, Sum: sum, Min: min, Max: max, SumSq: sumsq},
-	)
-
-	for _, perc := range percs {
-		m = append(m, gauge{Name: perc.n, Period: period, Count: 1, Sum: perc.v, Min: perc.v, Max: perc.v, SumSq: perc.v * perc.v})
-	}
-	return m
 }
 
 // Observe some data for the histogram
@@ -410,6 +382,7 @@ func (h *Histogram) Observe(value float64) {
 		h.max = value
 	}
 	h.sumsq += value * value
+	h.last = value
 	h.h.Add(value)
 }
 
