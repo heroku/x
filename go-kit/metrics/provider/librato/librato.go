@@ -242,16 +242,6 @@ func keyName(name string, labelValues ...string) string {
 
 // metricName returns the name we'll use for the metric depending on
 // whether we're using tags or not.
-//
-// GIVEN
-//   name = requests
-//   tags = { region = us, app = myapp }
-//
-// TAGS ENABLED:
-//   requests
-//
-// TAGS DISABLED:
-//   requests.region:us.app:myapp
 func (p *Provider) metricName(name string, labelValues ...string) string {
 	if p.tagsEnabled {
 		return name
