@@ -99,41 +99,6 @@ type gauge struct {
 	SumSq  float64 `json:"sum_squares"`
 }
 
-// the json marshalers for the histograms 4 different gauges
-func (b *oldBatcher) histogramMeasures(h *Histogram, period int) []gauge {
-	h.mu.Lock()
-	if h.count == 0 {
-		h.mu.Unlock()
-		return nil
-	}
-	count := h.count
-	sum := h.sum
-	min := h.min
-	max := h.max
-	sumsq := h.sumsq
-	name := h.metricName()
-	percs := []struct {
-		n string
-		v float64
-	}{
-		{name + h.percentilePrefix + "99", h.h.Quantile(.99)},
-		{name + h.percentilePrefix + "95", h.h.Quantile(.95)},
-		{name + h.percentilePrefix + "50", h.h.Quantile(.50)},
-	}
-	h.reset()
-	h.mu.Unlock()
-
-	m := make([]gauge, 0, 4)
-	m = append(m,
-		gauge{Name: name, Period: period, Count: count, Sum: sum, Min: min, Max: max, SumSq: sumsq},
-	)
-
-	for _, perc := range percs {
-		m = append(m, gauge{Name: perc.n, Period: period, Count: 1, Sum: perc.v, Min: perc.v, Max: perc.v, SumSq: perc.v * perc.v})
-	}
-	return m
-}
-
 type taggedBatcher struct {
 	p *Provider
 }
@@ -196,9 +161,9 @@ type measurement struct {
 	Attributes map[string]interface{} `json:"attributes,omitempty"`
 	Tags       map[string]string      `json:"tags"`
 
+	Count  int64   `json:"count"`
 	Sum    float64 `json:"sum"`
 	SumSq  float64 `json:"-"`
-	Count  int64   `json:"count"`
 	Min    float64 `json:"min"`
 	Max    float64 `json:"max"`
 	Last   float64 `json:"last"`

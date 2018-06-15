@@ -53,6 +53,7 @@ type Provider struct {
 	ssa                              bool
 	requestDebugging                 bool
 
+	now         func() time.Time
 	tagsEnabled bool
 	batcher     batcher
 
@@ -182,6 +183,8 @@ func New(URL *url.URL, interval time.Duration, opts ...OptionFunc) metrics.Provi
 		counters:   make(map[string]*Counter),
 		gauges:     make(map[string]*Gauge),
 		histograms: make(map[string]*Histogram),
+
+		now: time.Now,
 	}
 
 	// Defaults to the old batcher. Can be overridden if WithTags
@@ -313,10 +316,10 @@ func (p *Provider) newGauge(name string, labelValues ...string) kmetrics.Gauge {
 
 // NewHistogram that will be reported by the provider.
 func (p *Provider) NewHistogram(name string, buckets int) kmetrics.Histogram {
-	return p.newHistogram(name, buckets)
+	return p.newHistogram(name, buckets, p.percentilePrefix)
 }
 
-func (p *Provider) newHistogram(name string, buckets int, labelValues ...string) kmetrics.Histogram {
+func (p *Provider) newHistogram(name string, buckets int, percentilePrefix string, labelValues ...string) kmetrics.Histogram {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -326,7 +329,7 @@ func (p *Provider) newHistogram(name string, buckets int, labelValues ...string)
 			p:                p,
 			name:             prefixName(p.prefix, name),
 			buckets:          buckets,
-			percentilePrefix: p.percentilePrefix,
+			percentilePrefix: percentilePrefix,
 			labelValues:      labelValues,
 		}
 		h.reset()
@@ -390,7 +393,7 @@ func (h *Histogram) Observe(value float64) {
 // otherwise a noop
 func (h *Histogram) With(labelValues ...string) kmetrics.Histogram {
 	lvs := append(append([]string(nil), h.labelValues...), labelValues...)
-	return h.p.newHistogram(h.name, h.buckets, lvs...)
+	return h.p.newHistogram(h.name, h.buckets, h.percentilePrefix, lvs...)
 }
 
 func (h *Histogram) reset() {

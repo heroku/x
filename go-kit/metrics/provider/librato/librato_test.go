@@ -397,15 +397,32 @@ func TestLibratoReport(t *testing.T) {
 }
 
 func TestLibratoHistogramJSONMarshalers(t *testing.T) {
-	p := &Provider{}
+	p := &Provider{
+		histograms: make(map[string]*Histogram),
+		now:        func() time.Time { return time.Unix(1529076673, 0).UTC() },
+	}
 	h := &Histogram{p: p, name: "test.histogram", buckets: DefaultBucketCount, percentilePrefix: ".p"}
 	h.reset()
-	h.Observe(10)
-	h.Observe(100)
-	h.Observe(150)
-	ePeriod := 1
-	b := &oldBatcher{p: p}
-	d := b.histogramMeasures(h, ePeriod)
+	h2 := h.With("region", "us").(*Histogram)
+	h2.Observe(10)
+	h2.Observe(100)
+	h2.Observe(150)
+
+	pTagsEnabled := &Provider{
+		tagsEnabled: true,
+		histograms:  make(map[string]*Histogram),
+		now:         func() time.Time { return time.Unix(1529076673, 0).UTC() },
+	}
+	hTags := &Histogram{p: pTagsEnabled, name: "test.histogram", buckets: DefaultBucketCount, percentilePrefix: ".p"}
+	hTags.reset()
+	h2Tags := hTags.With("region", "us").(*Histogram)
+	h2Tags.Observe(10)
+	h2Tags.Observe(100)
+	h2Tags.Observe(150)
+
+	ePeriod := 60
+
+	d := p.histogramMeasures(h2, ePeriod)
 	if len(d) != 4 {
 		t.Fatalf("expected length of parts to be 4, got %d", len(d))
 	}
@@ -427,46 +444,94 @@ func TestLibratoHistogramJSONMarshalers(t *testing.T) {
 		t.Fatal("unexpected error unmarshaling", err)
 	}
 
+	d2 := p.histogramMeasures(h2Tags, ePeriod)
+	if len(d2) != 4 {
+		t.Fatalf("expected length of parts to be 4, got %d", len(d2))
+	}
+
+	p1Tags, err := json.Marshal(d2[0])
+	if err != nil {
+		t.Fatal("unexpected error unmarshaling", err)
+	}
+	p99Tags, err := json.Marshal(d2[1])
+	if err != nil {
+		t.Fatal("unexpected error unmarshaling", err)
+	}
+	p95Tags, err := json.Marshal(d2[2])
+	if err != nil {
+		t.Fatal("unexpected error unmarshaling", err)
+	}
+	p50Tags, err := json.Marshal(d2[3])
+	if err != nil {
+		t.Fatal("unexpected error unmarshaling", err)
+	}
+
 	cases := []struct {
-		eRaw, eName              string
-		eCount                   int64
-		eMin, eMax, eSum, eSumSq float64
-		input                    []byte
+		eRaw, eName               string
+		eCount                    int64
+		eMin, eMax, eSum, eStdDev float64
+		input                     []byte
 	}{
 		{
-			eRaw:   `{"name":"test.histogram","period":1,"count":3,"sum":260,"min":10,"max":150,"sum_squares":32600}`,
-			eName:  "test.histogram",
-			eCount: 3, eMin: 10, eMax: 150, eSum: 260, eSumSq: 32600,
+			eRaw:   `{"name":"test.histogram.region:us","time":1529076660,"period":60,"tags":{"region":"us"},"count":3,"sum":260,"min":10,"max":150,"last":150,"stddev":57.92715732327589}`,
+			eName:  "test.histogram.region:us",
+			eCount: 3, eMin: 10, eMax: 150, eSum: 260, eStdDev: 57.92715732327589,
 			input: p1,
 		},
 		{
-			eRaw:   `{"name":"test.histogram.p99","period":1,"count":1,"sum":150,"min":150,"max":150,"sum_squares":22500}`,
-			eName:  "test.histogram.p99",
-			eCount: 1, eMin: 150, eMax: 150, eSum: 150, eSumSq: 22500,
+			eRaw:   `{"name":"test.histogram.region:us.p99","time":1529076660,"period":60,"tags":{"region":"us"},"count":1,"sum":150,"min":150,"max":150,"last":150,"stddev":0}`,
+			eName:  "test.histogram.region:us.p99",
+			eCount: 1, eMin: 150, eMax: 150, eSum: 150, eStdDev: 0,
 			input: p99,
 		},
 		{
-			eRaw:   `{"name":"test.histogram.p95","period":1,"count":1,"sum":150,"min":150,"max":150,"sum_squares":22500}`,
-			eName:  "test.histogram.p95",
-			eCount: 1, eMin: 150, eMax: 150, eSum: 150, eSumSq: 22500,
+			eRaw:   `{"name":"test.histogram.region:us.p95","time":1529076660,"period":60,"tags":{"region":"us"},"count":1,"sum":150,"min":150,"max":150,"last":150,"stddev":0}`,
+			eName:  "test.histogram.region:us.p95",
+			eCount: 1, eMin: 150, eMax: 150, eSum: 150, eStdDev: 0,
 			input: p95,
 		},
 		{
-			eRaw:   `{"name":"test.histogram.p50","period":1,"count":1,"sum":100,"min":100,"max":100,"sum_squares":10000}`,
-			eName:  "test.histogram.p50",
-			eCount: 1, eMin: 100, eMax: 100, eSum: 100, eSumSq: 10000,
+			eRaw:   `{"name":"test.histogram.region:us.p50","time":1529076660,"period":60,"tags":{"region":"us"},"count":1,"sum":100,"min":100,"max":100,"last":100,"stddev":0}`,
+			eName:  "test.histogram.region:us.p50",
+			eCount: 1, eMin: 100, eMax: 100, eSum: 100, eStdDev: 0,
 			input: p50,
+		},
+
+		{
+			eRaw:   `{"name":"test.histogram","time":1529076660,"period":60,"tags":{"region":"us"},"count":3,"sum":260,"min":10,"max":150,"last":150,"stddev":57.92715732327589}`,
+			eName:  "test.histogram",
+			eCount: 3, eMin: 10, eMax: 150, eSum: 260, eStdDev: 57.92715732327589,
+			input: p1Tags,
+		},
+		{
+			eRaw:   `{"name":"test.histogram.p99","time":1529076660,"period":60,"tags":{"region":"us"},"count":1,"sum":150,"min":150,"max":150,"last":150,"stddev":0}`,
+			eName:  "test.histogram.p99",
+			eCount: 1, eMin: 150, eMax: 150, eSum: 150, eStdDev: 0,
+			input: p99Tags,
+		},
+		{
+			eRaw:   `{"name":"test.histogram.p95","time":1529076660,"period":60,"tags":{"region":"us"},"count":1,"sum":150,"min":150,"max":150,"last":150,"stddev":0}`,
+			eName:  "test.histogram.p95",
+			eCount: 1, eMin: 150, eMax: 150, eSum: 150, eStdDev: 0,
+			input: p95Tags,
+		},
+		{
+			eRaw:   `{"name":"test.histogram.p50","time":1529076660,"period":60,"tags":{"region":"us"},"count":1,"sum":100,"min":100,"max":100,"last":100,"stddev":0}`,
+			eName:  "test.histogram.p50",
+			eCount: 1, eMin: 100, eMax: 100, eSum: 100, eStdDev: 0,
+			input: p50Tags,
 		},
 	}
 
 	for _, tc := range cases {
+		tc := tc
 		t.Run(tc.eName, func(t *testing.T) {
 			t.Parallel()
 			if string(tc.input) != tc.eRaw {
-				t.Errorf("expected %q\ngot %q", tc.eRaw, tc.input)
+				t.Errorf("expected\n\t\t%q\ngot\n\t\t%q", tc.eRaw, tc.input)
 			}
 
-			var tg gauge
+			var tg measurement
 			err := json.Unmarshal(tc.input, &tg)
 			if err != nil {
 				t.Fatal("unexpected error unmarshalling", err)
@@ -490,8 +555,8 @@ func TestLibratoHistogramJSONMarshalers(t *testing.T) {
 			if math.Float64bits(tg.Max) != math.Float64bits(tc.eMax) {
 				t.Errorf("expected %f, got %f", tc.eMin, tg.Max)
 			}
-			if math.Float64bits(tg.SumSq) != math.Float64bits(tc.eSumSq) {
-				t.Errorf("expected %f, got %f", tc.eSumSq, tg.SumSq)
+			if math.Float64bits(tg.StdDev) != math.Float64bits(tc.eStdDev) {
+				t.Errorf("expected %f, got %f", tc.eStdDev, tg.StdDev)
 			}
 		})
 	}

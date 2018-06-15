@@ -1,6 +1,8 @@
 package librato
 
-import "time"
+import (
+	"time"
+)
 
 // the json marshalers for the histograms 4 different gauges
 func (p *Provider) histogramMeasures(h *Histogram, period int) []measurement {
@@ -17,7 +19,7 @@ func (p *Provider) histogramMeasures(h *Histogram, period int) []measurement {
 	stddev := stddev(sum, sumsq, count)
 	last := h.last
 	name := h.metricName()
-	ts := time.Now().Truncate(time.Second * time.Duration(period))
+	ts := p.now().Truncate(time.Second * time.Duration(period))
 
 	var attrs map[string]interface{}
 	if p.ssa {
@@ -53,16 +55,18 @@ func (p *Provider) histogramMeasures(h *Histogram, period int) []measurement {
 
 	for _, perc := range percs {
 		m = append(m, measurement{
-			Name:   perc.n,
-			Period: period,
-			Time:   ts.Unix(),
-			Count:  1,
-			Sum:    perc.v,
-			SumSq:  perc.v * perc.v,
-			Min:    perc.v,
-			Max:    perc.v,
-			Last:   perc.v,
-			StdDev: 0,
+			Name:       perc.n,
+			Period:     period,
+			Time:       ts.Unix(),
+			Count:      1,
+			Sum:        perc.v,
+			SumSq:      perc.v * perc.v,
+			Min:        perc.v,
+			Max:        perc.v,
+			Last:       perc.v,
+			StdDev:     0,
+			Attributes: attrs,
+			Tags:       p.tagsFor(h.labelValues...),
 		})
 	}
 
@@ -84,7 +88,7 @@ func (p *Provider) sample(period int) []measurement {
 		attrs = map[string]interface{}{"aggregate": true}
 	}
 
-	ts := time.Now().Truncate(time.Second * time.Duration(period))
+	ts := p.now().Truncate(time.Second * time.Duration(period))
 
 	// Assemble all the data we have to send
 	var measurements []measurement
