@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/go-kit/kit/metrics"
+	xmetrics "github.com/heroku/x/go-kit/metrics"
 )
 
 // Provider collects registered metrics for testing.
@@ -83,6 +84,11 @@ func (p *Provider) NewHistogram(name string, _ int) metrics.Histogram {
 	h := &Histogram{}
 	p.histograms[name] = h
 	return h
+}
+
+// NewCardinalityCounter implements metrics.Provider.
+func (p *Provider) NewCardinalityCounter(name string) xmetrics.CardinalityCounter {
+	panic("unimplemented")
 }
 
 // CheckCounter checks that there is a registered counter
