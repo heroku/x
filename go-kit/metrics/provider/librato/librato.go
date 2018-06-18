@@ -55,6 +55,7 @@ type Provider struct {
 
 	now         func() time.Time
 	tagsEnabled bool
+	defaultTags []string
 	batcher     *batcher
 
 	once          sync.Once
@@ -101,9 +102,10 @@ func WithSSA() OptionFunc {
 
 // WithTags allows the use of tags when submitting measurements. The default
 // is to not allow it, and fall back to just sources.
-func WithTags() OptionFunc {
+func WithTags(labelValues ...string) OptionFunc {
 	return func(p *Provider) {
 		p.batcher.tagsEnabled = true
+		p.defaultTags = append(p.defaultTags, labelValues...)
 	}
 }
 
@@ -268,6 +270,8 @@ func (p *Provider) newCounter(name string, labelValues ...string) kmetrics.Count
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
+	labelValues = append(labelValues, p.defaultTags...)
+
 	k := keyName(name, labelValues...)
 	if _, ok := p.counters[k]; !ok {
 		gc := generic.NewCounter(name)
@@ -294,6 +298,8 @@ func (p *Provider) newGauge(name string, labelValues ...string) kmetrics.Gauge {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
+	labelValues = append(labelValues, p.defaultTags...)
+
 	k := keyName(name, labelValues...)
 	if _, ok := p.gauges[k]; !ok {
 		gg := generic.NewGauge(name)
@@ -319,6 +325,8 @@ func (p *Provider) NewHistogram(name string, buckets int) kmetrics.Histogram {
 func (p *Provider) newHistogram(name string, buckets int, percentilePrefix string, labelValues ...string) kmetrics.Histogram {
 	p.mu.Lock()
 	defer p.mu.Unlock()
+
+	labelValues = append(labelValues, p.defaultTags...)
 
 	k := keyName(name, labelValues...)
 	if _, ok := p.histograms[k]; !ok {

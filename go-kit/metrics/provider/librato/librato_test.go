@@ -341,7 +341,7 @@ func TestLibratoSingleReportWithLabelValuesOnTagBasedAccount(t *testing.T) {
 		t.Fatal("unexpected error reporting metrics", err)
 	}
 
-	p := New(u, doesntmatter, WithTags(), WithSource("test.source"), WithErrorHandler(errs))
+	p := New(u, doesntmatter, WithTags("app", "myapp"), WithSource("test.source"), WithErrorHandler(errs))
 	c := p.NewCounter("test.counter")
 	g := p.NewGauge("test.gauge")
 	h := p.NewHistogram("test.histogram", DefaultBucketCount)
