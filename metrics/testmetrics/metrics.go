@@ -8,7 +8,10 @@ import (
 
 // Counter accumulates a value based on Add calls.
 type Counter struct {
-	value float64
+	name        string
+	p           *Provider
+	labelValues []string
+	value       float64
 	sync.RWMutex
 }
 
@@ -20,7 +23,10 @@ func (c *Counter) Add(delta float64) {
 }
 
 // With implements the metrics.Counter interface.
-func (c *Counter) With(...string) metrics.Counter { return c }
+func (c *Counter) With(labelValues ...string) metrics.Counter {
+	lvs := append(append([]string(nil), c.labelValues...), labelValues...)
+	return c.p.newCounter(c.name, lvs...)
+}
 
 func (c *Counter) getValue() float64 {
 	c.RLock()
@@ -30,7 +36,10 @@ func (c *Counter) getValue() float64 {
 
 // Gauge stores a value based on Add/Set calls.
 type Gauge struct {
-	value float64
+	name        string
+	p           *Provider
+	labelValues []string
+	value       float64
 	sync.RWMutex
 }
 
@@ -49,7 +58,10 @@ func (g *Gauge) Set(v float64) {
 }
 
 // With implements the metrics.Gauge interface.
-func (g *Gauge) With(...string) metrics.Gauge { return g }
+func (g *Gauge) With(labelValues ...string) metrics.Gauge {
+	lvs := append(append([]string(nil), g.labelValues...), labelValues...)
+	return g.p.newGauge(g.name, lvs...)
+}
 
 func (g *Gauge) getValue() float64 {
 	g.RLock()
@@ -60,6 +72,9 @@ func (g *Gauge) getValue() float64 {
 // Histogram collects observations without computing quantiles
 // so the observations can be checked by tests.
 type Histogram struct {
+	name         string
+	p            *Provider
+	labelValues  []string
 	observations []float64
 	sync.RWMutex
 }
@@ -80,4 +95,7 @@ func (h *Histogram) Observe(v float64) {
 }
 
 // With implements the metrics.Histogram interface.
-func (h *Histogram) With(...string) metrics.Histogram { return h }
+func (h *Histogram) With(labelValues ...string) metrics.Histogram {
+	lvs := append(append([]string(nil), h.labelValues...), labelValues...)
+	return h.p.newHistogram(h.name, lvs...)
+}

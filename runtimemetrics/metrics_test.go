@@ -44,14 +44,14 @@ func TestCollectGCStats(t *testing.T) {
 	c.Collect()
 
 	debug.ReadGCStats(&gs)
-	p.CheckObservationsMatch("go.gc.pause-duration.ms", pauseDurations(gs)...)
+	p.CheckObservationsMatch("go.gc.pause-duration.ms", pauseDurations(gs))
 	p.CheckGaugeNonZero("go.gc.next-target-heap-size-bytes")
 
 	runtime.GC()
 	c.Collect()
 
 	debug.ReadGCStats(&gs)
-	p.CheckObservationsMatch("go.gc.pause-duration.ms", pauseDurations(gs)...)
+	p.CheckObservationsMatch("go.gc.pause-duration.ms", pauseDurations(gs))
 
 	runtime.GC()
 	runtime.GC()
@@ -59,7 +59,7 @@ func TestCollectGCStats(t *testing.T) {
 	c.Collect()
 
 	debug.ReadGCStats(&gs)
-	p.CheckObservationsMatch("go.gc.pause-duration.ms", pauseDurations(gs)...)
+	p.CheckObservationsMatch("go.gc.pause-duration.ms", pauseDurations(gs))
 
 	// Trigger more GCs than the runtime stores in its buffer, to ensure the
 	// collector handles that case well.

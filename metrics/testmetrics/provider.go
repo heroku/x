@@ -1,7 +1,6 @@
 package testmetrics
 
 import (
-	"math"
 	"reflect"
 	"sort"
 	"strings"
@@ -40,50 +39,50 @@ func (p *Provider) Stop() {
 
 // NewCounter implements go-kit's Provider interface.
 func (p *Provider) NewCounter(name string) metrics.Counter {
-	p.t.Helper()
+	return p.newCounter(name)
+}
 
+func (p *Provider) newCounter(name string, labelValues ...string) metrics.Counter {
 	p.Lock()
 	defer p.Unlock()
 
-	if _, ok := p.counters[name]; ok {
-		p.t.Errorf("NewCounter(%s) called, already existing", name)
+	k := p.keyFor(name, labelValues...)
+	if _, ok := p.counters[k]; !ok {
+		p.counters[k] = &Counter{name: name, p: p, labelValues: labelValues}
 	}
-
-	c := &Counter{}
-	p.counters[name] = c
-	return c
+	return p.counters[k]
 }
 
 // NewGauge implements go-kit's Provider interface.
 func (p *Provider) NewGauge(name string) metrics.Gauge {
-	p.t.Helper()
+	return p.newGauge(name)
+}
 
+func (p *Provider) newGauge(name string, labelValues ...string) metrics.Gauge {
 	p.Lock()
 	defer p.Unlock()
 
-	if _, ok := p.gauges[name]; ok {
-		p.t.Errorf("NewGauge(%s) called, already existing", name)
+	k := p.keyFor(name, labelValues...)
+	if _, ok := p.gauges[k]; !ok {
+		p.gauges[k] = &Gauge{name: name, p: p, labelValues: labelValues}
 	}
-
-	g := &Gauge{}
-	p.gauges[name] = g
-	return g
+	return p.gauges[k]
 }
 
 // NewHistogram implements go-kit's Provider interface.
 func (p *Provider) NewHistogram(name string, _ int) metrics.Histogram {
-	p.t.Helper()
+	return p.newHistogram(name)
+}
 
+func (p *Provider) newHistogram(name string, labelValues ...string) metrics.Histogram {
 	p.Lock()
 	defer p.Unlock()
 
-	if _, ok := p.histograms[name]; ok {
-		p.t.Errorf("NewHistogram(%s) called, already existing", name)
+	k := p.keyFor(name, labelValues...)
+	if _, ok := p.histograms[k]; !ok {
+		p.histograms[k] = &Histogram{name: name, p: p, labelValues: labelValues}
 	}
-
-	h := &Histogram{}
-	p.histograms[name] = h
-	return h
+	return p.histograms[k]
 }
 
 // NewCardinalityCounter implements metrics.Provider.
@@ -93,47 +92,53 @@ func (p *Provider) NewCardinalityCounter(name string) xmetrics.CardinalityCounte
 
 // CheckCounter checks that there is a registered counter
 // with the name and value provided.
-func (p *Provider) CheckCounter(name string, v float64) {
+func (p *Provider) CheckCounter(name string, v float64, labelValues ...string) {
 	p.t.Helper()
 
 	p.Lock()
 	defer p.Unlock()
 
-	c, ok := p.counters[name]
+	k := p.keyFor(name, labelValues...)
+	c, ok := p.counters[k]
 	if !ok {
 		keys := make([]string, 0, len(p.counters))
 		for k := range p.counters {
 			keys = append(keys, k)
 		}
-		available := strings.Join(keys, ", ")
-		p.t.Fatalf("no counter named %s out of available counters: %s", name, available)
+		available := strings.Join(keys, "\n")
+		p.t.Fatalf("no counter named %s out of available counters: \n%s", k, available)
 	}
 
 	if c.getValue() != v {
 		p.t.Fatalf("%v = %v, want %v", name, c.value, v)
 	}
+
+	if len(labelValues) > 0 && !reflect.DeepEqual(labelValues, c.labelValues) {
+		p.t.Fatalf("want counter label values: %#v, got %#v", labelValues, c.labelValues)
+	}
 }
 
 // CheckNoCounter checks that there is no registered counter with the name
 // provided.
-func (p *Provider) CheckNoCounter(name string) {
+func (p *Provider) CheckNoCounter(name string, labelValues ...string) {
 	p.t.Helper()
 
 	p.Lock()
 	defer p.Unlock()
 
-	_, ok := p.counters[name]
+	k := p.keyFor(name, labelValues...)
+	_, ok := p.counters[k]
 	if ok {
-		p.t.Fatalf("a counter named %s was found", name)
+		p.t.Fatalf("a counter named %s was found", k)
 	}
 }
 
 // CheckObservationsMinMax checks that there is a histogram
 // with the name and that the values all fall within the min/max range.
-func (p *Provider) CheckObservationsMinMax(name string, min, max float64) {
+func (p *Provider) CheckObservationsMinMax(name string, min, max float64, labelValues ...string) {
 	p.t.Helper()
 
-	for _, o := range p.getObservations(name) {
+	for _, o := range p.getObservations(name, labelValues...) {
 		if o < min || o > max {
 			p.t.Fatalf("got %f want %f..%f ", o, min, max)
 		}
@@ -142,21 +147,21 @@ func (p *Provider) CheckObservationsMinMax(name string, min, max float64) {
 
 // CheckObservations checks that there is a histogram
 // with the name and observations provided.
-func (p *Provider) CheckObservations(name string, obs ...float64) {
+func (p *Provider) CheckObservations(name string, obs []float64, labelValues ...string) {
 	p.t.Helper()
 
-	observations := p.getObservations(name)
+	observations := p.getObservations(name, labelValues...)
 	if !reflect.DeepEqual(observations, obs) {
-		p.t.Fatalf("%v = %v, want %v", name, observations, obs)
+		p.t.Fatalf("%v = %v, want %v", p.keyFor(name, labelValues...), observations, obs)
 	}
 }
 
 // CheckObservationsMatch checks that there is a histogram with the name and
 // observations provided, ignoring order.
-func (p *Provider) CheckObservationsMatch(name string, obs ...float64) {
+func (p *Provider) CheckObservationsMatch(name string, obs []float64, labelValues ...string) {
 	p.t.Helper()
 
-	observations := p.getObservations(name)
+	observations := p.getObservations(name, labelValues...)
 
 	got := make([]float64, len(observations))
 	copy(got, observations)
@@ -168,51 +173,37 @@ func (p *Provider) CheckObservationsMatch(name string, obs ...float64) {
 	sort.Float64s(want)
 
 	if !reflect.DeepEqual(want, got) {
-		p.t.Fatalf("%v = %v, want %v", name, want, got)
+		p.t.Fatalf("%v = %v, want %v", p.keyFor(name, labelValues...), want, got)
 	}
 }
 
 // CheckObservationCount checks that there is a histogram
 // with the name and number of observations provided.
-func (p *Provider) CheckObservationCount(name string, n int) {
+func (p *Provider) CheckObservationCount(name string, n int, labelValues ...string) {
 	p.t.Helper()
 
-	observations := p.getObservations(name)
+	observations := p.getObservations(name, labelValues...)
 
 	if len(observations) != n {
-		p.t.Fatalf("len(%v) = %v, want %v", name, len(observations), n)
+		p.t.Fatalf("len(%v) = %v, want %v", p.keyFor(name, labelValues...), len(observations), n)
 	}
 }
 
-// CheckObservationAlmostEqual is used to compare a specific element in a histogram.
-// An epsilon is used because exactly matching floating point numbers is usually quite difficult.
-func (p *Provider) CheckObservationAlmostEqual(name string, n int, value, epsilon float64) {
-	p.t.Helper()
-
-	observations := p.getObservations(name)
-	if len(observations) <= n {
-		p.t.Fatalf("len(%v) = %v, want < %v", name, len(observations), n)
-	}
-
-	if math.Abs(observations[n]-value) >= epsilon {
-		p.t.Fatalf("%v = %v, want %v", name, observations[n], value)
-	}
-}
-
-func (p *Provider) getObservations(name string) []float64 {
+func (p *Provider) getObservations(name string, labelValues ...string) []float64 {
 	p.t.Helper()
 
 	p.Lock()
 	defer p.Unlock()
 
-	h, ok := p.histograms[name]
+	k := p.keyFor(name, labelValues...)
+	h, ok := p.histograms[k]
 	if !ok {
 		keys := make([]string, 0, len(p.histograms))
 		for k := range p.histograms {
 			keys = append(keys, k)
 		}
-		available := strings.Join(keys, ", ")
-		p.t.Fatalf("no histogram named %s out available histograms: %s", name, available)
+		available := strings.Join(keys, "\n")
+		p.t.Fatalf("no histogram named %s out available histograms: \n%s", k, available)
 	}
 
 	return h.getObservations()
@@ -220,51 +211,59 @@ func (p *Provider) getObservations(name string) []float64 {
 
 // CheckGauge checks that there is a registered gauge
 // with the name and value provided.
-func (p *Provider) CheckGauge(name string, v float64) {
+func (p *Provider) CheckGauge(name string, v float64, labelValues ...string) {
 	p.t.Helper()
 
 	p.Lock()
 	defer p.Unlock()
 
-	g, ok := p.gauges[name]
+	k := p.keyFor(name, labelValues...)
+	g, ok := p.gauges[k]
 	if !ok {
-		p.t.Fatalf("no gauge named %v", name)
+		keys := make([]string, 0, len(p.gauges))
+		for k := range p.gauges {
+			keys = append(keys, k)
+		}
+		available := strings.Join(keys, "\n")
+		p.t.Fatalf("no gauge named %s out of available gauges: \n%s", k, available)
 	}
 	actualV := g.getValue()
 	if actualV != v {
-		p.t.Fatalf("%v = %v, want %v", name, actualV, v)
+		p.t.Fatalf("%v = %v, want %v", k, actualV, v)
 	}
 }
 
 // CheckGaugeNonZero checks that there is a registered gauge
 // with the name provided whose value is != 0.
-func (p *Provider) CheckGaugeNonZero(name string) {
+func (p *Provider) CheckGaugeNonZero(name string, labelValues ...string) {
 	p.t.Helper()
 
 	p.Lock()
 	defer p.Unlock()
 
-	g, ok := p.gauges[name]
+	k := p.keyFor(name, labelValues...)
+	g, ok := p.gauges[k]
 	if !ok {
-		p.t.Fatalf("no gauge named %v", name)
+		p.t.Fatalf("no gauge named %v", k)
 	}
 
 	if g.value == 0 {
-		p.t.Fatalf("%v = %v, want non-zero", name, g.value)
+		p.t.Fatalf("%v = %v, want non-zero", k, g.value)
 	}
 }
 
 // CheckNoGauge checks that there is no registered gauge with the name
 // provided.
-func (p *Provider) CheckNoGauge(name string) {
+func (p *Provider) CheckNoGauge(name string, labelValues ...string) {
 	p.t.Helper()
 
 	p.Lock()
 	defer p.Unlock()
 
-	_, ok := p.gauges[name]
+	k := p.keyFor(name, labelValues...)
+	_, ok := p.gauges[k]
 	if ok {
-		p.t.Fatalf("a gauge named %s was found", name)
+		p.t.Fatalf("a gauge named %s was found", k)
 	}
 }
 
@@ -275,4 +274,11 @@ func (p *Provider) CheckStopped() {
 	if !p.stopped {
 		p.t.Fatal("provider is not stopped")
 	}
+}
+
+func (p *Provider) keyFor(name string, labelValues ...string) string {
+	if len(labelValues) == 0 {
+		return name
+	}
+	return name + "." + strings.Join(labelValues, ":")
 }

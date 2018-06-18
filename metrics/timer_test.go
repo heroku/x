@@ -54,7 +54,7 @@ func TestMeasureSince(t *testing.T) {
 	t1 := time.Now()
 	measureSince(h, t0, t1, float64(defaultTimingUnit))
 
-	p.CheckObservations("timer", float64(t1.Sub(t0))/float64(defaultTimingUnit))
+	p.CheckObservations("timer", []float64{float64(t1.Sub(t0)) / float64(defaultTimingUnit)})
 }
 
 func TestMonotonicTimer(t *testing.T) {
