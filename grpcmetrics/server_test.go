@@ -111,7 +111,7 @@ func TestInstrumentMethod(t *testing.T) {
 	p.CheckCounter("errors", 1)
 	p.CheckCounter("response-codes.ok", 2)
 	p.CheckCounter("response-codes.unknown", 1)
-	p.CheckObservations("request-duration.ms", 1.0, 1000.0, 10000.0)
+	p.CheckObservations("request-duration.ms", []float64{1.0, 1000.0, 10000.0})
 }
 
 func TestInstrumentStreamSend(t *testing.T) {
@@ -123,7 +123,7 @@ func TestInstrumentStreamSend(t *testing.T) {
 	instrumentStreamSend(r, 10*time.Second, errors.New("stream send error"))
 
 	p.CheckCounter("stream.sends", 3)
-	p.CheckObservations("stream.send-duration.ms", 1.0, 1000.0, 10000.0)
+	p.CheckObservations("stream.send-duration.ms", []float64{1.0, 1000.0, 10000.0})
 	p.CheckCounter("stream.sends.errors", 1)
 }
 
@@ -136,7 +136,7 @@ func TestInstrumentStreamRecv(t *testing.T) {
 	instrumentStreamRecv(r, 10*time.Second, errors.New("stream recv error"))
 
 	p.CheckCounter("stream.recvs", 3)
-	p.CheckObservations("stream.recv-duration.ms", 1.0, 1000.0, 10000.0)
+	p.CheckObservations("stream.recv-duration.ms", []float64{1.0, 1000.0, 10000.0})
 	p.CheckCounter("stream.recvs.errors", 1)
 }
 
