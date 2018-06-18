@@ -55,7 +55,7 @@ type Provider struct {
 
 	now         func() time.Time
 	tagsEnabled bool
-	batcher     batcher
+	batcher     *batcher
 
 	once          sync.Once
 	done, stopped chan struct{}
@@ -103,8 +103,7 @@ func WithSSA() OptionFunc {
 // is to not allow it, and fall back to just sources.
 func WithTags() OptionFunc {
 	return func(p *Provider) {
-		p.tagsEnabled = true
-		p.batcher = &taggedBatcher{p: p}
+		p.batcher.tagsEnabled = true
 	}
 }
 
@@ -187,9 +186,7 @@ func New(URL *url.URL, interval time.Duration, opts ...OptionFunc) metrics.Provi
 		now: time.Now,
 	}
 
-	// Defaults to the old batcher. Can be overridden if WithTags
-	// is called.
-	p.batcher = &oldBatcher{p: &p}
+	p.batcher = &batcher{p: &p}
 
 	for _, opt := range opts {
 		opt(&p)
