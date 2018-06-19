@@ -264,7 +264,7 @@ func (p *Provider) metricName(name string, labelValues ...string) string {
 // report use the WithResetCounters option function, otherwise the counter's
 // value will increase until restart.
 func (p *Provider) NewCounter(name string) kmetrics.Counter {
-	return p.newCounter(name)
+	return p.newCounter(prefixName(p.prefix, name))
 }
 
 func (p *Provider) newCounter(name string, labelValues ...string) kmetrics.Counter {
@@ -273,7 +273,7 @@ func (p *Provider) newCounter(name string, labelValues ...string) kmetrics.Count
 
 	k := keyName(name, labelValues...)
 	if _, ok := p.counters[k]; !ok {
-		gc := generic.NewCounter(prefixName(p.prefix, name))
+		gc := generic.NewCounter(name)
 
 		if len(labelValues) > 0 {
 			gc = gc.With(labelValues...).(*generic.Counter)
@@ -290,7 +290,7 @@ func (p *Provider) newCounter(name string, labelValues ...string) kmetrics.Count
 
 // NewGauge that will be reported by the provider.
 func (p *Provider) NewGauge(name string) kmetrics.Gauge {
-	return p.newGauge(name)
+	return p.newGauge(prefixName(p.prefix, name))
 }
 
 func (p *Provider) newGauge(name string, labelValues ...string) kmetrics.Gauge {
@@ -299,7 +299,7 @@ func (p *Provider) newGauge(name string, labelValues ...string) kmetrics.Gauge {
 
 	k := keyName(name, labelValues...)
 	if _, ok := p.gauges[k]; !ok {
-		gg := generic.NewGauge(prefixName(p.prefix, name))
+		gg := generic.NewGauge(name)
 
 		if len(labelValues) > 0 {
 			gg = gg.With(labelValues...).(*generic.Gauge)
@@ -316,7 +316,7 @@ func (p *Provider) newGauge(name string, labelValues ...string) kmetrics.Gauge {
 
 // NewHistogram that will be reported by the provider.
 func (p *Provider) NewHistogram(name string, buckets int) kmetrics.Histogram {
-	return p.newHistogram(name, buckets, p.percentilePrefix)
+	return p.newHistogram(prefixName(p.prefix, name), buckets, p.percentilePrefix)
 }
 
 func (p *Provider) newHistogram(name string, buckets int, percentilePrefix string, labelValues ...string) kmetrics.Histogram {
@@ -327,7 +327,7 @@ func (p *Provider) newHistogram(name string, buckets int, percentilePrefix strin
 	if _, ok := p.histograms[k]; !ok {
 		h := &Histogram{
 			p:                p,
-			name:             prefixName(p.prefix, name),
+			name:             name,
 			buckets:          buckets,
 			percentilePrefix: percentilePrefix,
 			labelValues:      labelValues,
