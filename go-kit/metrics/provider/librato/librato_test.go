@@ -846,3 +846,174 @@ func TestGaugeLabelValues(t *testing.T) {
 		t.Fatalf("want name %q, got %q", "test.gauge.region:us.space:myspace", g3.metricName())
 	}
 }
+
+func TestCounterNaming(t *testing.T) {
+	tests := []struct {
+		name     string
+		p        *Provider
+		fn       func(p *Provider) kmetrics.Counter
+		wantName string
+	}{
+		{
+			name:     "no prefix, no label values",
+			p:        &Provider{counters: make(map[string]*Counter)},
+			fn:       func(p *Provider) kmetrics.Counter { return p.NewCounter("my-counter") },
+			wantName: "my-counter",
+		},
+
+		{
+			name:     "with prefix, no label values",
+			p:        &Provider{prefix: "my-prefix", counters: make(map[string]*Counter)},
+			fn:       func(p *Provider) kmetrics.Counter { return p.NewCounter("my-counter") },
+			wantName: "my-prefix.my-counter",
+		},
+
+		{
+			name:     "no prefix, with label values",
+			p:        &Provider{counters: make(map[string]*Counter)},
+			fn:       func(p *Provider) kmetrics.Counter { return p.NewCounter("my-counter").With("region", "us") },
+			wantName: "my-counter",
+		},
+
+		{
+			name:     "no prefix, with label values, tags enabled",
+			p:        &Provider{counters: make(map[string]*Counter), tagsEnabled: true},
+			fn:       func(p *Provider) kmetrics.Counter { return p.NewCounter("my-counter").With("region", "us") },
+			wantName: "my-counter",
+		},
+
+		{
+			name:     "with prefix, with label values, tags enabled",
+			p:        &Provider{prefix: "my-prefix", counters: make(map[string]*Counter), tagsEnabled: true},
+			fn:       func(p *Provider) kmetrics.Counter { return p.NewCounter("my-counter").With("region", "us") },
+			wantName: "my-prefix.my-counter",
+		},
+	}
+
+	for _, test := range tests {
+		test := test
+
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			counter := test.fn(test.p)
+			if got := counter.(*Counter).Counter.Name; test.wantName != got {
+				t.Fatalf("want name: %q, got %q", test.wantName, got)
+			}
+		})
+	}
+}
+
+func TestGaugeNaming(t *testing.T) {
+	tests := []struct {
+		name     string
+		p        *Provider
+		fn       func(p *Provider) kmetrics.Gauge
+		wantName string
+	}{
+		{
+			name:     "no prefix, no label values",
+			p:        &Provider{gauges: make(map[string]*Gauge)},
+			fn:       func(p *Provider) kmetrics.Gauge { return p.NewGauge("my-gauge") },
+			wantName: "my-gauge",
+		},
+
+		{
+			name:     "with prefix, no label values",
+			p:        &Provider{prefix: "my-prefix", gauges: make(map[string]*Gauge)},
+			fn:       func(p *Provider) kmetrics.Gauge { return p.NewGauge("my-gauge") },
+			wantName: "my-prefix.my-gauge",
+		},
+
+		{
+			name:     "no prefix, with label values",
+			p:        &Provider{gauges: make(map[string]*Gauge)},
+			fn:       func(p *Provider) kmetrics.Gauge { return p.NewGauge("my-gauge").With("region", "us") },
+			wantName: "my-gauge",
+		},
+
+		{
+			name:     "no prefix, with label values, tags enabled",
+			p:        &Provider{gauges: make(map[string]*Gauge), tagsEnabled: true},
+			fn:       func(p *Provider) kmetrics.Gauge { return p.NewGauge("my-gauge").With("region", "us") },
+			wantName: "my-gauge",
+		},
+
+		{
+			name:     "with prefix, with label values, tags enabled",
+			p:        &Provider{prefix: "my-prefix", gauges: make(map[string]*Gauge), tagsEnabled: true},
+			fn:       func(p *Provider) kmetrics.Gauge { return p.NewGauge("my-gauge").With("region", "us") },
+			wantName: "my-prefix.my-gauge",
+		},
+	}
+
+	for _, test := range tests {
+		test := test
+
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			gauge := test.fn(test.p)
+			if got := gauge.(*Gauge).Gauge.Name; test.wantName != got {
+				t.Fatalf("want name: %q, got %q", test.wantName, got)
+			}
+		})
+	}
+}
+
+func TestHistogramNaming(t *testing.T) {
+	tests := []struct {
+		name     string
+		p        *Provider
+		fn       func(p *Provider) kmetrics.Histogram
+		wantName string
+	}{
+		{
+			name:     "no prefix, no label values",
+			p:        &Provider{histograms: make(map[string]*Histogram)},
+			fn:       func(p *Provider) kmetrics.Histogram { return p.NewHistogram("my-histogram", 50) },
+			wantName: "my-histogram",
+		},
+
+		{
+			name:     "with prefix, no label values",
+			p:        &Provider{prefix: "my-prefix", histograms: make(map[string]*Histogram)},
+			fn:       func(p *Provider) kmetrics.Histogram { return p.NewHistogram("my-histogram", 50) },
+			wantName: "my-prefix.my-histogram",
+		},
+
+		{
+			name:     "no prefix, with label values",
+			p:        &Provider{histograms: make(map[string]*Histogram)},
+			fn:       func(p *Provider) kmetrics.Histogram { return p.NewHistogram("my-histogram", 50).With("region", "us") },
+			wantName: "my-histogram",
+		},
+
+		{
+			name:     "no prefix, with label values, tags enabled",
+			p:        &Provider{histograms: make(map[string]*Histogram), tagsEnabled: true},
+			fn:       func(p *Provider) kmetrics.Histogram { return p.NewHistogram("my-histogram", 50).With("region", "us") },
+			wantName: "my-histogram",
+		},
+
+		{
+			name:     "with prefix, with label values, tags enabled",
+			p:        &Provider{prefix: "my-prefix", histograms: make(map[string]*Histogram), tagsEnabled: true},
+			fn:       func(p *Provider) kmetrics.Histogram { return p.NewHistogram("my-histogram", 50).With("region", "us") },
+			wantName: "my-prefix.my-histogram",
+		},
+	}
+
+	for _, test := range tests {
+		test := test
+
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			histogram := test.fn(test.p)
+			if got := histogram.(*Histogram).name; test.wantName != got {
+				t.Fatalf("want name: %q, got %q", test.wantName, got)
+			}
+		})
+	}
+}
