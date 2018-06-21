@@ -263,14 +263,12 @@ func (p *Provider) metricName(name string, labelValues ...string) string {
 // report use the WithResetCounters option function, otherwise the counter's
 // value will increase until restart.
 func (p *Provider) NewCounter(name string) kmetrics.Counter {
-	return p.newCounter(prefixName(p.prefix, name))
+	return p.newCounter(prefixName(p.prefix, name), p.defaultTags...)
 }
 
 func (p *Provider) newCounter(name string, labelValues ...string) kmetrics.Counter {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-
-	labelValues = p.applyDefaultTags(labelValues...)
 
 	k := keyName(name, labelValues...)
 	if _, ok := p.counters[k]; !ok {
@@ -291,14 +289,12 @@ func (p *Provider) newCounter(name string, labelValues ...string) kmetrics.Count
 
 // NewGauge that will be reported by the provider.
 func (p *Provider) NewGauge(name string) kmetrics.Gauge {
-	return p.newGauge(prefixName(p.prefix, name))
+	return p.newGauge(prefixName(p.prefix, name), p.defaultTags...)
 }
 
 func (p *Provider) newGauge(name string, labelValues ...string) kmetrics.Gauge {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-
-	labelValues = p.applyDefaultTags(labelValues...)
 
 	k := keyName(name, labelValues...)
 	if _, ok := p.gauges[k]; !ok {
@@ -319,14 +315,12 @@ func (p *Provider) newGauge(name string, labelValues ...string) kmetrics.Gauge {
 
 // NewHistogram that will be reported by the provider.
 func (p *Provider) NewHistogram(name string, buckets int) kmetrics.Histogram {
-	return p.newHistogram(prefixName(p.prefix, name), buckets, p.percentilePrefix)
+	return p.newHistogram(prefixName(p.prefix, name), buckets, p.percentilePrefix, p.defaultTags...)
 }
 
 func (p *Provider) newHistogram(name string, buckets int, percentilePrefix string, labelValues ...string) kmetrics.Histogram {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-
-	labelValues = p.applyDefaultTags(labelValues...)
 
 	k := keyName(name, labelValues...)
 	if _, ok := p.histograms[k]; !ok {
@@ -352,25 +346,6 @@ func (p *Provider) NewCardinalityCounter(name string) xmetrics.CardinalityCounte
 	defer p.mu.Unlock()
 	p.cardinalityCounters = append(p.cardinalityCounters, c)
 	return c
-}
-
-func (p *Provider) applyDefaultTags(labelValues ...string) []string {
-	if len(labelValues) > len(p.defaultTags) {
-		contained := true
-
-		for idx, v := range p.defaultTags {
-			if labelValues[idx] != v {
-				contained = false
-				break
-			}
-		}
-
-		if contained {
-			return labelValues
-		}
-	}
-
-	return append(p.defaultTags, labelValues...)
 }
 
 // Histogram adapts go-kit/Heroku/Librato's ideas of histograms. It
