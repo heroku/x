@@ -55,7 +55,8 @@ type Provider struct {
 
 	now         func() time.Time
 	tagsEnabled bool
-	batcher     batcher
+	defaultTags []string
+	batcher     *batcher
 
 	once          sync.Once
 	done, stopped chan struct{}
@@ -101,10 +102,10 @@ func WithSSA() OptionFunc {
 
 // WithTags allows the use of tags when submitting measurements. The default
 // is to not allow it, and fall back to just sources.
-func WithTags() OptionFunc {
+func WithTags(labelValues ...string) OptionFunc {
 	return func(p *Provider) {
-		p.tagsEnabled = true
-		p.batcher = &taggedBatcher{p: p}
+		p.batcher.tagsEnabled = true
+		p.defaultTags = append(p.defaultTags, labelValues...)
 	}
 }
 
@@ -187,9 +188,7 @@ func New(URL *url.URL, interval time.Duration, opts ...OptionFunc) metrics.Provi
 		now: time.Now,
 	}
 
-	// Defaults to the old batcher. Can be overridden if WithTags
-	// is called.
-	p.batcher = &oldBatcher{p: &p}
+	p.batcher = &batcher{p: &p}
 
 	for _, opt := range opts {
 		opt(&p)
@@ -264,7 +263,7 @@ func (p *Provider) metricName(name string, labelValues ...string) string {
 // report use the WithResetCounters option function, otherwise the counter's
 // value will increase until restart.
 func (p *Provider) NewCounter(name string) kmetrics.Counter {
-	return p.newCounter(prefixName(p.prefix, name))
+	return p.newCounter(prefixName(p.prefix, name), p.defaultTags...)
 }
 
 func (p *Provider) newCounter(name string, labelValues ...string) kmetrics.Counter {
@@ -290,7 +289,7 @@ func (p *Provider) newCounter(name string, labelValues ...string) kmetrics.Count
 
 // NewGauge that will be reported by the provider.
 func (p *Provider) NewGauge(name string) kmetrics.Gauge {
-	return p.newGauge(prefixName(p.prefix, name))
+	return p.newGauge(prefixName(p.prefix, name), p.defaultTags...)
 }
 
 func (p *Provider) newGauge(name string, labelValues ...string) kmetrics.Gauge {
@@ -316,7 +315,7 @@ func (p *Provider) newGauge(name string, labelValues ...string) kmetrics.Gauge {
 
 // NewHistogram that will be reported by the provider.
 func (p *Provider) NewHistogram(name string, buckets int) kmetrics.Histogram {
-	return p.newHistogram(prefixName(p.prefix, name), buckets, p.percentilePrefix)
+	return p.newHistogram(prefixName(p.prefix, name), buckets, p.percentilePrefix, p.defaultTags...)
 }
 
 func (p *Provider) newHistogram(name string, buckets int, percentilePrefix string, labelValues ...string) kmetrics.Histogram {

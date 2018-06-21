@@ -10,20 +10,25 @@ import (
 )
 
 const (
-	oldBatcherPath = "/v1/metrics"
-	tagBatcherPath = "/v1/measurements"
+	batchMetricsPath      = "/v1/metrics"
+	batchMeasurementsPath = "/v1/measurements"
 )
 
-type batcher interface {
-	Batch(URL *url.URL, interval time.Duration) ([]*http.Request, error)
-}
-
-type oldBatcher struct {
+type batcher struct {
 	p *Provider
+
+	tagsEnabled bool
 }
 
-// Batch will batch up all the metrics into []*http.Requests using the old style API.
-func (b *oldBatcher) Batch(u *url.URL, interval time.Duration) ([]*http.Request, error) {
+func (b *batcher) Batch(u *url.URL, interval time.Duration) ([]*http.Request, error) {
+	if b.tagsEnabled {
+		return b.batchMeasurements(u, interval)
+	}
+	return b.batchMetrics(u, interval)
+}
+
+// batchMetrics will batch up all the metrics into []*http.Requests using the old style API.
+func (b *batcher) batchMetrics(u *url.URL, interval time.Duration) ([]*http.Request, error) {
 	// Calculate the sample time.
 	st := time.Now().Truncate(interval).Unix()
 
@@ -42,7 +47,7 @@ func (b *oldBatcher) Batch(u *url.URL, interval time.Duration) ([]*http.Request,
 	var user *url.Userinfo
 	user, u.User = u.User, nil
 
-	u = u.ResolveReference(&url.URL{Path: oldBatcherPath})
+	u = u.ResolveReference(&url.URL{Path: batchMetricsPath})
 
 	nextEnd := func(e int) int {
 		e += b.p.batchSize
@@ -88,22 +93,7 @@ func (b *oldBatcher) Batch(u *url.URL, interval time.Duration) ([]*http.Request,
 	return requests, nil
 }
 
-// extended librato gauge format is used for all metric types in the old batcher.
-type gauge struct {
-	Name   string  `json:"name"`
-	Period int     `json:"period"`
-	Count  int64   `json:"count"`
-	Sum    float64 `json:"sum"`
-	Min    float64 `json:"min"`
-	Max    float64 `json:"max"`
-	SumSq  float64 `json:"sum_squares"`
-}
-
-type taggedBatcher struct {
-	p *Provider
-}
-
-func (b *taggedBatcher) Batch(u *url.URL, interval time.Duration) ([]*http.Request, error) {
+func (b *batcher) batchMeasurements(u *url.URL, interval time.Duration) ([]*http.Request, error) {
 	// Sample the metrics.
 	measurements := b.p.sample(int(interval.Seconds()))
 
@@ -115,7 +105,7 @@ func (b *taggedBatcher) Batch(u *url.URL, interval time.Duration) ([]*http.Reque
 	var user *url.Userinfo
 	user, u.User = u.User, nil
 
-	u = u.ResolveReference(&url.URL{Path: tagBatcherPath})
+	u = u.ResolveReference(&url.URL{Path: batchMeasurementsPath})
 
 	nextEnd := func(e int) int {
 		e += b.p.batchSize
@@ -151,6 +141,21 @@ func (b *taggedBatcher) Batch(u *url.URL, interval time.Duration) ([]*http.Reque
 	}
 
 	return requests, nil
+}
+
+// extended librato gauge format is used for all metric types in the old batcher.
+type gauge struct {
+	Name   string  `json:"name"`
+	Period int     `json:"period"`
+	Count  int64   `json:"count"`
+	Sum    float64 `json:"sum"`
+	Min    float64 `json:"min"`
+	Max    float64 `json:"max"`
+	SumSq  float64 `json:"sum_squares"`
+}
+
+type taggedBatcher struct {
+	p *Provider
 }
 
 type measurement struct {
