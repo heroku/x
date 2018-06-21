@@ -16,12 +16,10 @@ const (
 
 type batcher struct {
 	p *Provider
-
-	tagsEnabled bool
 }
 
 func (b *batcher) Batch(u *url.URL, interval time.Duration) ([]*http.Request, error) {
-	if b.tagsEnabled {
+	if b.p.tagsEnabled {
 		return b.batchMeasurements(u, interval)
 	}
 	return b.batchMetrics(u, interval)

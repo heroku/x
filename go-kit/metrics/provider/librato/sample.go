@@ -101,7 +101,7 @@ func (p *Provider) sample(period int) []measurement {
 		}
 
 		measurements = append(measurements, measurement{
-			Name:       c.Name,
+			Name:       c.metricName(),
 			Time:       ts.Unix(),
 			Period:     period,
 			Count:      1,
@@ -119,7 +119,7 @@ func (p *Provider) sample(period int) []measurement {
 	for _, g := range p.gauges {
 		v := g.Value()
 		measurements = append(measurements, measurement{
-			Name:       g.Name,
+			Name:       g.metricName(),
 			Time:       ts.Unix(),
 			Period:     period,
 			Count:      1,

@@ -104,7 +104,7 @@ func WithSSA() OptionFunc {
 // is to not allow it, and fall back to just sources.
 func WithTags(labelValues ...string) OptionFunc {
 	return func(p *Provider) {
-		p.batcher.tagsEnabled = true
+		p.tagsEnabled = true
 		p.defaultTags = append(p.defaultTags, labelValues...)
 	}
 }
