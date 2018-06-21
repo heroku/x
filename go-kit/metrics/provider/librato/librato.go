@@ -452,6 +452,14 @@ func (h *Histogram) SumSq() float64 {
 type Counter struct {
 	*generic.Counter
 	p *Provider
+
+	used bool
+}
+
+// Add implements Counter.
+func (c *Counter) Add(delta float64) {
+	c.Counter.Add(delta)
+	c.used = true
 }
 
 // With returns a Counter with the label values applied. Depending on whether
@@ -470,6 +478,18 @@ func (c *Counter) metricName() string {
 type Gauge struct {
 	*generic.Gauge
 	p *Provider
+
+	used bool
+}
+
+func (g *Gauge) Set(value float64) {
+	g.Gauge.Set(value)
+	g.used = true
+}
+
+func (g *Gauge) Add(delta float64) {
+	g.Gauge.Add(delta)
+	g.used = true
 }
 
 // With returns a Gauge with the label values applied. Depending on whether
