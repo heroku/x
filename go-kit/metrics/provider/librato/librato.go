@@ -270,7 +270,7 @@ func (p *Provider) newCounter(name string, labelValues ...string) kmetrics.Count
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	labelValues = append(labelValues, p.defaultTags...)
+	labelValues = p.applyDefaultTags(labelValues...)
 
 	k := keyName(name, labelValues...)
 	if _, ok := p.counters[k]; !ok {
@@ -298,7 +298,7 @@ func (p *Provider) newGauge(name string, labelValues ...string) kmetrics.Gauge {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	labelValues = append(labelValues, p.defaultTags...)
+	labelValues = p.applyDefaultTags(labelValues...)
 
 	k := keyName(name, labelValues...)
 	if _, ok := p.gauges[k]; !ok {
@@ -326,7 +326,7 @@ func (p *Provider) newHistogram(name string, buckets int, percentilePrefix strin
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	labelValues = append(labelValues, p.defaultTags...)
+	labelValues = p.applyDefaultTags(labelValues...)
 
 	k := keyName(name, labelValues...)
 	if _, ok := p.histograms[k]; !ok {
@@ -352,6 +352,25 @@ func (p *Provider) NewCardinalityCounter(name string) xmetrics.CardinalityCounte
 	defer p.mu.Unlock()
 	p.cardinalityCounters = append(p.cardinalityCounters, c)
 	return c
+}
+
+func (p *Provider) applyDefaultTags(labelValues ...string) []string {
+	if len(labelValues) > len(p.defaultTags) {
+		contained := true
+
+		for idx, v := range p.defaultTags {
+			if labelValues[idx] != v {
+				contained = false
+				break
+			}
+		}
+
+		if contained {
+			return labelValues
+		}
+	}
+
+	return append(p.defaultTags, labelValues...)
 }
 
 // Histogram adapts go-kit/Heroku/Librato's ideas of histograms. It
