@@ -453,7 +453,7 @@ type Counter struct {
 	*generic.Counter
 	p *Provider
 
-	used bool
+	used bool // allows batcher to ignore counters used only to create labeled counters
 }
 
 // Add implements Counter.
@@ -479,14 +479,16 @@ type Gauge struct {
 	*generic.Gauge
 	p *Provider
 
-	used bool
+	used bool // allows batcher to ignore gauges used only to create labeled counters
 }
 
+// Set implements Gauge.
 func (g *Gauge) Set(value float64) {
 	g.Gauge.Set(value)
 	g.used = true
 }
 
+// Add implements Gauge.
 func (g *Gauge) Add(delta float64) {
 	g.Gauge.Add(delta)
 	g.used = true
