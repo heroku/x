@@ -93,6 +93,10 @@ func (p *Provider) sample(period int) []measurement {
 	// Assemble all the data we have to send
 	var measurements []measurement
 	for _, c := range p.counters {
+		if !c.used {
+			continue
+		}
+
 		var v float64
 		if p.resetCounters {
 			v = c.ValueReset()
@@ -101,7 +105,7 @@ func (p *Provider) sample(period int) []measurement {
 		}
 
 		measurements = append(measurements, measurement{
-			Name:       c.Name,
+			Name:       c.metricName(),
 			Time:       ts.Unix(),
 			Period:     period,
 			Count:      1,
@@ -117,9 +121,13 @@ func (p *Provider) sample(period int) []measurement {
 	}
 
 	for _, g := range p.gauges {
+		if !g.used {
+			continue
+		}
+
 		v := g.Value()
 		measurements = append(measurements, measurement{
-			Name:       g.Name,
+			Name:       g.metricName(),
 			Time:       ts.Unix(),
 			Period:     period,
 			Count:      1,

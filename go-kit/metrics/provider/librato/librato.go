@@ -104,7 +104,7 @@ func WithSSA() OptionFunc {
 // is to not allow it, and fall back to just sources.
 func WithTags(labelValues ...string) OptionFunc {
 	return func(p *Provider) {
-		p.batcher.tagsEnabled = true
+		p.tagsEnabled = true
 		p.defaultTags = append(p.defaultTags, labelValues...)
 	}
 }
@@ -452,6 +452,14 @@ func (h *Histogram) SumSq() float64 {
 type Counter struct {
 	*generic.Counter
 	p *Provider
+
+	used bool // allows batcher to ignore counters used only to create labeled counters
+}
+
+// Add implements Counter.
+func (c *Counter) Add(delta float64) {
+	c.Counter.Add(delta)
+	c.used = true
 }
 
 // With returns a Counter with the label values applied. Depending on whether
@@ -470,6 +478,20 @@ func (c *Counter) metricName() string {
 type Gauge struct {
 	*generic.Gauge
 	p *Provider
+
+	used bool // allows batcher to ignore gauges used only to create labeled counters
+}
+
+// Set implements Gauge.
+func (g *Gauge) Set(value float64) {
+	g.Gauge.Set(value)
+	g.used = true
+}
+
+// Add implements Gauge.
+func (g *Gauge) Add(delta float64) {
+	g.Gauge.Add(delta)
+	g.used = true
 }
 
 // With returns a Gauge with the label values applied. Depending on whether
