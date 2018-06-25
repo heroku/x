@@ -10,6 +10,11 @@ import (
 	"testing"
 )
 
+func TestHLLCounterWith(t *testing.T) {
+	c := NewHLLCounter("foo").With("bar", "baz")
+	c.Insert([]byte("foo"))
+}
+
 func TestHLLCounterEstimate(t *testing.T) {
 	c := NewHLLCounter("foo")
 	c.Insert([]byte("foo"))
