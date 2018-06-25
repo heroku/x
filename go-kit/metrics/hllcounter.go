@@ -36,7 +36,7 @@ func NewHLLCounter(name string) *HLLCounter {
 // With returns a new UniqueCounter with the passed in label values merged
 // with the previous label values. The counter's values are copied.
 func (c *HLLCounter) With(labelValues ...string) CardinalityCounter {
-	nlv := make([]string, len(c.lvs)+len(labelValues), 0)
+	nlv := make([]string, 0, len(c.lvs)+len(labelValues))
 	nlv = append(nlv, c.lvs...)
 	nlv = append(nlv, labelValues...)
 
