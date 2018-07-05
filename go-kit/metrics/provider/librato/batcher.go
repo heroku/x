@@ -14,31 +14,28 @@ const (
 	batchMeasurementsPath = "/v1/measurements"
 )
 
-type batcher struct {
-	p *Provider
-}
-
-func (b *batcher) Batch(u *url.URL, interval time.Duration) ([]*http.Request, error) {
-	if b.p.tagsEnabled {
-		return b.batchMeasurements(u, interval)
+func (p *Provider) Batch(u *url.URL, interval time.Duration) ([]*http.Request, error) {
+	if p.tagsEnabled {
+		return p.batchMeasurements(u, interval)
 	}
-	return b.batchMetrics(u, interval)
+	return p.batchMetrics(u, interval)
 }
 
 // batchMetrics will batch up all the metrics into []*http.Requests using the old style API.
-func (b *batcher) batchMetrics(u *url.URL, interval time.Duration) ([]*http.Request, error) {
+func (p *Provider) batchMetrics(u *url.URL, interval time.Duration) ([]*http.Request, error) {
 	// Calculate the sample time.
 	st := time.Now().Truncate(interval).Unix()
 
 	// Sample the metrics.
-	measurements := b.p.sample(int(interval.Seconds()))
-	gauges := make([]gauge, len(measurements))
-	for i, m := range measurements {
-		gauges[i] = m.Gauge()
+	measurements := p.sample(int(interval.Seconds()))
+	if len(measurements) == 0 {
+		// no data to report
+		return nil, nil
 	}
 
-	if len(gauges) == 0 { // no data to report
-		return nil, nil
+	gauges := make([]gauge, 0, len(measurements))
+	for _, m := range measurements {
+		gauges = append(gauges, m.Gauge())
 	}
 
 	// Don't accidentally leak the creds, which can happen if we return the u with a u.User set
@@ -48,14 +45,14 @@ func (b *batcher) batchMetrics(u *url.URL, interval time.Duration) ([]*http.Requ
 	u = u.ResolveReference(&url.URL{Path: batchMetricsPath})
 
 	nextEnd := func(e int) int {
-		e += b.p.batchSize
+		e += p.batchSize
 		if l := len(gauges); e > l {
 			return l
 		}
 		return e
 	}
 
-	requests := make([]*http.Request, 0, len(gauges)/b.p.batchSize+1)
+	requests := make([]*http.Request, 0, len(gauges)/p.batchSize+1)
 	for batch, e := 0, nextEnd(0); batch < len(gauges); batch, e = e, nextEnd(e) {
 		r := struct {
 			Source      string                 `json:"source,omitempty"`
@@ -63,11 +60,11 @@ func (b *batcher) batchMetrics(u *url.URL, interval time.Duration) ([]*http.Requ
 			Gauges      []gauge                `json:"gauges"`
 			Attributes  map[string]interface{} `json:"attributes,omitempty"`
 		}{
-			Source:      b.p.source,
+			Source:      p.source,
 			MeasureTime: st,
 			Gauges:      gauges[batch:e],
 		}
-		if b.p.ssa {
+		if p.ssa {
 			r.Attributes = map[string]interface{}{"aggregate": true}
 		}
 
@@ -91,9 +88,9 @@ func (b *batcher) batchMetrics(u *url.URL, interval time.Duration) ([]*http.Requ
 	return requests, nil
 }
 
-func (b *batcher) batchMeasurements(u *url.URL, interval time.Duration) ([]*http.Request, error) {
+func (p *Provider) batchMeasurements(u *url.URL, interval time.Duration) ([]*http.Request, error) {
 	// Sample the metrics.
-	measurements := b.p.sample(int(interval.Seconds()))
+	measurements := p.sample(int(interval.Seconds()))
 
 	if len(measurements) == 0 { // no data to report
 		return nil, nil
@@ -106,14 +103,14 @@ func (b *batcher) batchMeasurements(u *url.URL, interval time.Duration) ([]*http
 	u = u.ResolveReference(&url.URL{Path: batchMeasurementsPath})
 
 	nextEnd := func(e int) int {
-		e += b.p.batchSize
+		e += p.batchSize
 		if l := len(measurements); e > l {
 			return l
 		}
 		return e
 	}
 
-	requests := make([]*http.Request, 0, len(measurements)/b.p.batchSize+1)
+	requests := make([]*http.Request, 0, len(measurements)/p.batchSize+1)
 	for batch, e := 0, nextEnd(0); batch < len(measurements); batch, e = e, nextEnd(e) {
 		r := struct {
 			Measurements []measurement `json:"measurements"`

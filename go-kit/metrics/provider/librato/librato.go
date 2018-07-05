@@ -56,7 +56,6 @@ type Provider struct {
 	now         func() time.Time
 	tagsEnabled bool
 	defaultTags []string
-	batcher     *batcher
 
 	once          sync.Once
 	done, stopped chan struct{}
@@ -187,8 +186,6 @@ func New(URL *url.URL, interval time.Duration, opts ...OptionFunc) metrics.Provi
 
 		now: time.Now,
 	}
-
-	p.batcher = &batcher{p: &p}
 
 	for _, opt := range opts {
 		opt(&p)
