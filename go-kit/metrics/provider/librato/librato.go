@@ -64,7 +64,7 @@ type Provider struct {
 	counters            map[string]*Counter
 	gauges              map[string]*Gauge
 	histograms          map[string]*Histogram
-	cardinalityCounters []*xmetrics.HLLCounter
+	cardinalityCounters map[string]*CardinalityCounter
 }
 
 // OptionFunc used to set options on a librato provider
@@ -180,9 +180,10 @@ func New(URL *url.URL, interval time.Duration, opts ...OptionFunc) metrics.Provi
 		numRetries:       DefaultNumRetries,
 		batchSize:        DefaultBatchSize,
 
-		counters:   make(map[string]*Counter),
-		gauges:     make(map[string]*Gauge),
-		histograms: make(map[string]*Histogram),
+		counters:            make(map[string]*Counter),
+		gauges:              make(map[string]*Gauge),
+		histograms:          make(map[string]*Histogram),
+		cardinalityCounters: make(map[string]*CardinalityCounter),
 
 		now: time.Now,
 	}
@@ -338,11 +339,24 @@ func (p *Provider) newHistogram(name string, buckets int, percentilePrefix strin
 
 // NewCardinalityCounter that will be reported by the provider.
 func (p *Provider) NewCardinalityCounter(name string) xmetrics.CardinalityCounter {
-	c := xmetrics.NewHLLCounter(prefixName(p.prefix, name))
+	return p.newCardinalityCounter(prefixName(p.prefix, name), p.defaultTags...)
+}
+
+func (p *Provider) newCardinalityCounter(name string, labelValues ...string) xmetrics.CardinalityCounter {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	p.cardinalityCounters = append(p.cardinalityCounters, c)
-	return c
+
+	k := keyName(name, labelValues...)
+	if _, ok := p.cardinalityCounters[k]; !ok {
+		c := &CardinalityCounter{
+			HLLCounter: xmetrics.NewHLLCounter(prefixName(p.prefix, name)),
+			p:          p,
+		}
+
+		p.cardinalityCounters[k] = c
+	}
+
+	return p.cardinalityCounters[k]
 }
 
 // Histogram adapts go-kit/Heroku/Librato's ideas of histograms. It
@@ -500,4 +514,31 @@ func (g *Gauge) With(labelValues ...string) kmetrics.Gauge {
 
 func (g *Gauge) metricName() string {
 	return g.p.metricName(g.Name, g.LabelValues()...)
+}
+
+// CardinalityCounter is a wrapper on xmetrics.CardinalityCounter which stores
+// a reference to the underlying Provider.
+type CardinalityCounter struct {
+	*xmetrics.HLLCounter
+	p *Provider
+
+	used bool // allows batcher to ignore card counters used only to create labeled counters
+}
+
+// With returns a CardinalityCounter with the label values applied. Depending
+// on whether you're using tags or not, the label values may be applied to the
+// name.
+func (c *CardinalityCounter) With(labelValues ...string) xmetrics.CardinalityCounter {
+	lvs := append(append([]string(nil), c.LabelValues()...), labelValues...)
+	return c.p.newCardinalityCounter(c.HLLCounter.Name, lvs...)
+}
+
+// Insert implements CardinalityCounter.
+func (c *CardinalityCounter) Insert(b []byte) {
+	c.HLLCounter.Insert(b)
+	c.used = true
+}
+
+func (c *CardinalityCounter) metricName() string {
+	return c.p.metricName(c.Name, c.LabelValues()...)
 }
