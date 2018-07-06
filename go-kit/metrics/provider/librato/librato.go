@@ -349,7 +349,7 @@ func (p *Provider) newCardinalityCounter(name string, labelValues ...string) xme
 	k := keyName(name, labelValues...)
 	if _, ok := p.cardinalityCounters[k]; !ok {
 		c := &CardinalityCounter{
-			HLLCounter: xmetrics.NewHLLCounter(prefixName(p.prefix, name)),
+			HLLCounter: xmetrics.NewHLLCounter(name).With(labelValues...).(*xmetrics.HLLCounter),
 			p:          p,
 		}
 

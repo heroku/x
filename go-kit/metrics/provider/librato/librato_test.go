@@ -345,11 +345,13 @@ func TestLibratoSingleReportWithLabelValuesOnTagBasedAccount(t *testing.T) {
 	c := p.NewCounter("test.counter")
 	g := p.NewGauge("test.gauge")
 	h := p.NewHistogram("test.histogram", DefaultBucketCount)
+	cc := p.NewCardinalityCounter("test.cardinality-counter")
 	c.With("region", "us").With("space", "myspace").Add(float64(time.Now().Unix())) // increasing value
 	g.With("region", "us").With("space", "myspace").Set(rand.Float64())
 	h.With("region", "us").With("space", "myspace").Observe(10)
 	h.With("region", "us").With("space", "myspace").Observe(100)
 	h.With("region", "us").With("space", "myspace").Observe(150)
+	cc.With("region", "us").With("space", "myspace").Insert([]byte("foo.bar"))
 	p.Stop() // does a final report
 }
 
