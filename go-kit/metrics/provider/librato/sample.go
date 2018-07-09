@@ -147,6 +147,10 @@ func (p *Provider) sample(period int) []measurement {
 	}
 
 	for _, c := range p.cardinalityCounters {
+		if !c.used {
+			continue
+		}
+
 		var v float64
 		if p.resetCounters {
 			v = float64(c.EstimateReset())
@@ -154,7 +158,7 @@ func (p *Provider) sample(period int) []measurement {
 			v = float64(c.Estimate())
 		}
 		measurements = append(measurements, measurement{
-			Name:       c.Name,
+			Name:       c.metricName(),
 			Time:       ts.Unix(),
 			Period:     period,
 			Count:      1,

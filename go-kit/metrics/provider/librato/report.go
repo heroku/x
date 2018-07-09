@@ -62,7 +62,7 @@ func (e Error) Error() string {
 // reportWithRetry the metrics to the url, every interval, with max retries.
 func (p *Provider) reportWithRetry(u *url.URL, interval time.Duration) {
 	nu := *u // copy the url
-	requests, err := p.batcher.Batch(&nu, interval)
+	requests, err := p.Batch(&nu, interval)
 	if err != nil {
 		p.errorHandler(err)
 		return

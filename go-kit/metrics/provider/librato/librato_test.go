@@ -73,7 +73,7 @@ func TestLibratoReportRequestDebugging(t *testing.T) {
 			p := New(u, doesntmatter, func(p *Provider) { p.requestDebugging = debug }).(*Provider)
 			p.Stop()
 			p.NewCounter("foo").Add(1) // need at least one metric in order to report
-			reqs, err := p.batcher.Batch(u, doesntmatter)
+			reqs, err := p.Batch(u, doesntmatter)
 			if err != nil {
 				t.Fatal("unexpected error", err)
 			}
@@ -345,11 +345,13 @@ func TestLibratoSingleReportWithLabelValuesOnTagBasedAccount(t *testing.T) {
 	c := p.NewCounter("test.counter")
 	g := p.NewGauge("test.gauge")
 	h := p.NewHistogram("test.histogram", DefaultBucketCount)
+	cc := p.NewCardinalityCounter("test.cardinality-counter")
 	c.With("region", "us").With("space", "myspace").Add(float64(time.Now().Unix())) // increasing value
 	g.With("region", "us").With("space", "myspace").Set(rand.Float64())
 	h.With("region", "us").With("space", "myspace").Observe(10)
 	h.With("region", "us").With("space", "myspace").Observe(100)
 	h.With("region", "us").With("space", "myspace").Observe(150)
+	cc.With("region", "us").With("space", "myspace").Insert([]byte("foo.bar"))
 	p.Stop() // does a final report
 }
 
@@ -640,7 +642,7 @@ func TestWithResetCounters(t *testing.T) {
 
 			foo := p.NewCounter("foo")
 			foo.Add(1)
-			reqs, err := p.batcher.Batch(u, doesntmatter)
+			reqs, err := p.Batch(u, doesntmatter)
 			if err != nil {
 				t.Fatal("unexpected error batching", err)
 			}
@@ -683,7 +685,7 @@ func TestWithResetCountersCardinalityCounters(t *testing.T) {
 			foo := p.NewCardinalityCounter("foo")
 			foo.Insert([]byte("foo"))
 
-			reqs, err := p.batcher.Batch(u, doesntmatter)
+			reqs, err := p.Batch(u, doesntmatter)
 			if err != nil {
 				t.Fatal("unexpected error batching", err)
 			}
