@@ -203,9 +203,9 @@ func New(URL *url.URL, interval time.Duration, opts ...OptionFunc) metrics.Provi
 		}
 	}
 
-	p.measurements = p.NewGauge("internal.measurements")
-	p.ratelimitAgg = p.NewGauge("internal.ratelimit-aggregate")
-	p.ratelimitStd = p.NewGauge("internal.ratelimit-standard")
+	p.measurements = p.NewGauge("go-kit.measurements")
+	p.ratelimitAgg = p.NewGauge("go-kit.ratelimit-aggregate")
+	p.ratelimitStd = p.NewGauge("go-kit.ratelimit-standard")
 
 	go func() {
 		t := time.NewTicker(interval)
