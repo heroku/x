@@ -1091,3 +1091,77 @@ func TestHistogramNaming(t *testing.T) {
 		})
 	}
 }
+
+func TestInternalMetrics(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Librato-RateLimit-Agg", "remaining=101")
+		w.Header().Set("X-Librato-RateLimit-Std", "remaining=102")
+	}))
+	defer srv.Close()
+
+	u, _ := url.Parse(srv.URL)
+
+	p := New(u, 20*time.Second).(*Provider)
+
+	c := p.NewCounter("my.counter")
+	c.Add(1)
+
+	g := p.NewGauge("my.gauge")
+	g.Set(1)
+
+	p.reportWithRetry(u, 20*time.Second)
+
+	if got := p.ratelimitAgg.(*Gauge).Value(); got != 101 {
+		t.Fatalf("want agg rate limit 101, got %f", got)
+	}
+
+	if got := p.ratelimitStd.(*Gauge).Value(); got != 102 {
+		t.Fatalf("want std rate limit 101, got %f", got)
+	}
+
+	if got := p.measurements.(*Gauge).Value(); got != 2 {
+		t.Fatalf("want measurements gauge to be 2, got %f", got)
+	}
+}
+
+func TestRemainingRateLimit(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  int
+	}{
+		{
+			name:  "default",
+			input: "limit=600000,remaining=599998,reset=1531370400",
+			want:  599998,
+		},
+		{
+			name:  "at beginning",
+			input: "remaining=599998,reset=1531370400,limit=600000",
+			want:  599998,
+		},
+		{
+			name:  "at end",
+			input: "reset=1531370400,limit=600000,remaining=599998",
+			want:  599998,
+		},
+		{
+			name:  "empty",
+			input: "",
+			want:  -1,
+		},
+		{
+			name:  "just remaining",
+			input: "remaining=599998",
+			want:  599998,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := remainingRateLimit(test.input); test.want != got {
+				t.Errorf("want %d got %d", test.want, got)
+			}
+		})
+	}
+}

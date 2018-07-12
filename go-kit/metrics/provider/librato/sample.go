@@ -173,6 +173,10 @@ func (p *Provider) sample(period int) []measurement {
 		})
 	}
 
+	if p.measurements != nil {
+		p.measurements.Set(float64(len(measurements)))
+	}
+
 	return measurements
 }
 

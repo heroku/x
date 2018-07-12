@@ -65,6 +65,10 @@ type Provider struct {
 	gauges              map[string]*Gauge
 	histograms          map[string]*Histogram
 	cardinalityCounters map[string]*CardinalityCounter
+
+	measurements kmetrics.Gauge
+	ratelimitAgg kmetrics.Gauge
+	ratelimitStd kmetrics.Gauge
 }
 
 // OptionFunc used to set options on a librato provider
@@ -198,6 +202,10 @@ func New(URL *url.URL, interval time.Duration, opts ...OptionFunc) metrics.Provi
 			return nil
 		}
 	}
+
+	p.measurements = p.NewGauge("go-kit.measurements")
+	p.ratelimitAgg = p.NewGauge("go-kit.ratelimit-aggregate")
+	p.ratelimitStd = p.NewGauge("go-kit.ratelimit-standard")
 
 	go func() {
 		t := time.NewTicker(interval)
