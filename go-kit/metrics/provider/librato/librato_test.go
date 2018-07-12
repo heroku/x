@@ -1091,3 +1091,45 @@ func TestHistogramNaming(t *testing.T) {
 		})
 	}
 }
+
+func TestRemainingRateLimit(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  int
+	}{
+		{
+			name:  "default",
+			input: "limit=600000,remaining=599998,reset=1531370400",
+			want:  599998,
+		},
+		{
+			name:  "at beginning",
+			input: "remaining=599998,reset=1531370400,limit=600000",
+			want:  599998,
+		},
+		{
+			name:  "at end",
+			input: "reset=1531370400,limit=600000,remaining=599998",
+			want:  599998,
+		},
+		{
+			name:  "empty",
+			input: "",
+			want:  -1,
+		},
+		{
+			name:  "just remaining",
+			input: "remaining=599998",
+			want:  599998,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if got := remainingRateLimit(test.input); test.want != got {
+				t.Errorf("want %d got %d", test.want, got)
+			}
+		})
+	}
+}

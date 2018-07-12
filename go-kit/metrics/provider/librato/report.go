@@ -12,6 +12,8 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -103,6 +105,14 @@ func (p *Provider) report(req *http.Request) error {
 	}
 	defer resp.Body.Close()
 
+	if v := remainingRateLimit(resp.Header.Get("X-Librato-RateLimit-Agg")); v >= 0 {
+		p.ratelimitAgg.Set(float64(v))
+	}
+
+	if v := remainingRateLimit(resp.Header.Get("X-Librato-RateLimit-Std")); v >= 0 {
+		p.ratelimitStd.Set(float64(v))
+	}
+
 	if resp.StatusCode/100 != 2 {
 		// Best effort, but don't fail on error
 		d, _ := ioutil.ReadAll(resp.Body)
@@ -127,4 +137,18 @@ func (p *Provider) report(req *http.Request) error {
 		return e
 	}
 	return nil
+}
+
+func remainingRateLimit(s string) int {
+	tuples := strings.Split(s, ",")
+	for _, t := range tuples {
+		chunks := strings.Split(t, "=")
+		if len(chunks) == 2 && chunks[0] == "remaining" {
+			n, err := strconv.Atoi(chunks[1])
+			if err == nil {
+				return n
+			}
+		}
+	}
+	return -1
 }
