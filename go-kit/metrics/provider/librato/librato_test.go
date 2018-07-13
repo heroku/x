@@ -620,8 +620,8 @@ func TestScrubbing(t *testing.T) {
 		}
 	}
 
-	if errCnt != 2*DefaultNumRetries {
-		t.Errorf("expected total error count to be %d, got %d", 2*DefaultNumRetries, errCnt)
+	if errCnt != 3*DefaultNumRetries {
+		t.Errorf("expected total error count to be %d, got %d", 3*DefaultNumRetries, errCnt)
 	}
 }
 
@@ -1119,8 +1119,8 @@ func TestInternalMetrics(t *testing.T) {
 		t.Fatalf("want std rate limit 101, got %f", got)
 	}
 
-	if got := p.measurements.(*Gauge).Value(); got != 2 {
-		t.Fatalf("want measurements gauge to be 2, got %f", got)
+	if got := p.measurements.(*Gauge).Value(); got != 5 {
+		t.Fatalf("want measurements gauge to be 5, got %f", got)
 	}
 }
 
