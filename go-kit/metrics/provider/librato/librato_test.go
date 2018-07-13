@@ -147,22 +147,22 @@ func TestLibratoRetriesWithErrors(t *testing.T) {
 	p.NewCounter("foo").Add(1) // need at least one metric in order to report
 	p.reportWithRetry(u, doesntmatter)
 
-	if totalErrors != expectedRetries {
-		t.Errorf("expected %d total errors, got %d", expectedRetries, totalErrors)
+	if totalErrors != expectedRetries*2 {
+		t.Errorf("expected %d total errors, got %d", expectedRetries*2, totalErrors)
 	}
 
 	expectedTemporaryErrors := expectedRetries - 1
-	if temporaryErrors != expectedTemporaryErrors {
-		t.Errorf("expected %d temporary errors, got %d", expectedTemporaryErrors, temporaryErrors)
+	if temporaryErrors != expectedTemporaryErrors*2 {
+		t.Errorf("expected %d temporary errors, got %d", expectedTemporaryErrors*2, temporaryErrors)
 	}
 
 	expectedFinalErrors := 1
-	if finalErrors != expectedFinalErrors {
-		t.Errorf("expected %d final errors, got %d", expectedFinalErrors, finalErrors)
+	if finalErrors != expectedFinalErrors*2 {
+		t.Errorf("expected %d final errors, got %d", expectedFinalErrors*2, finalErrors)
 	}
 
-	if retried != expectedRetries {
-		t.Errorf("expected %d retries, got %d", expectedRetries, retried)
+	if retried != expectedRetries*2 {
+		t.Errorf("expected %d retries, got %d", expectedRetries*2, retried)
 	}
 }
 
@@ -204,22 +204,22 @@ func TestLibratoRetriesWithErrorsNoDebugging(t *testing.T) {
 	p.NewCounter("foo").Add(1) // need at least one metric in order to report
 	p.reportWithRetry(u, doesntmatter)
 
-	if totalErrors != expectedRetries {
-		t.Errorf("expected %d total errors, got %d", expectedRetries, totalErrors)
+	if totalErrors != expectedRetries*2 {
+		t.Errorf("expected %d total errors, got %d", expectedRetries*2, totalErrors)
 	}
 
 	expectedTemporaryErrors := expectedRetries - 1
-	if temporaryErrors != expectedTemporaryErrors {
-		t.Errorf("expected %d temporary errors, got %d", expectedTemporaryErrors, temporaryErrors)
+	if temporaryErrors != expectedTemporaryErrors*2 {
+		t.Errorf("expected %d temporary errors, got %d", expectedTemporaryErrors*2, temporaryErrors)
 	}
 
 	expectedFinalErrors := 1
-	if finalErrors != expectedFinalErrors {
-		t.Errorf("expected %d final errors, got %d", expectedFinalErrors, finalErrors)
+	if finalErrors != expectedFinalErrors*2 {
+		t.Errorf("expected %d final errors, got %d", expectedFinalErrors*2, finalErrors)
 	}
 
-	if retried != expectedRetries {
-		t.Errorf("expected %d retries, got %d", expectedRetries, retried)
+	if retried != expectedRetries*2 {
+		t.Errorf("expected %d retries, got %d", expectedRetries*2, retried)
 	}
 }
 
@@ -620,8 +620,8 @@ func TestScrubbing(t *testing.T) {
 		}
 	}
 
-	if errCnt != 2*DefaultNumRetries {
-		t.Errorf("expected total error count to be %d, got %d", 2*DefaultNumRetries, errCnt)
+	if errCnt != 3*DefaultNumRetries {
+		t.Errorf("expected total error count to be %d, got %d", 3*DefaultNumRetries, errCnt)
 	}
 }
 
@@ -1119,8 +1119,8 @@ func TestInternalMetrics(t *testing.T) {
 		t.Fatalf("want std rate limit 101, got %f", got)
 	}
 
-	if got := p.measurements.(*Gauge).Value(); got != 2 {
-		t.Fatalf("want measurements gauge to be 2, got %f", got)
+	if got := p.measurements.(*Gauge).Value(); got != 5 {
+		t.Fatalf("want measurements gauge to be 5, got %f", got)
 	}
 }
 
