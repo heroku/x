@@ -12,11 +12,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/VividCortex/gohistogram"
 	kmetrics "github.com/go-kit/kit/metrics"
 	"github.com/go-kit/kit/metrics/generic"
 	"github.com/heroku/x/go-kit/metrics"
 	xmetrics "github.com/heroku/x/go-kit/metrics"
+	"gopkg.in/caio/go-tdigest.v2"
 )
 
 const (
@@ -381,7 +381,7 @@ type Histogram struct {
 	mu sync.RWMutex
 	// I would prefer to use hdrhistogram, but that's incompatible with the
 	// go-metrics Histogram interface (int64 vs float64).
-	h                          gohistogram.Histogram
+	h                          *tdigest.TDigest
 	sum, min, max, sumsq, last float64
 	count                      int64
 }
@@ -416,7 +416,7 @@ func (h *Histogram) With(labelValues ...string) kmetrics.Histogram {
 
 func (h *Histogram) reset() {
 	// Not happy with this, but the existing histogram doesn't have a Reset.
-	h.h = gohistogram.NewHistogram(h.buckets)
+	h.h, _ = tdigest.New() // errors only happen if you pass in wrong options.
 	h.count = 0
 	h.sum = 0
 	h.min = 0

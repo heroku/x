@@ -480,16 +480,17 @@ func TestLibratoHistogramJSONMarshalers(t *testing.T) {
 			eCount: 3, eMin: 10, eMax: 150, eSum: 260, eStdDev: 57.92715732327589,
 			input: p1,
 		},
+
 		{
-			eRaw:   `{"name":"test.histogram.region:us.p99","time":1529076660,"period":60,"tags":{"region":"us"},"count":1,"sum":150,"min":150,"max":150,"last":150,"stddev":0}`,
+			eRaw:   `{"name":"test.histogram.region:us.p99","time":1529076660,"period":60,"tags":{"region":"us"},"count":1,"sum":149,"min":149,"max":149,"last":149,"stddev":0}`,
 			eName:  "test.histogram.region:us.p99",
-			eCount: 1, eMin: 150, eMax: 150, eSum: 150, eStdDev: 0,
+			eCount: 1, eMin: 149, eMax: 149, eSum: 149, eStdDev: 0,
 			input: p99,
 		},
 		{
-			eRaw:   `{"name":"test.histogram.region:us.p95","time":1529076660,"period":60,"tags":{"region":"us"},"count":1,"sum":150,"min":150,"max":150,"last":150,"stddev":0}`,
+			eRaw:   `{"name":"test.histogram.region:us.p95","time":1529076660,"period":60,"tags":{"region":"us"},"count":1,"sum":145,"min":145,"max":145,"last":145,"stddev":0}`,
 			eName:  "test.histogram.region:us.p95",
-			eCount: 1, eMin: 150, eMax: 150, eSum: 150, eStdDev: 0,
+			eCount: 1, eMin: 145, eMax: 145, eSum: 145, eStdDev: 0,
 			input: p95,
 		},
 		{
@@ -506,15 +507,15 @@ func TestLibratoHistogramJSONMarshalers(t *testing.T) {
 			input: p1Tags,
 		},
 		{
-			eRaw:   `{"name":"test.histogram.p99","time":1529076660,"period":60,"tags":{"region":"us"},"count":1,"sum":150,"min":150,"max":150,"last":150,"stddev":0}`,
+			eRaw:   `{"name":"test.histogram.p99","time":1529076660,"period":60,"tags":{"region":"us"},"count":1,"sum":149,"min":149,"max":149,"last":149,"stddev":0}`,
 			eName:  "test.histogram.p99",
-			eCount: 1, eMin: 150, eMax: 150, eSum: 150, eStdDev: 0,
+			eCount: 1, eMin: 149, eMax: 149, eSum: 149, eStdDev: 0,
 			input: p99Tags,
 		},
 		{
-			eRaw:   `{"name":"test.histogram.p95","time":1529076660,"period":60,"tags":{"region":"us"},"count":1,"sum":150,"min":150,"max":150,"last":150,"stddev":0}`,
+			eRaw:   `{"name":"test.histogram.p95","time":1529076660,"period":60,"tags":{"region":"us"},"count":1,"sum":145,"min":145,"max":145,"last":145,"stddev":0}`,
 			eName:  "test.histogram.p95",
-			eCount: 1, eMin: 150, eMax: 150, eSum: 150, eStdDev: 0,
+			eCount: 1, eMin: 145, eMax: 145, eSum: 145, eStdDev: 0,
 			input: p95Tags,
 		},
 		{
