@@ -379,8 +379,7 @@ type Histogram struct {
 	labelValues      []string
 
 	mu sync.RWMutex
-	// I would prefer to use hdrhistogram, but that's incompatible with the
-	// go-metrics Histogram interface (int64 vs float64).
+
 	h                          *tdigest.TDigest
 	sum, min, max, sumsq, last float64
 	count                      int64
@@ -415,8 +414,9 @@ func (h *Histogram) With(labelValues ...string) kmetrics.Histogram {
 }
 
 func (h *Histogram) reset() {
-	// Not happy with this, but the existing histogram doesn't have a Reset.
-	h.h, _ = tdigest.New() // errors only happen if you pass in wrong options.
+	// errors only happen if you pass in wrong options. We're passing no
+	// options so there's zero chance of getting an error here.
+	h.h, _ = tdigest.New()
 	h.count = 0
 	h.sum = 0
 	h.min = 0
