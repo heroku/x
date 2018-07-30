@@ -51,7 +51,7 @@ therefore all signals are properly delegated.`,
 // merge takes a map of envs and a slice and combines them into one slice.
 // e.g. given "A" => 1, and []{"B=2"}, you get {"A=1", "B=2"}
 func merge(env map[string]string, environ []string) []string {
-	result := make([]string, len(env), len(env)+len(environ))
+	result := make([]string, len(environ), len(env)+len(environ))
 	copy(result, environ)
 
 	for k, v := range env {

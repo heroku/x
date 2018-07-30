@@ -8,13 +8,15 @@ package librato
 
 import (
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 
-	"github.com/VividCortex/gohistogram"
 	kmetrics "github.com/go-kit/kit/metrics"
 	"github.com/go-kit/kit/metrics/generic"
 	"github.com/heroku/x/go-kit/metrics"
+	xmetrics "github.com/heroku/x/go-kit/metrics"
+	"gopkg.in/caio/go-tdigest.v2"
 )
 
 const (
@@ -51,13 +53,22 @@ type Provider struct {
 	ssa                              bool
 	requestDebugging                 bool
 
+	now         func() time.Time
+	tagsEnabled bool
+	defaultTags []string
+
 	once          sync.Once
 	done, stopped chan struct{}
 
-	mu         sync.Mutex
-	counters   []*generic.Counter
-	gauges     []*generic.Gauge
-	histograms []*Histogram
+	mu                  sync.Mutex
+	counters            map[string]*Counter
+	gauges              map[string]*Gauge
+	histograms          map[string]*Histogram
+	cardinalityCounters map[string]*CardinalityCounter
+
+	measurements kmetrics.Gauge
+	ratelimitAgg kmetrics.Gauge
+	ratelimitStd kmetrics.Gauge
 }
 
 // OptionFunc used to set options on a librato provider
@@ -89,6 +100,15 @@ func WithRequestDebugging() OptionFunc {
 func WithSSA() OptionFunc {
 	return func(p *Provider) {
 		p.ssa = true
+	}
+}
+
+// WithTags allows the use of tags when submitting measurements. The default
+// is to not allow it, and fall back to just sources.
+func WithTags(labelValues ...string) OptionFunc {
+	return func(p *Provider) {
+		p.tagsEnabled = true
+		p.defaultTags = append(p.defaultTags, labelValues...)
 	}
 }
 
@@ -163,6 +183,13 @@ func New(URL *url.URL, interval time.Duration, opts ...OptionFunc) metrics.Provi
 		percentilePrefix: DefaultPercentilePrefix,
 		numRetries:       DefaultNumRetries,
 		batchSize:        DefaultBatchSize,
+
+		counters:            make(map[string]*Counter),
+		gauges:              make(map[string]*Gauge),
+		histograms:          make(map[string]*Histogram),
+		cardinalityCounters: make(map[string]*CardinalityCounter),
+
+		now: time.Now,
 	}
 
 	for _, opt := range opts {
@@ -175,6 +202,10 @@ func New(URL *url.URL, interval time.Duration, opts ...OptionFunc) metrics.Provi
 			return nil
 		}
 	}
+
+	p.measurements = p.NewGauge("go-kit.measurements")
+	p.ratelimitAgg = p.NewGauge("go-kit.ratelimit-aggregate")
+	p.ratelimitStd = p.NewGauge("go-kit.ratelimit-standard")
 
 	go func() {
 		t := time.NewTicker(interval)
@@ -209,86 +240,153 @@ func prefixName(prefix, name string) string {
 	return prefix + "." + name
 }
 
+// keyName is used as the map key for counters, gauges, and histograms
+// and incorporates the name and the labelValues.
+func keyName(name string, labelValues ...string) string {
+	if len(labelValues) == 0 {
+		return name
+	}
+
+	l := len(labelValues)
+	parts := make([]string, 0, l/2)
+	for i := 0; i < l; i += 2 {
+		parts = append(parts, labelValues[i]+":"+labelValues[i+1])
+	}
+	return name + "." + strings.Join(parts, ".")
+}
+
+// metricName returns the name we'll use for the metric depending on
+// whether we're using tags or not.
+func (p *Provider) metricName(name string, labelValues ...string) string {
+	if p.tagsEnabled {
+		return name
+	}
+	return keyName(name, labelValues...)
+}
+
 // NewCounter that will be reported by the provider. Becuase of the way librato
 // works, they are reported as gauges. If you require a counter reset every
 // report use the WithResetCounters option function, otherwise the counter's
 // value will increase until restart.
 func (p *Provider) NewCounter(name string) kmetrics.Counter {
-	c := generic.NewCounter(prefixName(p.prefix, name))
+	return p.newCounter(prefixName(p.prefix, name), p.defaultTags...)
+}
+
+func (p *Provider) newCounter(name string, labelValues ...string) kmetrics.Counter {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	p.counters = append(p.counters, c)
-	return c
+
+	k := keyName(name, labelValues...)
+	if _, ok := p.counters[k]; !ok {
+		gc := generic.NewCounter(name)
+
+		if len(labelValues) > 0 {
+			gc = gc.With(labelValues...).(*generic.Counter)
+		}
+
+		p.counters[k] = &Counter{
+			Counter: gc,
+			p:       p,
+		}
+	}
+
+	return p.counters[k]
 }
 
 // NewGauge that will be reported by the provider.
 func (p *Provider) NewGauge(name string) kmetrics.Gauge {
-	g := generic.NewGauge(prefixName(p.prefix, name))
+	return p.newGauge(prefixName(p.prefix, name), p.defaultTags...)
+}
+
+func (p *Provider) newGauge(name string, labelValues ...string) kmetrics.Gauge {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	p.gauges = append(p.gauges, g)
-	return g
+
+	k := keyName(name, labelValues...)
+	if _, ok := p.gauges[k]; !ok {
+		gg := generic.NewGauge(name)
+
+		if len(labelValues) > 0 {
+			gg = gg.With(labelValues...).(*generic.Gauge)
+		}
+
+		p.gauges[k] = &Gauge{
+			Gauge: gg,
+			p:     p,
+		}
+	}
+
+	return p.gauges[k]
 }
 
 // NewHistogram that will be reported by the provider.
 func (p *Provider) NewHistogram(name string, buckets int) kmetrics.Histogram {
-	h := Histogram{name: prefixName(p.prefix, name), buckets: buckets, percentilePrefix: p.percentilePrefix}
-	h.reset()
+	return p.newHistogram(prefixName(p.prefix, name), buckets, p.percentilePrefix, p.defaultTags...)
+}
+
+func (p *Provider) newHistogram(name string, buckets int, percentilePrefix string, labelValues ...string) kmetrics.Histogram {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	p.histograms = append(p.histograms, &h)
-	return &h
+
+	k := keyName(name, labelValues...)
+	if _, ok := p.histograms[k]; !ok {
+		h := &Histogram{
+			p:                p,
+			name:             name,
+			buckets:          buckets,
+			percentilePrefix: percentilePrefix,
+			labelValues:      labelValues,
+		}
+		h.reset()
+
+		p.histograms[k] = h
+	}
+
+	return p.histograms[k]
+}
+
+// NewCardinalityCounter that will be reported by the provider.
+func (p *Provider) NewCardinalityCounter(name string) xmetrics.CardinalityCounter {
+	return p.newCardinalityCounter(prefixName(p.prefix, name), p.defaultTags...)
+}
+
+func (p *Provider) newCardinalityCounter(name string, labelValues ...string) xmetrics.CardinalityCounter {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	k := keyName(name, labelValues...)
+	if _, ok := p.cardinalityCounters[k]; !ok {
+		c := &CardinalityCounter{
+			HLLCounter: xmetrics.NewHLLCounter(name).With(labelValues...).(*xmetrics.HLLCounter),
+			p:          p,
+		}
+
+		p.cardinalityCounters[k] = c
+	}
+
+	return p.cardinalityCounters[k]
 }
 
 // Histogram adapts go-kit/Heroku/Librato's ideas of histograms. It
 // reports p99, p95 and p50 values as gauges in addition to a gauge for the
 // histogram itself.
 type Histogram struct {
+	p *Provider
+
 	buckets          int
 	name             string
 	percentilePrefix string
+	labelValues      []string
 
 	mu sync.RWMutex
-	// I would prefer to use hdrhistogram, but that's incompatible with the
-	// go-metrics Histogram interface (int64 vs float64).
-	h                    gohistogram.Histogram
-	sum, min, max, sumsq float64
-	count                int64
+
+	h                          *tdigest.TDigest
+	sum, min, max, sumsq, last float64
+	count                      int64
 }
 
-// the json marshalers for the histograms 4 different gauges
-func (h *Histogram) measures(period float64) []gauge {
-	h.mu.Lock()
-	if h.count == 0 {
-		h.mu.Unlock()
-		return nil
-	}
-	count := h.count
-	sum := h.sum
-	min := h.min
-	max := h.max
-	sumsq := h.sumsq
-	name := h.name
-	percs := []struct {
-		n string
-		v float64
-	}{
-		{name + h.percentilePrefix + "99", h.h.Quantile(.99)},
-		{name + h.percentilePrefix + "95", h.h.Quantile(.95)},
-		{name + h.percentilePrefix + "50", h.h.Quantile(.50)},
-	}
-	h.reset()
-	h.mu.Unlock()
-
-	m := make([]gauge, 0, 4)
-	m = append(m,
-		gauge{Name: name, Period: period, Count: count, Sum: sum, Min: min, Max: max, SumSq: sumsq},
-	)
-
-	for _, perc := range percs {
-		m = append(m, gauge{Name: perc.n, Period: period, Count: 1, Sum: perc.v, Min: perc.v, Max: perc.v, SumSq: perc.v * perc.v})
-	}
-	return m
+func (h *Histogram) metricName() string {
+	return h.p.metricName(h.name, h.labelValues...)
 }
 
 // Observe some data for the histogram
@@ -304,20 +402,21 @@ func (h *Histogram) Observe(value float64) {
 		h.max = value
 	}
 	h.sumsq += value * value
+	h.last = value
 	h.h.Add(value)
 }
 
 // With returns a new LibratoHistogram with the same name / buckets but it is
 // otherwise a noop
-func (h *Histogram) With(lv ...string) kmetrics.Histogram {
-	n := Histogram{name: h.name, buckets: h.buckets}
-	n.reset()
-	return &n
+func (h *Histogram) With(labelValues ...string) kmetrics.Histogram {
+	lvs := append(append([]string(nil), h.labelValues...), labelValues...)
+	return h.p.newHistogram(h.name, h.buckets, h.percentilePrefix, lvs...)
 }
 
 func (h *Histogram) reset() {
-	// Not happy with this, but the existing histogram doesn't have a Reset.
-	h.h = gohistogram.NewHistogram(h.buckets)
+	// errors only happen if you pass in wrong options. We're passing no
+	// options so there's zero chance of getting an error here.
+	h.h, _ = tdigest.New()
 	h.count = 0
 	h.sum = 0
 	h.min = 0
@@ -365,4 +464,79 @@ func (h *Histogram) SumSq() float64 {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	return h.sumsq
+}
+
+// Counter is a wrapper on generic.Counter which stores a reference to the
+// underlying Provider.
+type Counter struct {
+	*generic.Counter
+	p *Provider
+}
+
+// Add implements Counter.
+func (c *Counter) Add(delta float64) {
+	c.Counter.Add(delta)
+}
+
+// With returns a Counter with the label values applied. Depending on whether
+// you're using tags or not, the label values may be applied to the name.
+func (c *Counter) With(labelValues ...string) kmetrics.Counter {
+	lvs := append(append([]string(nil), c.LabelValues()...), labelValues...)
+	return c.p.newCounter(c.Counter.Name, lvs...)
+}
+
+func (c *Counter) metricName() string {
+	return c.p.metricName(c.Name, c.LabelValues()...)
+}
+
+// Gauge is a wrapper on generic.Gauge which stores a reference to the
+// underlying Provider.
+type Gauge struct {
+	*generic.Gauge
+	p *Provider
+}
+
+// Set implements Gauge.
+func (g *Gauge) Set(value float64) {
+	g.Gauge.Set(value)
+}
+
+// Add implements Gauge.
+func (g *Gauge) Add(delta float64) {
+	g.Gauge.Add(delta)
+}
+
+// With returns a Gauge with the label values applied. Depending on whether
+// you're using tags or not, the label values may be applied to the name.
+func (g *Gauge) With(labelValues ...string) kmetrics.Gauge {
+	lvs := append(append([]string(nil), g.LabelValues()...), labelValues...)
+	return g.p.newGauge(g.Gauge.Name, lvs...)
+}
+
+func (g *Gauge) metricName() string {
+	return g.p.metricName(g.Name, g.LabelValues()...)
+}
+
+// CardinalityCounter is a wrapper on xmetrics.CardinalityCounter which stores
+// a reference to the underlying Provider.
+type CardinalityCounter struct {
+	*xmetrics.HLLCounter
+	p *Provider
+}
+
+// With returns a CardinalityCounter with the label values applied. Depending
+// on whether you're using tags or not, the label values may be applied to the
+// name.
+func (c *CardinalityCounter) With(labelValues ...string) xmetrics.CardinalityCounter {
+	lvs := append(append([]string(nil), c.LabelValues()...), labelValues...)
+	return c.p.newCardinalityCounter(c.HLLCounter.Name, lvs...)
+}
+
+// Insert implements CardinalityCounter.
+func (c *CardinalityCounter) Insert(b []byte) {
+	c.HLLCounter.Insert(b)
+}
+
+func (c *CardinalityCounter) metricName() string {
+	return c.p.metricName(c.Name, c.LabelValues()...)
 }

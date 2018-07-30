@@ -7,13 +7,13 @@
 package librato
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -61,112 +61,10 @@ func (e Error) Error() string {
 	return fmt.Sprintf("code: %d, retries remaining: %d, body: %s, rate-limit-agg: %s, rate-limit-std: %s", e.code, e.retries, e.body, e.rateLimitAgg, e.rateLimitStd)
 }
 
-// extended librato gauge format is used for all metric types.
-type gauge struct {
-	Name   string  `json:"name"`
-	Period float64 `json:"period"`
-	Count  int64   `json:"count"`
-	Sum    float64 `json:"sum"`
-	Min    float64 `json:"min"`
-	Max    float64 `json:"max"`
-	SumSq  float64 `json:"sum_squares"`
-}
-
-// sample the metrics
-func (p *Provider) sample(period float64) []gauge {
-	p.mu.Lock()
-	defer p.mu.Unlock() // should only block New{Histogram,Counter,Gauge}
-
-	if len(p.counters) == 0 && len(p.histograms) == 0 && len(p.gauges) == 0 {
-		return nil
-	}
-
-	// Assemble all the data we have to send
-	var gauges []gauge
-	for _, c := range p.counters {
-		var v float64
-		if p.resetCounters {
-			v = c.ValueReset()
-		} else {
-			v = c.Value()
-		}
-		gauges = append(gauges, gauge{Name: c.Name, Period: period, Count: 1, Sum: v, Min: v, Max: v, SumSq: v * v})
-	}
-	for _, g := range p.gauges {
-		v := g.Value()
-		gauges = append(gauges, gauge{Name: g.Name, Period: period, Count: 1, Sum: v, Min: v, Max: v, SumSq: v * v})
-	}
-	for _, h := range p.histograms {
-		gauges = append(gauges, h.measures(period)...)
-	}
-	return gauges
-}
-
-// batch the metrics into a []*http.Requests
-func (p *Provider) batch(u *url.URL, interval time.Duration) ([]*http.Request, error) {
-	// Calculate the sample time.
-	ivSec := int64(interval / time.Second)
-	st := (time.Now().Unix() / ivSec) * ivSec
-
-	// Sample the metrics.
-	gauges := p.sample(interval.Seconds())
-
-	if len(gauges) == 0 { // no data to report
-		return nil, nil
-	}
-
-	// Don't accidentally leak the creds, which can happen if we return the u with a u.User set
-	var user *url.Userinfo
-	user, u.User = u.User, nil
-
-	nextEnd := func(e int) int {
-		e += p.batchSize
-		if l := len(gauges); e > l {
-			return l
-		}
-		return e
-	}
-
-	requests := make([]*http.Request, 0, len(gauges)/p.batchSize+1)
-	for b, e := 0, nextEnd(0); b < len(gauges); b, e = e, nextEnd(e) {
-		r := struct {
-			Source      string                 `json:"source,omitempty"`
-			MeasureTime int64                  `json:"measure_time"`
-			Gauges      []gauge                `json:"gauges"`
-			Attributes  map[string]interface{} `json:"attributes,omitempty"`
-		}{
-			Source:      p.source,
-			MeasureTime: st,
-			Gauges:      gauges[b:e],
-		}
-		if p.ssa {
-			r.Attributes = map[string]interface{}{"aggregate": true}
-		}
-
-		var buf bytes.Buffer
-		if err := json.NewEncoder(&buf).Encode(r); err != nil {
-			return nil, err
-		}
-
-		req, err := http.NewRequest(http.MethodPost, u.String(), &buf)
-		if err != nil {
-			return nil, err
-		}
-		if user != nil {
-			p, _ := user.Password()
-			req.SetBasicAuth(user.Username(), p)
-		}
-		req.Header.Set("Content-Type", "application/json")
-		requests = append(requests, req)
-	}
-
-	return requests, nil
-}
-
 // reportWithRetry the metrics to the url, every interval, with max retries.
 func (p *Provider) reportWithRetry(u *url.URL, interval time.Duration) {
 	nu := *u // copy the url
-	requests, err := p.batch(&nu, interval)
+	requests, err := p.Batch(&nu, interval)
 	if err != nil {
 		p.errorHandler(err)
 		return
@@ -207,6 +105,14 @@ func (p *Provider) report(req *http.Request) error {
 	}
 	defer resp.Body.Close()
 
+	if v := remainingRateLimit(resp.Header.Get("X-Librato-RateLimit-Agg")); v >= 0 {
+		p.ratelimitAgg.Set(float64(v))
+	}
+
+	if v := remainingRateLimit(resp.Header.Get("X-Librato-RateLimit-Std")); v >= 0 {
+		p.ratelimitStd.Set(float64(v))
+	}
+
 	if resp.StatusCode/100 != 2 {
 		// Best effort, but don't fail on error
 		d, _ := ioutil.ReadAll(resp.Body)
@@ -231,4 +137,18 @@ func (p *Provider) report(req *http.Request) error {
 		return e
 	}
 	return nil
+}
+
+func remainingRateLimit(s string) int {
+	tuples := strings.Split(s, ",")
+	for _, t := range tuples {
+		chunks := strings.Split(t, "=")
+		if len(chunks) == 2 && chunks[0] == "remaining" {
+			n, err := strconv.Atoi(chunks[1])
+			if err == nil {
+				return n
+			}
+		}
+	}
+	return -1
 }
