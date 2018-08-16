@@ -10,7 +10,6 @@ import (
 	"github.com/heroku/x/go-kit/metrics"
 	"github.com/mwitkow/go-grpc-middleware"
 	"github.com/sirupsen/logrus"
-	"go.opencensus.io/plugin/grpc/grpctrace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
@@ -113,7 +112,6 @@ func (o *options) serverOptions() []grpc.ServerOption {
 	opts := []grpc.ServerOption{
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(o.unaryInterceptors()...)),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(o.streamInterceptors()...)),
-		grpc.StatsHandler(&grpctrace.ServerStatsHandler{}),
 	}
 	opts = append(opts, o.grpcOptions...)
 	return opts
