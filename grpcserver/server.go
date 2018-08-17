@@ -8,6 +8,7 @@ import (
 
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	"github.com/heroku/cedar/lib/grpc/requestid"
+	"github.com/heroku/cedar/lib/kit"
 	"github.com/lstoll/grpce/h2c"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
@@ -42,12 +43,18 @@ type Starter interface {
 // (if provider passed), panic handling, a health check service, TLS termination
 // with client authentication, and proxy-protocol wrapping.
 //
-// Deprecated: RunStandardServer is now a wrapper for New and TCP with TLS
-// options and a logger.
+// Deprecated: Use NewStandardServer instead.
 func RunStandardServer(logger log.FieldLogger, port int, serverCACerts [][]byte, serverCert, serverKey []byte, server Starter, opts ...ServerOption) error {
+	return NewStandardServer(logger, port, serverCACerts, serverCert, serverKey, server, opts...).Run()
+}
+
+// NewStandardServer configures a GRPC server with a standard setup including metrics
+// (if provider passed), panic handling, a health check service, TLS termination
+// with client authentication, and proxy-protocol wrapping.
+func NewStandardServer(logger log.FieldLogger, port int, serverCACerts [][]byte, serverCert, serverKey []byte, server Starter, opts ...ServerOption) kit.Server {
 	tls, err := TLS(serverCACerts, serverCert, serverKey)
 	if err != nil {
-		return err
+		logger.Fatal(err)
 	}
 
 	opts = append(opts, tls)
@@ -56,11 +63,10 @@ func RunStandardServer(logger log.FieldLogger, port int, serverCACerts [][]byte,
 	grpcsrv := New(opts...)
 
 	if err := server.Start(grpcsrv); err != nil {
-		return err
+		logger.Fatal(err)
 	}
 
-	tcp := TCP(logger, grpcsrv, net.JoinHostPort("", strconv.Itoa(port)))
-	return tcp.Run()
+	return TCP(logger, grpcsrv, net.JoinHostPort("", strconv.Itoa(port)))
 }
 
 // NewStandardH2C create a set of servers suitible for serving gRPC services
