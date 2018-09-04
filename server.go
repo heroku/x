@@ -2,6 +2,8 @@ package kit
 
 import (
 	"context"
+
+	"github.com/oklog/run"
 )
 
 // A Server can be run synchronously and return an error.
@@ -62,4 +64,26 @@ func NewContextServer(fn func(context.Context) error) Server {
 		},
 	}
 
+}
+
+// MultiServer returns a new kit.Server which will run all of the provided
+// servers until one of them fails or the server is stopped.
+func MultiServer(srvs ...Server) Server {
+	var g run.Group
+
+	s := NewContextServer(func(ctx context.Context) error {
+		<-ctx.Done()
+		return ctx.Err()
+	})
+
+	g.Add(s.Run, s.Stop)
+
+	for _, srv := range srvs {
+		g.Add(srv.Run, srv.Stop)
+	}
+
+	return ServerFuncs{
+		RunFunc:  g.Run,
+		StopFunc: s.Stop,
+	}
 }
