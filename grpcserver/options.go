@@ -5,7 +5,6 @@ import (
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	"github.com/heroku/cedar/lib/grpc/grpcmetrics"
 	"github.com/heroku/cedar/lib/grpc/panichandler"
-	"github.com/heroku/cedar/lib/grpc/tokenauth"
 	"github.com/heroku/cedar/lib/tlsconfig"
 	"github.com/heroku/x/go-kit/metrics"
 	"github.com/mwitkow/go-grpc-middleware"
@@ -19,10 +18,11 @@ var defaultLogOpts = []grpc_logrus.Option{
 }
 
 type options struct {
-	logEntry        *logrus.Entry
-	metricsProvider metrics.Provider
-	authorizer      tokenauth.Authorizer
-	grpcOptions     []grpc.ServerOption
+	logEntry              *logrus.Entry
+	metricsProvider       metrics.Provider
+	authUnaryInterceptor  grpc.UnaryServerInterceptor
+	authStreamInterceptor grpc.StreamServerInterceptor
+	grpcOptions           []grpc.ServerOption
 }
 
 // ServerOption sets optional fields on the standard gRPC server
@@ -49,11 +49,12 @@ func MetricsProvider(provider metrics.Provider) ServerOption {
 	}
 }
 
-// TokenAuthorizer binds a tokenauth.Authorizer to the given service, to
-// validate Unary and Stream requests
-func TokenAuthorizer(authorizer tokenauth.Authorizer) ServerOption {
+// AuthInterceptors sets interceptors that are intented for
+// authentication/authorization in the correct locations in the chain
+func AuthInterceptors(unary grpc.UnaryServerInterceptor, stream grpc.StreamServerInterceptor) ServerOption {
 	return func(o *options) {
-		o.authorizer = authorizer
+		o.authUnaryInterceptor = unary
+		o.authStreamInterceptor = stream
 	}
 }
 
@@ -76,8 +77,8 @@ func (o *options) unaryInterceptors() []grpc.UnaryServerInterceptor {
 		unaryServerErrorUnwrapper, // unwrap after we've logged
 		grpc_logrus.UnaryServerInterceptor(l, defaultLogOpts...),
 	)
-	if o.authorizer != nil {
-		i = append(i, tokenauth.UnaryServerInterceptor(o.authorizer))
+	if o.authUnaryInterceptor != nil {
+		i = append(i, o.authUnaryInterceptor)
 	}
 
 	return i
@@ -101,8 +102,8 @@ func (o *options) streamInterceptors() []grpc.StreamServerInterceptor {
 		streamServerErrorUnwrapper, // unwrap after we've logged
 		grpc_logrus.StreamServerInterceptor(l, defaultLogOpts...),
 	)
-	if o.authorizer != nil {
-		i = append(i, tokenauth.StreamServerInterceptor(o.authorizer))
+	if o.authStreamInterceptor != nil {
+		i = append(i, o.authStreamInterceptor)
 	}
 
 	return i

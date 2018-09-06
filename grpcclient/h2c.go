@@ -6,7 +6,6 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/heroku/cedar/lib/grpc/tokenauth"
 	"github.com/lstoll/grpce/h2c"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -44,13 +43,4 @@ func DialH2C(serverURL string, opts ...grpc.DialOption) (*grpc.ClientConn, error
 		return nil, errors.Wrap(err, "Error dialing server")
 	}
 	return conn, nil
-}
-
-// WithTokenAuth is a convenience function to provide Per RPC credentials via
-// our token auth method.
-func WithTokenAuth(creds map[string]string) grpc.DialOption {
-	return grpc.WithPerRPCCredentials(&tokenauth.RPCCredentials{
-		Credentials:   creds,
-		AllowInsecure: true,
-	})
 }
