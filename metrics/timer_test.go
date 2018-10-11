@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/go-kit/kit/metrics/generic"
-	"github.com/heroku/cedar/lib/kit/metrics/testmetrics"
+	"github.com/heroku/runtime/lib/kit/metrics/testmetrics"
 )
 
 var timerDurations = []time.Duration{

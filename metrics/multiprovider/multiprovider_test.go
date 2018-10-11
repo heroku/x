@@ -3,7 +3,7 @@ package multiprovider
 import (
 	"testing"
 
-	"github.com/heroku/cedar/lib/kit/metrics/testmetrics"
+	"github.com/heroku/runtime/lib/kit/metrics/testmetrics"
 )
 
 func TestCounters(t *testing.T) {
