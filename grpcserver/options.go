@@ -3,9 +3,9 @@ package grpcserver
 import (
 	grpc_logrus "github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
-	"github.com/heroku/cedar/lib/grpc/grpcmetrics"
-	"github.com/heroku/cedar/lib/grpc/panichandler"
-	"github.com/heroku/cedar/lib/tlsconfig"
+	"github.com/heroku/runtime/lib/grpc/grpcmetrics"
+	"github.com/heroku/runtime/lib/grpc/panichandler"
+	"github.com/heroku/runtime/lib/tlsconfig"
 	"github.com/heroku/x/go-kit/metrics"
 	"github.com/mwitkow/go-grpc-middleware"
 	"github.com/sirupsen/logrus"

@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/heroku/cedar/lib/kit/metrics/testmetrics"
-	"github.com/heroku/cedar/lib/kit/metricsregistry"
+	"github.com/heroku/runtime/lib/kit/metrics/testmetrics"
+	"github.com/heroku/runtime/lib/kit/metricsregistry"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

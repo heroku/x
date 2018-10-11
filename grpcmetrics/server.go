@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/heroku/cedar/lib/kit/metricsregistry"
+	"github.com/heroku/runtime/lib/kit/metricsregistry"
 	"github.com/heroku/x/go-kit/metrics"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

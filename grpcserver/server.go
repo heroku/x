@@ -7,8 +7,8 @@ import (
 	"strconv"
 
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
-	"github.com/heroku/cedar/lib/grpc/requestid"
-	"github.com/heroku/cedar/lib/kit"
+	"github.com/heroku/runtime/lib/grpc/requestid"
+	"github.com/heroku/runtime/lib/kit"
 	"github.com/lstoll/grpce/h2c"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"

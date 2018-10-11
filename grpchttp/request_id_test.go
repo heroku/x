@@ -8,7 +8,7 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
-	"github.com/heroku/cedar/lib/grpc/requestid"
+	"github.com/heroku/runtime/lib/grpc/requestid"
 )
 
 func TestRequestIDAnnotator(t *testing.T) {
