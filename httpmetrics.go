@@ -9,7 +9,7 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
-	"github.com/heroku/cedar/lib/kit/metricsregistry"
+	"github.com/heroku/runtime/lib/kit/metricsregistry"
 	"github.com/heroku/x/go-kit/metrics"
 )
 

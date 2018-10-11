@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/go-chi/chi"
-	"github.com/heroku/cedar/lib/kit/metrics/testmetrics"
+	"github.com/heroku/runtime/lib/kit/metrics/testmetrics"
 )
 
 func TestServer(t *testing.T) {
