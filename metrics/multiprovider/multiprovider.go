@@ -51,12 +51,33 @@ func (m *multiProvider) NewHistogram(name string, buckets int) kitmetrics.Histog
 
 // NewCardinalityCounter implements metrics.CardinalityCounter.
 func (m *multiProvider) NewCardinalityCounter(name string) metrics.CardinalityCounter {
-	panic("unimplemented")
+	cardCounters := make([]metrics.CardinalityCounter, 0, len(m.providers))
+
+	for _, p := range m.providers {
+		cardCounters = append(cardCounters, p.NewCardinalityCounter(name))
+	}
+	return multiCardinalityCounter(cardCounters)
 }
 
 // Stop calls stop on all the underlying providers.
 func (m *multiProvider) Stop() {
 	for _, p := range m.providers {
 		p.Stop()
+	}
+}
+
+type multiCardinalityCounter []metrics.CardinalityCounter
+
+func (cc multiCardinalityCounter) With(labelValues ...string) metrics.CardinalityCounter {
+	cardCounters := make([]metrics.CardinalityCounter, 0, len(cc))
+	for _, cardCounter := range cc {
+		cardCounters = append(cardCounters, cardCounter.With(labelValues...))
+	}
+	return multiCardinalityCounter(cardCounters)
+}
+
+func (cc multiCardinalityCounter) Insert(b []byte) {
+	for _, cardCounter := range cc {
+		cardCounter.Insert(b)
 	}
 }

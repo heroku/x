@@ -16,19 +16,21 @@ type Provider struct {
 	t *testing.T
 
 	sync.Mutex
-	counters   map[string]*Counter
-	gauges     map[string]*Gauge
-	histograms map[string]*Histogram
-	stopped    bool
+	counters     map[string]*Counter
+	gauges       map[string]*Gauge
+	histograms   map[string]*Histogram
+	cardCounters map[string]*xmetrics.HLLCounter
+	stopped      bool
 }
 
 // NewProvider constructs a test provider which can later be checked.
 func NewProvider(t *testing.T) *Provider {
 	return &Provider{
-		t:          t,
-		counters:   make(map[string]*Counter),
-		histograms: make(map[string]*Histogram),
-		gauges:     make(map[string]*Gauge),
+		t:            t,
+		counters:     make(map[string]*Counter),
+		histograms:   make(map[string]*Histogram),
+		gauges:       make(map[string]*Gauge),
+		cardCounters: make(map[string]*xmetrics.HLLCounter),
 	}
 }
 
@@ -87,7 +89,13 @@ func (p *Provider) newHistogram(name string, labelValues ...string) metrics.Hist
 
 // NewCardinalityCounter implements metrics.Provider.
 func (p *Provider) NewCardinalityCounter(name string) xmetrics.CardinalityCounter {
-	panic("unimplemented")
+	p.Lock()
+	defer p.Unlock()
+
+	if _, ok := p.cardCounters[name]; !ok {
+		p.cardCounters[name] = xmetrics.NewHLLCounter(name)
+	}
+	return p.cardCounters[name]
 }
 
 // CheckCounter checks that there is a registered counter
@@ -273,6 +281,29 @@ func (p *Provider) CheckStopped() {
 
 	if !p.stopped {
 		p.t.Fatal("provider is not stopped")
+	}
+}
+
+// CheckCardinalityCounter checks that there is a registered cardinality
+// counter with the name and estimate provided.
+func (p *Provider) CheckCardinalityCounter(name string, estimate uint64) {
+	p.t.Helper()
+
+	p.Lock()
+	defer p.Unlock()
+
+	cc, ok := p.cardCounters[name]
+	if !ok {
+		keys := make([]string, 0, len(p.cardCounters))
+		for k := range p.cardCounters {
+			keys = append(keys, k)
+		}
+		available := strings.Join(keys, "\n")
+		p.t.Fatalf("no cardinality counter named %s out of available cardinality counter: \n%s", name, available)
+	}
+	actualEstimate := cc.Estimate()
+	if actualEstimate != estimate {
+		p.t.Fatalf("%v = %v, want %v", name, actualEstimate, estimate)
 	}
 }
 

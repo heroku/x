@@ -49,3 +49,14 @@ func TestStop(t *testing.T) {
 	p1.CheckStopped()
 	p2.CheckStopped()
 }
+
+func TestMultiCardinalityCounter(t *testing.T) {
+	p1 := testmetrics.NewProvider(t)
+	p2 := testmetrics.NewProvider(t)
+
+	p := New(p1, p2)
+	p.NewCardinalityCounter("foo").Insert([]byte("bar"))
+
+	p1.CheckCardinalityCounter("foo", 1)
+	p2.CheckCardinalityCounter("foo", 1)
+}
