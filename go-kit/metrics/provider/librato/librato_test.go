@@ -112,6 +112,12 @@ type temporary interface {
 func TestLibratoRetriesWithErrors(t *testing.T) {
 	var retried int
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		user, pass, ok := r.BasicAuth()
+		if !ok || user != "user" || pass != "pass" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
 		retried++
 		b, err := io.Copy(ioutil.Discard, r.Body)
 		if err != nil {
@@ -128,6 +134,7 @@ func TestLibratoRetriesWithErrors(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	u.User = url.UserPassword("user", "pass")
 
 	var totalErrors, temporaryErrors, finalErrors int
 	expectedRetries := 3
