@@ -124,14 +124,7 @@ func (p *Provider) report(req *http.Request) error {
 			rateLimitStd: resp.Header.Get("X-Librato-RateLimit-Std"),
 		}
 		if p.requestDebugging {
-			req.Header = scrub.Header(req.Header)
-
-			// Best effort, but don't fail on error
-			if b, err := req.GetBody(); err == nil {
-				req.Body = b
-			}
-			d, _ := httputil.DumpRequestOut(req, true)
-			e.dumpedRequest = string(d)
+			e.dumpedRequest = dumpRequest(req)
 		}
 
 		return e
@@ -151,4 +144,19 @@ func remainingRateLimit(s string) int {
 		}
 	}
 	return -1
+}
+
+func dumpRequest(req *http.Request) string {
+	header := req.Header
+	defer func() { req.Header = header }()
+
+	req.Header = scrub.Header(header)
+
+	// Best effort, but don't fail on error
+	if b, err := req.GetBody(); err == nil {
+		req.Body = b
+	}
+
+	d, _ := httputil.DumpRequestOut(req, true)
+	return string(d)
 }
