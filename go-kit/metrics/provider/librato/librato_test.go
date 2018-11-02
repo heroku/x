@@ -574,6 +574,9 @@ func TestLibratoHistogramJSONMarshalers(t *testing.T) {
 
 func TestScrubbing(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Custom-Response-Header", "value")
+		w.Header().Set("Set-Cookie", "secret")
+
 		b, err := io.Copy(ioutil.Discard, r.Body)
 		if err != nil {
 			t.Fatal("Unable to read all of the request body:", err)
@@ -607,6 +610,15 @@ func TestScrubbing(t *testing.T) {
 		if !ok {
 			t.Fatalf("expected Error, got %T: %q", err, err.Error())
 		}
+		body := e.Body()
+		if !strings.Contains(body, "X-Custom-Response-Header: value") {
+			t.Errorf("expected response headers to be included in response")
+		}
+
+		if !strings.Contains(body, "Set-Cookie: [SCRUBBED]") {
+			t.Errorf("expected Set-Cookie header to be scrubbed, got %q", body)
+		}
+
 		request := e.Request()
 		if !strings.Contains(request, "Authorization: Basic [SCRUBBED]") {
 			t.Errorf("expected Authorization header to be scrubbed, got %q", request)
