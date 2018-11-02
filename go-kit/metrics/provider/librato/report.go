@@ -8,7 +8,6 @@ package librato
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -114,12 +113,9 @@ func (p *Provider) report(req *http.Request) error {
 	}
 
 	if resp.StatusCode/100 != 2 {
-		// Best effort, but don't fail on error
-		d, _ := ioutil.ReadAll(resp.Body)
-
 		e := Error{
 			code:         resp.StatusCode,
-			body:         string(d),
+			body:         dumpResponse(resp),
 			rateLimitAgg: resp.Header.Get("X-Librato-RateLimit-Agg"),
 			rateLimitStd: resp.Header.Get("X-Librato-RateLimit-Std"),
 		}
@@ -158,5 +154,15 @@ func dumpRequest(req *http.Request) string {
 	}
 
 	d, _ := httputil.DumpRequestOut(req, true)
+	return string(d)
+}
+
+func dumpResponse(resp *http.Response) string {
+	header := resp.Header
+	defer func() { resp.Header = header }()
+
+	resp.Header = scrub.Header(header)
+
+	d, _ := httputil.DumpResponse(resp, true)
 	return string(d)
 }
