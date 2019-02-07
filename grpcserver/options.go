@@ -17,6 +17,9 @@ var defaultLogOpts = []grpc_logrus.Option{
 	grpc_logrus.WithCodes(ErrorToCode),
 }
 
+// grpc library default is 4MB, lets double that
+const maxMsgSize = 1024 * 1024 * 8
+
 type options struct {
 	logEntry              *logrus.Entry
 	metricsProvider       metrics.Provider
@@ -111,6 +114,8 @@ func (o *options) streamInterceptors() []grpc.StreamServerInterceptor {
 
 func (o *options) serverOptions() []grpc.ServerOption {
 	opts := []grpc.ServerOption{
+		grpc.MaxRecvMsgSize(maxMsgSize),
+		grpc.MaxSendMsgSize(maxMsgSize),
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(o.unaryInterceptors()...)),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(o.streamInterceptors()...)),
 	}
