@@ -2,6 +2,7 @@ package metricsregistry
 
 import (
 	"sync"
+	"time"
 
 	kitmetrics "github.com/go-kit/kit/metrics"
 	"github.com/heroku/x/go-kit/metrics"
@@ -103,6 +104,11 @@ func (r *prefixedRegistry) GetOrRegisterGauge(name string) kitmetrics.Gauge {
 // GetOrRegisterHistogram creates or finds the Histogram given a name.
 func (r *prefixedRegistry) GetOrRegisterHistogram(name string, buckets int) kitmetrics.Histogram {
 	return r.r.GetOrRegisterHistogram(r.prefixedName(name), buckets)
+}
+
+// Millisecond converts time.Duration to milliseconds
+func Millisecond(d time.Duration) float64 {
+	return float64(d) / float64(time.Millisecond)
 }
 
 func (r *prefixedRegistry) prefixedName(name string) string {
