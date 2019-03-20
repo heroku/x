@@ -73,7 +73,7 @@ func (ss *serverStream) RecvMsg(m interface{}) (err error) {
 }
 
 func instrumentMethod(r metricsregistry.Registry, duration time.Duration, err error) {
-	r.GetOrRegisterHistogram("request-duration.ms", 50).Observe(ms(duration))
+	r.GetOrRegisterHistogram("request-duration.ms", 50).Observe(metricsregistry.Millisecond(duration))
 	r.GetOrRegisterCounter("requests").Add(1)
 	r.GetOrRegisterCounter(fmt.Sprintf("response-codes.%s", code(err))).Add(1)
 
@@ -96,7 +96,7 @@ func isCanceled(err error) bool {
 }
 
 func instrumentStreamSend(r metricsregistry.Registry, duration time.Duration, err error) {
-	r.GetOrRegisterHistogram("stream.send-duration.ms", 50).Observe(ms(duration))
+	r.GetOrRegisterHistogram("stream.send-duration.ms", 50).Observe(metricsregistry.Millisecond(duration))
 	r.GetOrRegisterCounter("stream.sends").Add(1)
 
 	if err != nil && !isCanceled(err) {
@@ -105,14 +105,10 @@ func instrumentStreamSend(r metricsregistry.Registry, duration time.Duration, er
 }
 
 func instrumentStreamRecv(r metricsregistry.Registry, duration time.Duration, err error) {
-	r.GetOrRegisterHistogram("stream.recv-duration.ms", 50).Observe(ms(duration))
+	r.GetOrRegisterHistogram("stream.recv-duration.ms", 50).Observe(metricsregistry.Millisecond(duration))
 	r.GetOrRegisterCounter("stream.recvs").Add(1)
 
 	if err != nil && !isCanceled(err) {
 		r.GetOrRegisterCounter("stream.recvs.errors").Add(1)
 	}
-}
-
-func ms(d time.Duration) float64 {
-	return float64(d) / float64(time.Millisecond)
 }
