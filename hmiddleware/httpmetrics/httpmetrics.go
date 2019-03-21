@@ -33,7 +33,7 @@ func NewServer(p metrics.Provider, next http.Handler) http.Handler {
 		}
 		sts := strconv.Itoa(st)
 
-		reg.GetOrRegisterHistogram("http.server.all.request-duration.ms", 50).Observe(metricsregistry.Millisecond(dur))
+		reg.GetOrRegisterHistogram("http.server.all.request-duration.ms", 50).Observe(ms(dur))
 		reg.GetOrRegisterCounter("http.server.all.response-statuses." + sts).Add(1)
 
 		ctx := r.Context()
@@ -50,9 +50,13 @@ func NewServer(p metrics.Provider, next http.Handler) http.Handler {
 		// GET /apps/:foo/bars/:baz_id -> get.apps.foo.bars.baz-id
 		met := strings.ToLower(r.Method) + "." + nameRoutePatterns(rtCtx.RoutePatterns)
 		reg.GetOrRegisterCounter("http.server." + met + ".requests").Add(1)
-		reg.GetOrRegisterHistogram("http.server."+met+".request-duration.ms", 50).Observe(metricsregistry.Millisecond(dur))
+		reg.GetOrRegisterHistogram("http.server."+met+".request-duration.ms", 50).Observe(ms(dur))
 		reg.GetOrRegisterCounter("http.server." + met + ".response-statuses." + sts).Add(1)
 	})
+}
+
+func ms(d time.Duration) float64 {
+	return float64(d) / float64(time.Millisecond)
 }
 
 // turn these into dashes
