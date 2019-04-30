@@ -7,7 +7,7 @@ import (
 	"github.com/heroku/runtime/lib/grpc/panichandler"
 	"github.com/heroku/runtime/lib/tlsconfig"
 	"github.com/heroku/x/go-kit/metrics"
-	"github.com/mwitkow/go-grpc-middleware"
+	grpc_middleware "github.com/mwitkow/go-grpc-middleware"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -16,9 +16,6 @@ import (
 var defaultLogOpts = []grpc_logrus.Option{
 	grpc_logrus.WithCodes(ErrorToCode),
 }
-
-// grpc library default is 4MB, lets double that
-const maxMsgSize = 1024 * 1024 * 8
 
 type options struct {
 	logEntry              *logrus.Entry
@@ -114,8 +111,6 @@ func (o *options) streamInterceptors() []grpc.StreamServerInterceptor {
 
 func (o *options) serverOptions() []grpc.ServerOption {
 	opts := []grpc.ServerOption{
-		grpc.MaxRecvMsgSize(maxMsgSize),
-		grpc.MaxSendMsgSize(maxMsgSize),
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(o.unaryInterceptors()...)),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(o.streamInterceptors()...)),
 	}
