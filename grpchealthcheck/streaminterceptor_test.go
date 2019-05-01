@@ -8,6 +8,7 @@ import (
 
 	"google.golang.org/grpc"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/metadata"
 )
 
 type response struct {
@@ -26,6 +27,36 @@ func (s *testStream) Context() context.Context {
 
 func (s *testStream) RecvMsg(m interface{}) error {
 	return s.recvMsg(m)
+}
+
+type testHealthWatchClient struct {
+}
+
+func (hwc *testHealthWatchClient) Recv() (*healthpb.HealthCheckResponse, error) {
+	return &healthpb.HealthCheckResponse{Status: healthpb.HealthCheckResponse_SERVING}, nil
+}
+func (hwc *testHealthWatchClient) RecvMsg(m interface{}) error {
+	return nil
+}
+
+func (hwc *testHealthWatchClient) SendMsg(m interface{}) error {
+	return nil
+}
+
+func (hwc *testHealthWatchClient) CloseSend() error {
+	return nil
+}
+
+func (hwc *testHealthWatchClient) Context() context.Context {
+	return context.TODO()
+}
+
+func (hwc *testHealthWatchClient) Header() (metadata.MD, error) {
+	return metadata.MD{}, nil
+}
+
+func (hwc *testHealthWatchClient) Trailer() metadata.MD {
+	return metadata.MD{}
 }
 
 type testHealthClient struct {
@@ -53,6 +84,10 @@ func (c *testHealthClient) Check(ctx context.Context, in *healthpb.HealthCheckRe
 	}
 
 	return &healthpb.HealthCheckResponse{Status: status}, nil
+}
+
+func (c *testHealthClient) Watch(ctx context.Context, in *healthpb.HealthCheckRequest, opts ...grpc.CallOption) (healthpb.Health_WatchClient, error) {
+	return &testHealthWatchClient{}, nil
 }
 
 func TestStreamInterceptor(t *testing.T) {
