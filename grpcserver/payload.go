@@ -39,7 +39,7 @@ func tag(ctx context.Context, scope string, pb interface{}) {
 	extractTags(tags, scope, pb)
 }
 
-func extractTags(tags *grpc_ctxtags.Tags, scope string, pb interface{}) {
+func extractTags(tags grpc_ctxtags.Tags, scope string, pb interface{}) {
 	if lg, ok := pb.(loggable); ok {
 		for k, v := range lg.LoggingTags() {
 			name := fmt.Sprintf("%s.%s", scope, k)

@@ -1,7 +1,6 @@
 package grpcserver
 
 import (
-	"context"
 	"reflect"
 	"testing"
 
@@ -9,7 +8,7 @@ import (
 )
 
 func TestExtractTagsWithoutLoggingTagsCompatibleValue(t *testing.T) {
-	tags := grpc_ctxtags.Extract(context.Background())
+	tags := newTags()
 	extractTags(tags, "scope", "value")
 	got := tags.Values()
 	want := make(map[string]interface{})
@@ -19,7 +18,7 @@ func TestExtractTagsWithoutLoggingTagsCompatibleValue(t *testing.T) {
 }
 
 func TestExtractTags(t *testing.T) {
-	tags := grpc_ctxtags.Extract(context.Background())
+	tags := newTags()
 	extractTags(tags, "scope", &value{})
 	got := tags.Values()
 	want := make(map[string]interface{})
@@ -30,7 +29,7 @@ func TestExtractTags(t *testing.T) {
 }
 
 func TestExtractTagsWithNestedValue(t *testing.T) {
-	tags := grpc_ctxtags.Extract(context.Background())
+	tags := newTags()
 	extractTags(tags, "scope", &nestedValue{})
 	got := tags.Values()
 	want := make(map[string]interface{})
@@ -54,4 +53,27 @@ func (v *nestedValue) LoggingTags() map[string]interface{} {
 	res := make(map[string]interface{})
 	res["nested"] = &value{}
 	return res
+}
+
+// testTags mirrors the implementation of grpc_ctxtags.Tags
+type testTags struct {
+	values map[string]interface{}
+}
+
+func (t *testTags) Set(key string, value interface{}) grpc_ctxtags.Tags {
+	t.values[key] = value
+	return t
+}
+
+func (t *testTags) Has(key string) bool {
+	_, ok := t.values[key]
+	return ok
+}
+
+func (t *testTags) Values() map[string]interface{} {
+	return t.values
+}
+
+func newTags() grpc_ctxtags.Tags {
+	return &testTags{values: make(map[string]interface{})}
 }
