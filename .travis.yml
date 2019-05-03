@@ -1,6 +1,6 @@
 language: go
-go: '1.10'
+go: '1.12'
 sudo: false
 install: true
 script:
-- go test -v -race ./...
+- GO111MODULE=on go test -v -race ./...
