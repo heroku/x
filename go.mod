@@ -4,6 +4,7 @@ go 1.12
 
 require (
 	github.com/VividCortex/gohistogram v1.0.0 // indirect
+	github.com/armon/go-proxyproto v0.0.0-20190211145416-68259f75880e
 	github.com/aws/aws-sdk-go v1.13.10
 	github.com/axiomhq/hyperloglog v0.0.0-20180317131949-fe9507de0228
 	github.com/dgryski/go-metro v0.0.0-20180109044635-280f6062b5bc // indirect
@@ -11,11 +12,17 @@ require (
 	github.com/go-chi/chi v3.3.2+incompatible
 	github.com/go-ini/ini v1.33.0 // indirect
 	github.com/go-kit/kit v0.6.0
+	github.com/gogo/protobuf v1.2.1 // indirect
 	github.com/gomodule/redigo v2.0.0+incompatible
+	github.com/grpc-ecosystem/go-grpc-middleware v1.0.0
+	github.com/grpc-ecosystem/grpc-gateway v1.8.5
+	github.com/hydrogen18/memlistener v0.0.0-20141126152155-54553eb933fb
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jmespath/go-jmespath v0.0.0-20160202185014-0b12d6b521d8 // indirect
 	github.com/joeshaw/envdecode v0.0.0-20180129163420-d5f34bca07f3
 	github.com/leesper/go_rng v0.0.0-20171009123644-5344a9259b21 // indirect
+	github.com/lstoll/grpce v1.7.0
+	github.com/mwitkow/go-grpc-middleware v1.0.0
 	github.com/oklog/run v1.0.0
 	github.com/pborman/uuid v0.0.0-20170612153648-e790cca94e6c
 	github.com/pkg/errors v0.8.1
@@ -27,6 +34,7 @@ require (
 	github.com/stretchr/testify v1.3.0 // indirect
 	golang.org/x/net v0.0.0-20190502183928-7f726cade0ab // indirect
 	gonum.org/v1/gonum v0.0.0-20190502212712-4a2eb0188cbc // indirect
+	google.golang.org/grpc v1.20.1
 	gopkg.in/caio/go-tdigest.v2 v2.3.0
 	gopkg.in/ini.v1 v1.42.0 // indirect
 )
