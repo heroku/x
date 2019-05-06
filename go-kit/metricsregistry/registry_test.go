@@ -3,7 +3,7 @@ package metricsregistry
 import (
 	"testing"
 
-	"github.com/heroku/runtime/lib/kit/metrics/testmetrics"
+	"github.com/heroku/x/go-kit/metrics/testmetrics"
 )
 
 func TestGetOrRegisterCounter(t *testing.T) {

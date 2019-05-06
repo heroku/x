@@ -15,7 +15,7 @@ const defaultTimingUnit = time.Millisecond
 type DurationTimer struct {
 	h kitmetrics.Histogram
 	t time.Time
-	d float64
+	d time.Duration
 }
 
 // NewDurationTimer wraps the given histogram and records the current time.
@@ -24,7 +24,7 @@ func NewDurationTimer(h kitmetrics.Histogram) *DurationTimer {
 	return &DurationTimer{
 		h: h,
 		t: time.Now(),
-		d: float64(defaultTimingUnit),
+		d: defaultTimingUnit,
 	}
 }
 
@@ -38,17 +38,17 @@ func (t *DurationTimer) ObserveDuration() {
 // an observation for the total duration of the operation. It's
 // intended to be called via defer, e.g. defer MeasureSince(h, time.Now()).
 func MeasureSince(h kitmetrics.Histogram, t0 time.Time) {
-	measureSince(h, t0, time.Now(), float64(defaultTimingUnit))
+	measureSince(h, t0, time.Now(), defaultTimingUnit)
 }
 
 // measureSince is the underlying code for supporting both MeasureSince
 // and DurationTimer.ObserveDuration.
-func measureSince(h kitmetrics.Histogram, t0, t1 time.Time, unit float64) {
+func measureSince(h kitmetrics.Histogram, t0, t1 time.Time, unit time.Duration) {
 	d := t1.Sub(t0)
 	if d < 0 {
 		d = 0
 	}
-	h.Observe(float64(d) / unit)
+	h.Observe(float64(d / unit))
 }
 
 // MonotonicTimer emits metrics periodically until it is stopped.
@@ -72,7 +72,7 @@ func newUnstartedMonotonicTimer(h kitmetrics.Histogram, d time.Duration) *Monoto
 		DurationTimer: DurationTimer{
 			h: h,
 			t: time.Now(),
-			d: float64(d),
+			d: d,
 		},
 		cancel: make(chan struct{}),
 	}

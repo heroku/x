@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/go-kit/kit/metrics"
 	"github.com/go-kit/kit/metrics/generic"
-	"github.com/heroku/runtime/lib/kit/metrics/testmetrics"
 )
 
 var timerDurations = []time.Duration{
@@ -19,7 +19,7 @@ var timerDurations = []time.Duration{
 func TestTimerDurationFast(t *testing.T) {
 	for _, d := range timerDurations {
 		h := generic.NewSimpleHistogram()
-		timer := &DurationTimer{h: h, t: time.Now(), d: float64(d)}
+		timer := &DurationTimer{h: h, t: time.Now(), d: d}
 		timer.ObserveDuration()
 
 		tolerance := float64(100 * time.Microsecond)
@@ -34,7 +34,7 @@ func TestTimerDurationSlow(t *testing.T) {
 		h := generic.NewSimpleHistogram()
 		timer := &DurationTimer{
 			h: h,
-			d: float64(d),
+			d: d,
 			t: time.Now().Add(-250 * time.Millisecond),
 		}
 		timer.ObserveDuration()
@@ -47,20 +47,21 @@ func TestTimerDurationSlow(t *testing.T) {
 }
 
 func TestMeasureSince(t *testing.T) {
-	p := testmetrics.NewProvider(t)
-	h := p.NewHistogram("timer", 50)
+	h := generic.NewSimpleHistogram()
 
 	t0 := time.Now().Add(-1 * time.Second)
 	t1 := time.Now()
-	measureSince(h, t0, t1, float64(defaultTimingUnit))
+	measureSince(h, t0, t1, defaultTimingUnit)
 
-	p.CheckObservations("timer", []float64{float64(t1.Sub(t0)) / float64(defaultTimingUnit)})
+	want := float64(t1.Sub(t0) / defaultTimingUnit)
+	got := h.ApproximateMovingAverage()
+	if want != got {
+		t.Fatalf("wanted avg: %f, got %f", want, got)
+	}
 }
 
 func TestMonotonicTimer(t *testing.T) {
-	name := "monotonic-test"
-	provider := testmetrics.NewProvider(t)
-	h := provider.NewHistogram(name, 50)
+	h := &testHistogram{}
 	timer := newUnstartedMonotonicTimer(h, time.Millisecond)
 
 	done := make(chan struct{})
@@ -74,5 +75,19 @@ func TestMonotonicTimer(t *testing.T) {
 
 	<-done
 
-	provider.CheckObservationCount(name, 3)
+	if want, got := 3, len(h.observations); want != got {
+		t.Fatalf("wanted %d observations, got %d", want, got)
+	}
+}
+
+type testHistogram struct {
+	observations []float64
+}
+
+func (h *testHistogram) With(lvs ...string) metrics.Histogram {
+	return h
+}
+
+func (h *testHistogram) Observe(v float64) {
+	h.observations = append(h.observations, v)
 }
