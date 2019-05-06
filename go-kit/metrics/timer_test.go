@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"math"
+	"sync"
 	"testing"
 	"time"
 
@@ -81,6 +82,7 @@ func TestMonotonicTimer(t *testing.T) {
 }
 
 type testHistogram struct {
+	mu           sync.Mutex
 	observations []float64
 }
 
@@ -89,5 +91,8 @@ func (h *testHistogram) With(lvs ...string) metrics.Histogram {
 }
 
 func (h *testHistogram) Observe(v float64) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+
 	h.observations = append(h.observations, v)
 }
