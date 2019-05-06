@@ -3,7 +3,7 @@ package grpcclient
 import (
 	"net/url"
 
-	"github.com/heroku/runtime/lib/tlsconfig"
+	"github.com/heroku/x/tlsconfig"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )

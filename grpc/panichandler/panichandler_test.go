@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/heroku/runtime/lib/testlog"
+	"github.com/heroku/x/testing/testlog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

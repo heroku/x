@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
-	"github.com/heroku/x/go-kit/metrics"
+	kit "github.com/heroku/x/go-kit"
 	"github.com/heroku/x/grpc/requestid"
 	"github.com/lstoll/grpce/h2c"
 	"github.com/pkg/errors"
@@ -51,7 +51,7 @@ func RunStandardServer(logger log.FieldLogger, port int, serverCACerts [][]byte,
 // NewStandardServer configures a GRPC server with a standard setup including metrics
 // (if provider passed), panic handling, a health check service, TLS termination
 // with client authentication, and proxy-protocol wrapping.
-func NewStandardServer(logger log.FieldLogger, port int, serverCACerts [][]byte, serverCert, serverKey []byte, server Starter, opts ...ServerOption) metrics.Server {
+func NewStandardServer(logger log.FieldLogger, port int, serverCACerts [][]byte, serverCert, serverKey []byte, server Starter, opts ...ServerOption) kit.Server {
 	tls, err := TLS(serverCACerts, serverCert, serverKey)
 	if err != nil {
 		logger.Fatal(err)

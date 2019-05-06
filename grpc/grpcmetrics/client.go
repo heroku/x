@@ -5,7 +5,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/heroku/runtime/lib/kit/metricsregistry"
+	"github.com/heroku/x/go-kit/metricsregistry"
 	"google.golang.org/grpc"
 )
 
