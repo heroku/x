@@ -6,7 +6,7 @@ package testserver
 import (
 	"log"
 
-	"github.com/heroku/runtime/lib/grpc/grpcserver"
+	"github.com/heroku/x/grpc/grpcserver"
 	"google.golang.org/grpc"
 )
 

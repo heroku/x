@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/heroku/runtime/lib/grpc/requestid"
+	"github.com/heroku/x/grpc/requestid"
 	"google.golang.org/grpc/metadata"
 )
 

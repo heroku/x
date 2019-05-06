@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/heroku/runtime/lib/grpc/grpcclient"
-	"github.com/heroku/runtime/lib/grpc/grpcserver"
+	"github.com/heroku/x/grpc/grpcclient"
+	"github.com/heroku/x/grpc/grpcserver"
 
 	"google.golang.org/grpc"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
