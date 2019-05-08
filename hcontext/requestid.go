@@ -10,7 +10,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/pborman/uuid"
+	"github.com/google/uuid"
 )
 
 type idkey int
@@ -31,7 +31,7 @@ func FromRequest(r *http.Request) (id string, ok bool) {
 		}
 	}
 
-	newRID := uuid.New()
+	newRID := uuid.New().String()
 	r.Header.Set("X-Request-Id", newRID)
 	return newRID, false
 }

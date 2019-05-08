@@ -14,6 +14,7 @@ require (
 	github.com/go-kit/kit v0.6.0
 	github.com/gogo/protobuf v1.2.1 // indirect
 	github.com/gomodule/redigo v2.0.0+incompatible
+	github.com/google/uuid v1.1.1
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.0
 	github.com/grpc-ecosystem/grpc-gateway v1.8.5
 	github.com/hydrogen18/memlistener v0.0.0-20141126152155-54553eb933fb
@@ -24,7 +25,6 @@ require (
 	github.com/lstoll/grpce v1.7.0
 	github.com/mwitkow/go-grpc-middleware v1.0.0
 	github.com/oklog/run v1.0.0
-	github.com/pborman/uuid v0.0.0-20170612153648-e790cca94e6c
 	github.com/pkg/errors v0.8.1
 	github.com/sirupsen/logrus v1.4.1
 	github.com/smartystreets/goconvey v0.0.0-20190330032615-68dc04aab96a // indirect
