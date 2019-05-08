@@ -8,7 +8,6 @@ require (
 	github.com/aws/aws-sdk-go v1.13.10
 	github.com/axiomhq/hyperloglog v0.0.0-20180317131949-fe9507de0228
 	github.com/dgryski/go-metro v0.0.0-20180109044635-280f6062b5bc // indirect
-	github.com/garyburd/redigo v1.6.0
 	github.com/go-chi/chi v3.3.2+incompatible
 	github.com/go-ini/ini v1.33.0 // indirect
 	github.com/go-kit/kit v0.6.0
