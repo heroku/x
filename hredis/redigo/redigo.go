@@ -92,7 +92,7 @@ func NewRedisPoolFromURL(rawURL string, altPasses ...string) (*redis.Pool, error
 				}
 			})
 
-			// This is necessary since
+			// This is necessary since Do will only ever be called once on first borrow.
 			if _, err := c.Do("AUTH", password); err != nil {
 				c.Close()
 				return nil, err
