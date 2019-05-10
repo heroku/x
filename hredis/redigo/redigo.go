@@ -57,17 +57,19 @@ func NewRedisPoolFromURL(rawURL string, altPasses ...string) (*redis.Pool, error
 	}
 
 	var (
-		findPassword sync.Once
-		password     string
+		mu       sync.Mutex
+		password string
 	)
 
 	// strip and save password
 	if pass, ok := u.User.Password(); ok {
 		password = pass
+		altPasses = append(altPasses, pass)
 	}
 
-	// DialURL will fail if wrong password is set. We want to create a successful connection
-	// with which we can try all of the possible passwords.
+	// DialURL will error if wrong password is set. We want to create a
+	// successful connection with which we can try all of the possible
+	// passwords.
 	u.User = url.UserPassword("", "")
 	rawURL = u.String()
 
@@ -80,22 +82,32 @@ func NewRedisPoolFromURL(rawURL string, altPasses ...string) (*redis.Pool, error
 				return nil, err
 			}
 
-			findPassword.Do(func() {
-				passesToTry := []string{password}
-				passesToTry = append(passesToTry, altPasses...)
+			// Capture the current best known valid pass.
+			mu.Lock()
+			localPass := password
+			mu.Unlock()
 
-				for _, pass := range passesToTry {
-					if _, err := c.Do("AUTH", pass); err == nil {
+			var authErr error
+
+			if _, authErr = c.Do("AUTH", localPass); authErr != nil {
+				for _, pass := range altPasses {
+					if pass == localPass {
+						continue
+					}
+
+					if _, authErr = c.Do("AUTH", pass); authErr == nil {
+						// nominate this pass as valid.
+						mu.Lock()
 						password = pass
-						return
+						mu.Unlock()
+						break
 					}
 				}
-			})
+			}
 
-			// This is necessary since Do will only ever be called once on first borrow.
-			if _, err := c.Do("AUTH", password); err != nil {
+			if authErr != nil {
 				c.Close()
-				return nil, err
+				return nil, authErr
 			}
 
 			return c, nil
