@@ -135,8 +135,7 @@ func TestForReals(t *testing.T) {
 
 	initPassword, _ := u.User.Password()
 
-	params := []string{
-		// passwords
+	passes := []string{
 		"one",
 		"two",
 		"three",
@@ -144,7 +143,7 @@ func TestForReals(t *testing.T) {
 		"five",
 	}
 
-	sut, err := NewRedisPoolFromURL(redisURL, params...)
+	sut, err := NewRedisPoolFromURL(redisURL, passes...)
 	initConn := sut.Get()
 
 	defer func() {
@@ -153,7 +152,7 @@ func TestForReals(t *testing.T) {
 		}
 	}()
 
-	for _, newPass := range params[1:] {
+	for _, newPass := range passes {
 		c := sut.Get()
 		if _, err = c.Do("CONFIG", "SET", "requirepass", newPass); err != nil {
 			t.Fatalf("got %q, want nil", err)
