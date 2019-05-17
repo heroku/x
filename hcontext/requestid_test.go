@@ -12,7 +12,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/pborman/uuid"
+	"github.com/google/uuid"
 )
 
 func TestFromRequest(t *testing.T) {
@@ -27,7 +27,7 @@ func TestFromRequest(t *testing.T) {
 					name: "everything works as normal",
 					doer: func() *http.Request {
 						req := httptest.NewRequest("GET", "/", nil)
-						req.Header.Set(h, uuid.New())
+						req.Header.Set(h, uuid.New().String())
 						return req
 					},
 				},
