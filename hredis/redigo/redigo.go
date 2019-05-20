@@ -44,7 +44,7 @@ func WaitForAvailability(url string, d time.Duration, f WaitFunc) (bool, error) 
 	}
 }
 
-// make this a var, so we can change this for testing.
+// make this a var, so that it can be changed for testing.
 var redisDialURL = redis.DialURL
 
 // NewRedisPoolFromURL returns a new *redigo/redis.Pool configured for the supplied url
@@ -67,9 +67,9 @@ func NewRedisPoolFromURL(rawURL string, altPasses ...string) (*redis.Pool, error
 		altPasses = append(altPasses, pass)
 	}
 
-	// DialURL will error if wrong password is set. We want to create a
-	// successful connection with which we can try all of the possible
-	// passwords.
+	// DialURL will error if wrong password is set. Not providing a password
+	// to DialURL results in the ability to try all potential passwords before
+	// erroring.
 	u.User = url.UserPassword("", "")
 	rawURL = u.String()
 
