@@ -11,28 +11,32 @@ import (
 	"github.com/rafaeljusto/redigomock"
 )
 
-func setup(t *testing.T, dialErr error) (*redigomock.Conn, func()) {
+func setup(t *testing.T, dialErr error) (*redigomock.Conn, DialURLFunc, func()) {
 	conn := redigomock.NewConn()
-	redisDialURL = func(_ string, options ...redis.DialOption) (redis.Conn, error) {
+	redisDialURL := func(_ string, options ...redis.DialOption) (redis.Conn, error) {
 		if dialErr != nil {
 			return nil, dialErr
 		}
 		return conn, nil
 	}
 
-	return conn, func() {
+	return conn, redisDialURL, func() {
 		redisDialURL = redis.DialURL
 	}
 }
 
 func TestPool(t *testing.T) {
-	mock, tearDown := setup(t, nil)
+	mock, dialURL, tearDown := setup(t, nil)
 	defer tearDown()
 
 	mock.Command("AUTH", "badpass").ExpectError(errors.New("Bad password"))
 	mock.Command("AUTH", "goodpass")
 
-	sut, err := NewRedisPoolFromURL("redis://h:badpass@localhost:6379", "goodpass")
+	sut, err := NewRedisPoolFromURL("redis://h:badpass@localhost:6379",
+		WithPasswords("goodpass"),
+		WithDialURLFunc(dialURL),
+	)
+
 	if err != nil {
 		t.Fatalf("got %q, want nil", err)
 	}
@@ -61,13 +65,16 @@ func TestPool(t *testing.T) {
 }
 
 func TestPoolGoodPassNowFails(t *testing.T) {
-	mock, tearDown := setup(t, nil)
+	mock, dialURL, tearDown := setup(t, nil)
 	defer tearDown()
 
 	mock.Command("AUTH", "badpass").ExpectError(errors.New("Bad password"))
 	mock.Command("AUTH", "goodpass")
 
-	sut, err := NewRedisPoolFromURL("redis://h:badpass@localhost:6379", "goodpass")
+	sut, err := NewRedisPoolFromURL("redis://h:badpass@localhost:6379",
+		WithPasswords("goodpass"),
+		WithDialURLFunc(dialURL),
+	)
 	if err != nil {
 		t.Fatalf("got %q, want nil", err)
 	}
@@ -97,13 +104,16 @@ func TestPoolGoodPassNowFails(t *testing.T) {
 }
 
 func TestPoolWithNoGoodPasses(t *testing.T) {
-	mock, tearDown := setup(t, nil)
+	mock, dialURL, tearDown := setup(t, nil)
 	defer tearDown()
 
 	mock.Command("AUTH", "badpass").ExpectError(errors.New("Bad password"))
 	mock.Command("AUTH", "alsobadpass").ExpectError(errors.New("Bad password"))
 
-	sut, err := NewRedisPoolFromURL("redis://h:badpass@localhost:6379", "alsobadpass")
+	sut, err := NewRedisPoolFromURL("redis://h:badpass@localhost:6379",
+		WithPasswords("alsobadpass"),
+		WithDialURLFunc(dialURL),
+	)
 	if err != nil {
 		t.Fatalf("got %q, want nil", err)
 	}
@@ -143,7 +153,7 @@ func TestForReals(t *testing.T) {
 		"five",
 	}
 
-	sut, err := NewRedisPoolFromURL(redisURL, passes...)
+	sut, err := NewRedisPoolFromURL(redisURL, WithPasswords(passes...))
 	initConn := sut.Get()
 
 	defer func() {
