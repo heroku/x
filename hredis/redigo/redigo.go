@@ -1,6 +1,7 @@
 package redigo
 
 import (
+	"net/url"
 	"time"
 
 	"github.com/gomodule/redigo/redis"
@@ -32,6 +33,7 @@ func WaitForAvailability(url string, d time.Duration, f WaitFunc) (bool, error) 
 			}
 		}
 	}()
+
 	select {
 	case err := <-errs:
 		return false, err
@@ -42,16 +44,90 @@ func WaitForAvailability(url string, d time.Duration, f WaitFunc) (bool, error) 
 	}
 }
 
-// NewRedisPoolFromURL returns a new *redigo/redis.Pool configured for the supplied url
-// The url can include a password in the standard form and if so is used to AUTH against
-// the redis server
-func NewRedisPoolFromURL(url string) (*redis.Pool, error) {
+// redisDialer is a helper that provides custom Redis dial logic for
+// authentication purposes.
+type redisDialer struct {
+	url       string      // Stripped of authentication, but in the form redis://host:port, as in redis.DialURL
+	passwords []string    // The passwords that will be tried for authentication
+	dialURL   DialURLFunc // Defaults to redis.DialURL
+}
+
+func (d *redisDialer) dial() (redis.Conn, error) {
+	c, err := d.dialURL(d.url)
+	if err != nil || len(d.passwords) == 0 {
+		// error or no passwords to try
+		return c, err
+	}
+
+	for _, pass := range d.passwords {
+		if _, err = c.Do("AUTH", pass); err == nil {
+			return c, nil
+		}
+	}
+
+	// Went through all the passwords, last one still errored, so no passwords
+	// work, close the connection to prevent a leak.
+	if err != nil {
+		c.Close()
+	}
+
+	return c, err
+}
+
+// OptionFunc sets redisDialer options
+type OptionFunc func(*redisDialer)
+
+// WithPasswords specifies additional passwords to try authenticating with when
+// dialing
+func WithPasswords(passes ...string) OptionFunc {
+	return func(d *redisDialer) {
+		d.passwords = append(d.passwords, passes...)
+	}
+}
+
+// DialURLFunc describes the type implemented by redis.DialURL, useful for
+// changing the behavior of a redis Dialer.
+type DialURLFunc func(string, ...redis.DialOption) (redis.Conn, error)
+
+// WithDialURLFunc specifies an alternative DialURLFunc to use when dialing via
+// URL.
+func WithDialURLFunc(df DialURLFunc) OptionFunc {
+	return func(d *redisDialer) {
+		d.dialURL = df
+	}
+}
+
+// NewRedisPoolFromURL returns a new *redigo/redis.Pool configured for the
+// supplied url. If the url includes a password in the standard form it is used
+// to AUTH against the redis server
+func NewRedisPoolFromURL(rawURL string, opts ...OptionFunc) (*redis.Pool, error) {
+	// Extract / remove password from URL string
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return nil, err
+	}
+
+	var pwds []string
+	pass, ok := u.User.Password()
+	if ok {
+		pwds = append(pwds, pass)
+		u.User = url.UserPassword("", "")
+	}
+
+	dialer := &redisDialer{
+		url:       u.String(),
+		dialURL:   redis.DialURL,
+		passwords: pwds,
+	}
+
+	for _, opt := range opts {
+		opt(dialer)
+	}
+
 	return &redis.Pool{
 		MaxIdle:     3,
 		IdleTimeout: 240 * time.Second,
-		Dial: func() (redis.Conn, error) {
-			return redis.DialURL(url)
-		},
+		Dial:        dialer.dial,
 		TestOnBorrow: func(c redis.Conn, t time.Time) error {
 			if time.Since(t) < time.Minute {
 				return nil
