@@ -42,3 +42,18 @@ func TestFromContext_InvalidMetadata(t *testing.T) {
 		t.Fatalf("got id from invalid context")
 	}
 }
+
+func TestAppendToOutgoingContext(t *testing.T) {
+	requestID := "request-1"
+	ctx := metadata.NewIncomingContext(context.Background(), NewMetadata(requestID))
+	ctx = AppendToOutgoingContext(ctx)
+	md, ok := metadata.FromOutgoingContext(ctx)
+	if !ok {
+		t.Fatal("no id for annotated context")
+	}
+
+	id := md[metadataKey][0]
+	if id != requestID {
+		t.Fatalf("got request-id %q; wanted %q", id, requestID)
+	}
+}
