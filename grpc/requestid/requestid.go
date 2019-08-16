@@ -29,3 +29,13 @@ func FromContext(ctx context.Context) (string, bool) {
 func NewMetadata(id string) metadata.MD {
 	return metadata.Pairs(metadataKey, id)
 }
+
+// AppendToOutgoingContext returns a context with the request-id added to the gRPC metadata.
+func AppendToOutgoingContext(ctx context.Context) context.Context {
+	id, ok := FromContext(ctx)
+	if !ok {
+		return ctx
+	}
+
+	return metadata.AppendToOutgoingContext(ctx, metadataKey, id)
+}
