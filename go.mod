@@ -26,6 +26,7 @@ require (
 	github.com/lstoll/grpce v1.7.0
 	github.com/mwitkow/go-grpc-middleware v1.0.0
 	github.com/oklog/run v1.0.0
+	github.com/pborman/uuid v1.2.0
 	github.com/pkg/errors v0.8.1
 	github.com/rafaeljusto/redigomock v0.0.0-20190202135759-257e089e14a1
 	github.com/sirupsen/logrus v1.4.1
@@ -34,6 +35,7 @@ require (
 	github.com/spf13/cobra v0.0.1
 	github.com/spf13/pflag v1.0.0 // indirect
 	github.com/stretchr/testify v1.3.0 // indirect
+	golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2
 	golang.org/x/net v0.0.0-20190502183928-7f726cade0ab // indirect
 	gonum.org/v1/gonum v0.0.0-20190502212712-4a2eb0188cbc // indirect
 	google.golang.org/grpc v1.20.1
