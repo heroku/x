@@ -9,8 +9,8 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
-	"github.com/heroku/runtime/lib/kit/metricsregistry"
 	"github.com/heroku/x/go-kit/metrics"
+	"github.com/heroku/x/go-kit/metricsregistry"
 )
 
 // NewServer returns an http.Handler which calls next for each
