@@ -1,0 +1,70 @@
+package basicauth
+
+import (
+	"strings"
+
+	"github.com/pkg/errors"
+)
+
+// Credentials is a set of credentials with the added functionality of
+// decoding.
+type Credentials []Credential
+
+// Decode implements the envdecode contract, allowing Credentials to be used in
+// config structs.
+func (c *Credentials) Decode(repl string) error {
+	var result []Credential
+	for _, part := range strings.Split(repl, ";") {
+		cred, err := parseCredential(part)
+		if err != nil {
+			return err
+		}
+		result = append(result, cred)
+	}
+
+	*c = result
+	return nil
+}
+
+// Credential is a valid username/password pair used to authenticate HTTP
+// requests using basic auth.
+type Credential struct {
+	Username string
+	Password string
+}
+
+var errMalformedCredentials = errors.New("malformed credentials")
+
+func parseCredential(credential string) (Credential, error) {
+	parts := strings.SplitN(credential, ":", 2)
+	if len(parts) != 2 {
+		return Credential{}, errMalformedCredentials
+	} else if parts[0] == "" && parts[1] == "" {
+		return Credential{}, errMalformedCredentials
+	}
+	return Credential{Username: parts[0], Password: parts[1]}, nil
+}
+
+// Checker stores a set of valid credentials to be used when authenticating
+// HTTP requests using basic auth.
+type Checker struct {
+	credentials []Credential
+}
+
+// NewChecker returns a basic auth checker configured to use credentials
+// when checking for valid authentication.
+func NewChecker(credentials []Credential) *Checker {
+	return &Checker{
+		credentials: credentials,
+	}
+}
+
+// Valid is true if username and password represent acceptable credentials.
+func (c *Checker) Valid(username, password string) bool {
+	for _, cred := range c.credentials {
+		if cred.Username == username && cred.Password == password {
+			return true
+		}
+	}
+	return false
+}
