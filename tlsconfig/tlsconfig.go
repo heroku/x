@@ -148,11 +148,7 @@ func New() *tls.Config {
 
 // NewMutualTLS returns a TLS configuration setup for mutual TLS
 // authentication.
-func NewMutualTLS(caCerts [][]byte, certPEM, keyPEM []byte) (*tls.Config, error) {
-	cert, err := tls.X509KeyPair(certPEM, keyPEM)
-	if err != nil {
-		return nil, errors.Wrap(err, "creating X509 key pair")
-	}
+func NewMutualTLS(caCerts [][]byte, serverCert tls.Certificate) (*tls.Config, error) {
 	pool := x509.NewCertPool()
 	for _, caCert := range caCerts {
 		if !pool.AppendCertsFromPEM(caCert) {
@@ -161,7 +157,7 @@ func NewMutualTLS(caCerts [][]byte, certPEM, keyPEM []byte) (*tls.Config, error)
 	}
 	cfg := New()
 	cfg.ClientAuth = tls.RequireAndVerifyClientCert
-	cfg.Certificates = []tls.Certificate{cert}
+	cfg.Certificates = []tls.Certificate{serverCert}
 	cfg.ClientCAs = pool
 	cfg.RootCAs = pool
 	return cfg, nil

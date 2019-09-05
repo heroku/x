@@ -1,12 +1,17 @@
 package grpcserver
 
 import (
+	"context"
+	"crypto/tls"
+	"crypto/x509"
+
 	grpc_logrus "github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	grpc_middleware "github.com/mwitkow/go-grpc-middleware"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
 
 	"github.com/heroku/x/go-kit/metrics"
@@ -65,7 +70,7 @@ func AuthInterceptors(unary grpc.UnaryServerInterceptor, stream grpc.StreamServe
 // ValidateInterceptor sets interceptors that will validate every
 // message that has a receiver of the form `Validate() error`
 //
-// For use with: github.com/mwitkow/go-proto-validators
+// See github.com/mwitkow/go-proto-validators for details.
 func ValidateInterceptor() ServerOption {
 	return func(o *options) {
 		o.useValidateInterceptor = true
@@ -83,6 +88,7 @@ func (o *options) unaryInterceptors() []grpc.UnaryServerInterceptor {
 		grpc_ctxtags.UnaryServerInterceptor(),
 		UnaryPayloadLoggingTagger,
 		unaryRequestIDTagger,
+		unaryPeerNameTagger,
 	}
 	if o.metricsProvider != nil {
 		i = append(i, grpcmetrics.NewUnaryServerInterceptor(o.metricsProvider)) // report metrics on unwrapped errors
@@ -111,6 +117,7 @@ func (o *options) streamInterceptors() []grpc.StreamServerInterceptor {
 		panichandler.LoggingStreamPanicHandler(l),
 		grpc_ctxtags.StreamServerInterceptor(),
 		streamRequestIDTagger,
+		streamPeerNameTagger,
 	}
 	if o.metricsProvider != nil {
 		i = append(i, grpcmetrics.NewStreamServerInterceptor(o.metricsProvider)) // report metrics on unwrapped errors
@@ -139,11 +146,44 @@ func (o *options) serverOptions() []grpc.ServerOption {
 }
 
 // TLS returns a ServerOption which adds mutual-TLS to the gRPC server.
-func TLS(caCerts [][]byte, serverCert []byte, serverKey []byte) (ServerOption, error) {
-	tlsConfig, err := tlsconfig.NewMutualTLS(caCerts, serverCert, serverKey)
+func TLS(caCerts [][]byte, serverCert tls.Certificate) (ServerOption, error) {
+	tlsConfig, err := tlsconfig.NewMutualTLS(caCerts, serverCert)
 	if err != nil {
 		return nil, err
 	}
 
 	return GRPCOption(grpc.Creds(credentials.NewTLS(tlsConfig))), nil
+}
+
+// WithPeerValidator configures the gRPC server to reject calls from peers
+// which do not provide a certificate or for which the provided function
+// returns false.
+func WithPeerValidator(f func(*x509.Certificate) bool) ServerOption {
+	return func(o *options) {
+		o.authStreamInterceptor = func(req interface{}, ss grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
+			if err := validatePeer(ss.Context(), f); err != nil {
+				return err
+			}
+			return handler(req, ss)
+		}
+		o.authUnaryInterceptor = func(ctx context.Context, req interface{}, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (_ interface{}, err error) {
+			if err := validatePeer(ctx, f); err != nil {
+				return nil, err
+			}
+			return handler(ctx, req)
+		}
+	}
+}
+
+func validatePeer(ctx context.Context, f func(*x509.Certificate) bool) error {
+	cert, ok := getPeerCertFromContext(ctx)
+	if !ok {
+		return grpc.Errorf(codes.Unauthenticated, "unauthenticated")
+	}
+
+	if !f(cert) {
+		return grpc.Errorf(codes.PermissionDenied, "forbidden")
+	}
+
+	return nil
 }

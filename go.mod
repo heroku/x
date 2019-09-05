@@ -15,9 +15,11 @@ require (
 	github.com/gogo/protobuf v1.2.1 // indirect
 	github.com/golangci/golangci-lint v1.17.1
 	github.com/gomodule/redigo v2.0.0+incompatible
+	github.com/google/gops v0.3.6
 	github.com/google/uuid v1.1.1
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.0
 	github.com/grpc-ecosystem/grpc-gateway v1.9.0
+	github.com/heroku/rollrus v0.0.1
 	github.com/hydrogen18/memlistener v0.0.0-20141126152155-54553eb933fb
 	github.com/influxdata/go-syslog v0.0.0-20190814180256-831896502726
 	github.com/jmespath/go-jmespath v0.0.0-20160202185014-0b12d6b521d8 // indirect
@@ -26,13 +28,14 @@ require (
 	github.com/lstoll/grpce v1.7.0
 	github.com/mwitkow/go-grpc-middleware v1.0.0
 	github.com/oklog/run v1.0.0
-	github.com/pkg/errors v0.8.1
+	github.com/pkg/errors v0.8.2-0.20190227000051-27936f6d90f9
 	github.com/rafaeljusto/redigomock v0.0.0-20190202135759-257e089e14a1
-	github.com/sirupsen/logrus v1.4.1
+	github.com/sirupsen/logrus v1.4.2
 	github.com/smartystreets/goconvey v0.0.0-20190330032615-68dc04aab96a // indirect
 	github.com/soveran/redisurl v0.0.0-20180322091936-eb325bc7a4b8
 	github.com/spf13/cobra v0.0.2
-	github.com/stretchr/testify v1.3.0 // indirect
+	github.com/unrolled/secure v1.0.1
+	github.com/urfave/cli v1.21.0
 	golang.org/x/crypto v0.0.0-20190313024323-a1f597ede03a
 	golang.org/x/net v0.0.0-20190502183928-7f726cade0ab // indirect
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58
