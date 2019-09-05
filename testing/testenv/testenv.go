@@ -18,7 +18,7 @@ var skipMissingEnv = os.Getenv("TESTING_SKIP_MISSING_ENV") == "true"
 func NewRedisPool(t testing.TB) *redis.Pool {
 	t.Helper()
 
-	redisURL, err := getenv("REDIS_URL", "redis://localhost:16379")
+	redisURL, err := getenv("REDIS_URL", "redis://localhost:6379")
 	if err != nil {
 		t.Skip(err.Error())
 	}
@@ -41,7 +41,7 @@ func OpenDatabase(t *testing.T, dbname string) (tx *sql.Tx, close func()) {
 
 	dbURL, err := getenv(
 		"DATABASE_URL",
-		fmt.Sprintf("postgres://postgres@localhost:15432/%s?sslmode=disable", dbname),
+		fmt.Sprintf("postgres:///%s?sslmode=disable", dbname),
 	)
 	if err != nil {
 		t.Skip(err.Error())
@@ -70,7 +70,7 @@ func OpenDatabase(t *testing.T, dbname string) (tx *sql.Tx, close func()) {
 func MustDB(dbname string) (db *sql.DB, cleanup func()) {
 	dbURL, err := getenv(
 		"DATABASE_URL",
-		fmt.Sprintf("postgres://postgres@localhost:15432/%s?sslmode=disable", dbname),
+		fmt.Sprintf("postgres:///%s?sslmode=disable", dbname),
 	)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err.Error())
