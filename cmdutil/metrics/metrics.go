@@ -4,11 +4,12 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/heroku/x/go-kit/metrics"
 	"github.com/heroku/x/go-kit/metrics/provider/librato"
 	"github.com/heroku/x/go-kit/runtimemetrics"
-	"github.com/pkg/errors"
-	log "github.com/sirupsen/logrus"
 )
 
 // StartLibrato initializes a new librato provider given the Config, and sets

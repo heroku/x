@@ -4,8 +4,9 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 
-	"github.com/heroku/x/tlsconfig"
 	"github.com/pkg/errors"
+
+	"github.com/heroku/x/tlsconfig"
 )
 
 // CA contains information regarding the root CA and intermediary

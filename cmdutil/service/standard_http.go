@@ -9,15 +9,16 @@ import (
 	"time"
 
 	proxyproto "github.com/armon/go-proxyproto"
+	"github.com/joeshaw/envdecode"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+	"golang.org/x/crypto/acme/autocert"
+
 	"github.com/heroku/x/cmdutil"
 	"github.com/heroku/x/cmdutil/health"
 	"github.com/heroku/x/cmdutil/https"
 	"github.com/heroku/x/go-kit/metrics"
 	"github.com/heroku/x/tlsconfig"
-	"github.com/joeshaw/envdecode"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
-	"golang.org/x/crypto/acme/autocert"
 )
 
 type httpConfig struct {

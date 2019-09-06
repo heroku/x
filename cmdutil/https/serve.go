@@ -7,9 +7,10 @@ import (
 	"net/http"
 
 	proxyproto "github.com/armon/go-proxyproto"
-	"github.com/heroku/x/tlsconfig"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/acme/autocert"
+
+	"github.com/heroku/x/tlsconfig"
 )
 
 // Serve starts an HTTP server configured to handle traffic directly from an

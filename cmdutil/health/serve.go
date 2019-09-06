@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/sirupsen/logrus"
+
 	"github.com/heroku/x/cmdutil"
 	"github.com/heroku/x/go-kit/metrics"
 	"github.com/heroku/x/healthcheck"
 	"github.com/heroku/x/tickgroup"
-	"github.com/sirupsen/logrus"
 )
 
 // NewTCPServer returns a cmdutil.Server which emits a health metric whenever a TCP

@@ -3,14 +3,15 @@ package service
 import (
 	"crypto/tls"
 
+	"github.com/joeshaw/envdecode"
+	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
+
 	"github.com/heroku/x/cmdutil"
 	"github.com/heroku/x/cmdutil/health"
 	"github.com/heroku/x/cmdutil/spaceca"
 	"github.com/heroku/x/go-kit/metrics"
 	"github.com/heroku/x/grpc/grpcserver"
-	"github.com/joeshaw/envdecode"
-	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 )
 
 type grpcConfig struct {

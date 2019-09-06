@@ -6,6 +6,10 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/joeshaw/envdecode"
+	"github.com/oklog/run"
+	"github.com/sirupsen/logrus"
+
 	"github.com/heroku/x/cmdutil"
 	"github.com/heroku/x/cmdutil/debug"
 	"github.com/heroku/x/cmdutil/metrics"
@@ -14,9 +18,6 @@ import (
 	"github.com/heroku/x/cmdutil/svclog"
 	xmetrics "github.com/heroku/x/go-kit/metrics"
 	"github.com/heroku/x/go-kit/metrics/l2met"
-	"github.com/joeshaw/envdecode"
-	"github.com/oklog/run"
-	"github.com/sirupsen/logrus"
 )
 
 // Standard is a standard service.

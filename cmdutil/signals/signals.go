@@ -5,8 +5,9 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/heroku/x/cmdutil"
 	"github.com/sirupsen/logrus"
+
+	"github.com/heroku/x/cmdutil"
 )
 
 // WithNotifyCancel creates a sub-context from the given context which gets
