@@ -16,7 +16,6 @@ jobs:
           keys:
             - v1-mod-cache-{{ checksum "go.sum" }}
       - run: go version; go env
-      - run: make verify-vendor
       - run: make lint
       - run: make test
       - run: make coverage
