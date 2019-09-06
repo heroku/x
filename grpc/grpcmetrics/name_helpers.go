@@ -9,6 +9,11 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+const (
+	Unknown  = "unknown"
+	Canceled = "canceled"
+)
+
 // The helpers here exist to make friendly metric names for
 // metric providers that don't support labeled metrics.
 
@@ -22,7 +27,7 @@ func metricPrefix(rpcType, fullMethod string) string {
 func methodInfo(fullMethod string) (string, string) {
 	parts := strings.Split(fullMethod, "/")
 	if len(parts) < 3 {
-		return "unknown", "unknown"
+		return Unknown, Unknown
 	}
 
 	fullService := parts[1]
@@ -37,12 +42,12 @@ func methodInfo(fullMethod string) (string, string) {
 // code returns the gRPC error code, handling context and unknown errors.
 func code(err error) string {
 	if err == context.Canceled {
-		return "canceled"
+		return Canceled
 	}
 
 	st, ok := status.FromError(err)
 	if !ok {
-		return "unknown"
+		return Unknown
 	}
 
 	return dasherize(st.Code().String())

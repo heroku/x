@@ -16,7 +16,7 @@ linters:
     - scopelint
     - nakedret
     - gochecknoinits
-  #    - goconst
+    - goconst
   #    - gocritic
   #    - gocyclo
   #    - lll
