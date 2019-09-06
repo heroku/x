@@ -11,7 +11,7 @@ linters:
     - golint
     - stylecheck
     - unconvert
-  #    - dupl
+    - dupl
   #    - gosec
   #    - scopelint
   #    - nakedret
@@ -34,6 +34,7 @@ issues:
         - goconst # Don't run on test files because they may often repeate the same string
         - scopelint # Otherwise you need tc := tc. This isn't actually a problem unless tests are being run in parallel.
         - lll # Don't do line length checks in test code.
+        - dupl # Sometimes we duplicate a bunch in tests for the sake of clarity.
 
 linters-settings:
   misspell:
