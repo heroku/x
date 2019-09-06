@@ -7,8 +7,6 @@ import (
 	"github.com/heroku/x/tlsconfig"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
-
-	"github.com/heroku/x/tlsconfig"
 )
 
 // TLSOption is a function which modifies a TLS configuration.
