@@ -142,7 +142,7 @@ func parseEnvironStrings(environ []string) (map[string]string, error) {
 	for _, v := range environ {
 		chunks := strings.SplitN(v, "=", 2)
 		if len(chunks) != 2 {
-			return nil, fmt.Errorf("Unable to parse %s. Make sure it's of the format KEY=VAL", v)
+			return nil, fmt.Errorf("unable to parse %q (expected format KEY=VAL)", v)
 		}
 
 		vars[chunks[0]] = chunks[1]
