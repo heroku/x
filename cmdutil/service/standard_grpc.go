@@ -32,7 +32,7 @@ func loadMutualTLSCert(cfg grpcConfig) (tls.Certificate, [][]byte, error) {
 			return tls.Certificate{}, nil, errors.Wrap(err, "error generating cert from spaceCA")
 		}
 
-		serverCACertList := [][]byte{[]byte(ca.RootCert)}
+		serverCACertList := [][]byte{ca.RootCert}
 
 		if cfg.SpaceCA.RootCACertAlternate != "" {
 			serverCACertList = append(serverCACertList, []byte(cfg.SpaceCA.RootCACertAlternate))
@@ -54,7 +54,11 @@ func loadMutualTLSCert(cfg grpcConfig) (tls.Certificate, [][]byte, error) {
 // Router-bypass and TLS config are inferred from the environment.
 //
 // Currently only supports running in router-bypass mode, unlike HTTP.
-func GRPC(l logrus.FieldLogger, m metrics.Provider, server grpcserver.Starter, grpcOpts ...grpcserver.ServerOption) cmdutil.Server {
+func GRPC(
+	l logrus.FieldLogger,
+	m metrics.Provider,
+	server grpcserver.Starter,
+	grpcOpts ...grpcserver.ServerOption) cmdutil.Server {
 	var cfg grpcConfig
 	envdecode.MustDecode(&cfg)
 
