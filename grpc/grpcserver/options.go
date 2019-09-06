@@ -53,7 +53,7 @@ func MetricsProvider(provider metrics.Provider) ServerOption {
 	}
 }
 
-// AuthInterceptors sets interceptors that are intented for
+// AuthInterceptors sets interceptors that are intended for
 // authentication/authorization in the correct locations in the chain
 func AuthInterceptors(unary grpc.UnaryServerInterceptor, stream grpc.StreamServerInterceptor) ServerOption {
 	return func(o *options) {

@@ -6,11 +6,11 @@ run:
 
 linters:
   enable:
-    #    - misspell
+    - misspell
     - goimports
     - golint
-  #    - stylecheck
-  #    - unconvert
+    - stylecheck
+    - unconvert
   #    - dupl
   #    - gosec
   #    - scopelint

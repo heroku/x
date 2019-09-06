@@ -131,7 +131,7 @@ func Strict(config *tls.Config) {
 // the recommendations in:
 // https://blog.gopheracademy.com/advent-2016/exposing-go-on-the-internet/
 //
-// AES128 & SHA256 prefered over AES256 & SHA384:
+// AES128 & SHA256 preferred over AES256 & SHA384:
 // https://github.com/ssllabs/research/wiki/SSL-and-TLS-Deployment-Best-Practices#31-avoid-too-much-security
 func New() *tls.Config {
 	return &tls.Config{
