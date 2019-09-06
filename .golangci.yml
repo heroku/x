@@ -17,7 +17,7 @@ linters:
     - nakedret
     - gochecknoinits
     - goconst
-  #    - gocritic
+    - gocritic
   #    - gocyclo
   #    - lll
   #    - maligned
