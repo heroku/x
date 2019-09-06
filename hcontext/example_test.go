@@ -12,9 +12,9 @@ import (
 )
 
 func ExampleFromRequest() {
-	var r *http.Request
+	var r http.Request
 
-	reqID, ok := FromRequest(r)
+	reqID, ok := FromRequest(&r)
 	if !ok {
 		log.Printf("when handling request from %s, no request ID", r.RemoteAddr)
 		return
@@ -24,7 +24,7 @@ func ExampleFromRequest() {
 }
 
 func ExampleWithRequestID() {
-	var r *http.Request
+	r := &http.Request{}
 
 	reqID, ok := FromRequest(r)
 	if !ok {
