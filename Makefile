@@ -25,11 +25,7 @@ vars:
 	@echo "ENV=$(ENV)"
 
 .PHONY: precommit
-precommit: verify-vendor lint test coverage 
-
-.PHONY: verify-vendor
-verify-vendor:
-	./sbin/verify-vendor.sh
+precommit: lint test coverage 
 
 .PHONY: lint
 lint: $(TOOLS_DIR)/golangci-lint
