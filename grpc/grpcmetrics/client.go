@@ -5,8 +5,9 @@ import (
 	"net"
 	"time"
 
-	"github.com/heroku/x/go-kit/metricsregistry"
 	"google.golang.org/grpc"
+
+	"github.com/heroku/x/go-kit/metricsregistry"
 )
 
 // NewUnaryClientInterceptor returns an interceptor for unary client calls

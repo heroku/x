@@ -5,10 +5,11 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/heroku/x/testing/testlog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/heroku/x/testing/testlog"
 )
 
 func TestLoggingUnaryPanicHandler_NoPanic(t *testing.T) {

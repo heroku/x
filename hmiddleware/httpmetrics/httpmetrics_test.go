@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/go-chi/chi"
+
 	"github.com/heroku/x/go-kit/metrics/testmetrics"
 )
 

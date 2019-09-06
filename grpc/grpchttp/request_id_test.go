@@ -8,6 +8,7 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
+
 	"github.com/heroku/x/grpc/requestid"
 )
 

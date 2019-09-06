@@ -8,8 +8,9 @@ import (
 
 	"github.com/go-kit/kit/metrics"
 	"github.com/go-kit/kit/metrics/generic"
-	xmetrics "github.com/heroku/x/go-kit/metrics"
 	"github.com/sirupsen/logrus"
+
+	xmetrics "github.com/heroku/x/go-kit/metrics"
 )
 
 // Provider provides constructors for creating, tracking, and logging metrics.

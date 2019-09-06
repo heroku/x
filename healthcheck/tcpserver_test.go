@@ -6,8 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/heroku/x/go-kit/metrics/testmetrics"
 	logtest "github.com/sirupsen/logrus/hooks/test"
+
+	"github.com/heroku/x/go-kit/metrics/testmetrics"
 )
 
 func TestTCPServer(t *testing.T) {

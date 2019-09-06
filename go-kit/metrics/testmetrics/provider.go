@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/go-kit/kit/metrics"
+
 	xmetrics "github.com/heroku/x/go-kit/metrics"
 )
 

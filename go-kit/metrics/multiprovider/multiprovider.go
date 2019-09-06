@@ -3,6 +3,7 @@ package multiprovider
 import (
 	kitmetrics "github.com/go-kit/kit/metrics"
 	"github.com/go-kit/kit/metrics/multi"
+
 	"github.com/heroku/x/go-kit/metrics"
 )
 

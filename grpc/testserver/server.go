@@ -6,8 +6,9 @@ package testserver
 import (
 	"log"
 
-	"github.com/heroku/x/grpc/grpcserver"
 	"google.golang.org/grpc"
+
+	"github.com/heroku/x/grpc/grpcserver"
 )
 
 // GRPCTestServer provides the Server and Conn (client).

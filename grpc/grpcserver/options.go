@@ -4,14 +4,15 @@ import (
 	grpc_logrus "github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
-	"github.com/heroku/x/go-kit/metrics"
-	"github.com/heroku/x/grpc/grpcmetrics"
-	"github.com/heroku/x/grpc/panichandler"
-	"github.com/heroku/x/tlsconfig"
 	grpc_middleware "github.com/mwitkow/go-grpc-middleware"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+
+	"github.com/heroku/x/go-kit/metrics"
+	"github.com/heroku/x/grpc/grpcmetrics"
+	"github.com/heroku/x/grpc/panichandler"
+	"github.com/heroku/x/tlsconfig"
 )
 
 var defaultLogOpts = []grpc_logrus.Option{

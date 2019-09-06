@@ -14,9 +14,10 @@ import (
 
 	kmetrics "github.com/go-kit/kit/metrics"
 	"github.com/go-kit/kit/metrics/generic"
+	"gopkg.in/caio/go-tdigest.v2"
+
 	"github.com/heroku/x/go-kit/metrics"
 	xmetrics "github.com/heroku/x/go-kit/metrics"
-	"gopkg.in/caio/go-tdigest.v2"
 )
 
 const (
