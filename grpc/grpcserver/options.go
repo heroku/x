@@ -3,6 +3,7 @@ package grpcserver
 import (
 	grpc_logrus "github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus"
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
+	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	"github.com/heroku/x/go-kit/metrics"
 	"github.com/heroku/x/grpc/grpcmetrics"
 	"github.com/heroku/x/grpc/panichandler"
@@ -18,11 +19,13 @@ var defaultLogOpts = []grpc_logrus.Option{
 }
 
 type options struct {
-	logEntry              *logrus.Entry
-	metricsProvider       metrics.Provider
-	authUnaryInterceptor  grpc.UnaryServerInterceptor
-	authStreamInterceptor grpc.StreamServerInterceptor
-	grpcOptions           []grpc.ServerOption
+	logEntry               *logrus.Entry
+	metricsProvider        metrics.Provider
+	authUnaryInterceptor   grpc.UnaryServerInterceptor
+	authStreamInterceptor  grpc.StreamServerInterceptor
+	useValidateInterceptor bool
+
+	grpcOptions []grpc.ServerOption
 }
 
 // ServerOption sets optional fields on the standard gRPC server
@@ -58,6 +61,16 @@ func AuthInterceptors(unary grpc.UnaryServerInterceptor, stream grpc.StreamServe
 	}
 }
 
+// ValidateInterceptor sets interceptors that will validate every
+// message that has a receiver of the form `Validate() error`
+//
+// For use with: github.com/mwitkow/go-proto-validators
+func ValidateInterceptor() ServerOption {
+	return func(o *options) {
+		o.useValidateInterceptor = true
+	}
+}
+
 func (o *options) unaryInterceptors() []grpc.UnaryServerInterceptor {
 	l := o.logEntry
 	if l == nil {
@@ -79,6 +92,9 @@ func (o *options) unaryInterceptors() []grpc.UnaryServerInterceptor {
 	)
 	if o.authUnaryInterceptor != nil {
 		i = append(i, o.authUnaryInterceptor)
+	}
+	if o.useValidateInterceptor {
+		i = append(i, grpc_validator.UnaryServerInterceptor())
 	}
 
 	return i
@@ -104,6 +120,9 @@ func (o *options) streamInterceptors() []grpc.StreamServerInterceptor {
 	)
 	if o.authStreamInterceptor != nil {
 		i = append(i, o.authStreamInterceptor)
+	}
+	if o.useValidateInterceptor {
+		i = append(i, grpc_validator.StreamServerInterceptor())
 	}
 
 	return i
