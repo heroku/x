@@ -13,9 +13,9 @@ linters:
     - unconvert
     - dupl
     - gosec
-  #    - scopelint
-  #    - nakedret
-  #    - gochecknoinits
+    - scopelint
+    - nakedret
+    - gochecknoinits
   #    - goconst
   #    - gocritic
   #    - gocyclo
@@ -38,6 +38,12 @@ issues:
     - path: nacl/secretbox
       linters:
         - gosec # Don't run gosec on nacl/secretbox* because we know it uses crypto/md5. TODO: Evaluate if this makes sense.
+    - path: hmetrics/onload/init.go
+      linters:
+        - gochecknoinits # The whole point of this package is to use init
+    - path: cmd/s3env/main.go
+      linters:
+        - gochecknoinits # TODO: FixMe
 
 linters-settings:
   misspell:
