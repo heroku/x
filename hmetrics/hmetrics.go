@@ -113,7 +113,7 @@ func startable(endpoint string) error {
 		return &url.Error{
 			Op:  "Empty",
 			URL: endpoint,
-			Err: errors.New("Empty string"),
+			Err: errors.New("empty string"),
 		}
 	}
 	if _, err := url.Parse(endpoint); err != nil {

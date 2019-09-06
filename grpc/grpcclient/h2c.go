@@ -24,7 +24,7 @@ func DialH2C(serverURL string, opts ...grpc.DialOption) (*grpc.ClientConn, error
 	if ou.Port() == "" {
 		p, err := net.LookupPort("tcp", ou.Scheme)
 		if err != nil {
-			return nil, fmt.Errorf("Error determining default port for scheme %s", ou.Scheme)
+			return nil, fmt.Errorf("unable to determine default port for scheme %s", ou.Scheme)
 		}
 		port = strconv.Itoa(p)
 	}

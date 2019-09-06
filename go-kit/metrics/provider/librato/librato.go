@@ -265,7 +265,7 @@ func (p *Provider) metricName(name string, labelValues ...string) string {
 	return keyName(name, labelValues...)
 }
 
-// NewCounter that will be reported by the provider. Becuase of the way librato
+// NewCounter that will be reported by the provider. Because of the way librato
 // works, they are reported as gauges. If you require a counter reset every
 // report use the WithResetCounters option function, otherwise the counter's
 // value will increase until restart.

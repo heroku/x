@@ -65,7 +65,7 @@ func (s *syslogScanner) next(r *syslog.Result) {
 	s.more <- r
 }
 
-// Message returns the curent message
+// Message returns the current message
 func (s *syslogScanner) Message() Message {
 	return s.item
 }
