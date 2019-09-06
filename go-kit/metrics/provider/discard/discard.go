@@ -13,6 +13,7 @@ package discard
 import (
 	"github.com/go-kit/kit/metrics"
 	"github.com/go-kit/kit/metrics/discard"
+
 	xmetrics "github.com/heroku/x/go-kit/metrics"
 )
 

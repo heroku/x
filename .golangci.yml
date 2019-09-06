@@ -6,23 +6,26 @@ run:
 
 linters:
   enable:
-    - misspell
+    #    - misspell
     - goimports
     - golint
-    - stylecheck
-    - unconvert
-    - dupl
-    - gosec
-    - scopelint
-    - nakedret
-    - gochecknoinits
-    - goconst
-    - gocritic
-    - gocyclo
-    - lll
-    - maligned
-    - prealloc
-    - unparam
+  #    - stylecheck
+  #    - unconvert
+  #    - dupl
+  #    - gosec
+  #    - scopelint
+  #    - nakedret
+  #    - gochecknoinits
+  #    - goconst
+  #    - gocritic
+  #    - gocyclo
+  #    - lll
+  #    - maligned
+  #    - prealloc
+  #    - unparam
+  disable: # TODO: enable these and the ones above
+    - errcheck
+    - staticcheck
 
 issues:
   exclude-rules:

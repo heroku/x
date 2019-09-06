@@ -6,9 +6,10 @@ import (
 	"testing"
 	"time"
 
+	"google.golang.org/grpc"
+
 	"github.com/heroku/x/go-kit/metrics/testmetrics"
 	"github.com/heroku/x/go-kit/metricsregistry"
-	"google.golang.org/grpc"
 )
 
 func TestUnaryServerInterceptor(t *testing.T) {

@@ -5,8 +5,9 @@ import (
 	"time"
 
 	"github.com/go-kit/kit/metrics"
-	hmetrics "github.com/heroku/x/go-kit/metrics"
 	"github.com/sirupsen/logrus"
+
+	hmetrics "github.com/heroku/x/go-kit/metrics"
 )
 
 // TCPServer answers healthcheck requests from TCP routers, such as an ELB.

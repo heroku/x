@@ -5,10 +5,11 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/heroku/x/testing/testlog"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/heroku/x/testing/testlog"
 )
 
 func TestLoggingUnaryPanicHandler_NoPanic(t *testing.T) {
@@ -56,9 +57,9 @@ func TestLoggingUnaryPanicHandler_Panic(t *testing.T) {
 
 	uh := func(ctx context.Context, req interface{}) (interface{}, error) {
 		uhCalled = true
-		var x *int
-		// the common nil pointer deref case
-		_ = *x + 1
+		if uhCalled {
+			panic("BOOM")
+		}
 		return res, testErr
 	}
 
@@ -116,9 +117,9 @@ func TestLoggingStreamPanicHandler_Panic(t *testing.T) {
 
 	sh := func(srv interface{}, stream grpc.ServerStream) error {
 		shCalled = true
-		var x *int
-		// the common nil pointer deref case
-		_ = *x + 1
+		if shCalled {
+			panic("BOOM")
+		}
 		return testErr
 	}
 

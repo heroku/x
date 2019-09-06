@@ -4,9 +4,10 @@ import (
 	"context"
 	"net/http"
 
+	"google.golang.org/grpc/metadata"
+
 	"github.com/heroku/x/grpc/requestid"
 	httprequestid "github.com/heroku/x/requestid"
-	"google.golang.org/grpc/metadata"
 )
 
 // RequestIDAnnotator returns gRPC metadata with the Request-Id header if

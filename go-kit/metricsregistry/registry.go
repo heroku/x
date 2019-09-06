@@ -4,6 +4,7 @@ import (
 	"sync"
 
 	kitmetrics "github.com/go-kit/kit/metrics"
+
 	"github.com/heroku/x/go-kit/metrics"
 )
 

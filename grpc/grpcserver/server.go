@@ -7,14 +7,15 @@ import (
 	"strconv"
 
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
-	kit "github.com/heroku/x/go-kit"
-	"github.com/heroku/x/grpc/requestid"
 	"github.com/lstoll/grpce/h2c"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	healthgrpc "google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
+
+	kit "github.com/heroku/x/go-kit"
+	"github.com/heroku/x/grpc/requestid"
 )
 
 // New configures a gRPC Server with default options and a health server.

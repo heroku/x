@@ -16,7 +16,7 @@ jobs:
           keys:
             - v1-mod-cache-{{ checksum "go.sum" }}
       - run: go version; go env
-      - run: echo make lint
+      - run: make lint
       - run: make test
       - run: make coverage
       - save_cache: # Store cache of the /go/pkg directory

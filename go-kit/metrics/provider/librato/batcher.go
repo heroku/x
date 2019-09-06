@@ -149,10 +149,6 @@ type gauge struct {
 	SumSq  float64 `json:"sum_squares"`
 }
 
-type taggedBatcher struct {
-	p *Provider
-}
-
 type measurement struct {
 	Name   string `json:"name"`
 	Time   int64  `json:"time"`

@@ -4,10 +4,11 @@ import (
 	"context"
 	"net/url"
 
-	"github.com/heroku/x/grpc/requestid"
-	"github.com/heroku/x/tlsconfig"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
+
+	"github.com/heroku/x/grpc/requestid"
+	"github.com/heroku/x/tlsconfig"
 )
 
 // Credentials returns a gRPC DialOption configured for mutual TLS.

@@ -8,12 +8,13 @@ import (
 	"time"
 
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
-	"github.com/heroku/x/grpc/grpcclient"
-	"github.com/heroku/x/grpc/grpcserver"
-	"github.com/heroku/x/testing/testlog"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/examples/route_guide/routeguide"
+
+	"github.com/heroku/x/grpc/grpcclient"
+	"github.com/heroku/x/grpc/grpcserver"
+	"github.com/heroku/x/testing/testlog"
 )
 
 func TestGRPCPerRPCCredentialBasicAuth(t *testing.T) {

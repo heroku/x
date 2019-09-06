@@ -732,19 +732,21 @@ func TestWithResetCountersCardinalityCounters(t *testing.T) {
 
 func TestProviderMetricName(t *testing.T) {
 	tests := []struct {
-		p           Provider
+		p           *Provider
 		scenario    string
 		name        string
 		labelValues []string
 		want        string
 	}{
 		{
+			p:        &Provider{},
 			scenario: "tags disabled, no label values",
 			name:     "http_requests",
 			want:     "http_requests",
 		},
 
 		{
+			p:           &Provider{},
 			scenario:    "tags disabled, with label values",
 			name:        "http_requests",
 			labelValues: []string{"region", "us", "app", "myapp"},
@@ -753,14 +755,14 @@ func TestProviderMetricName(t *testing.T) {
 
 		{
 			scenario: "tags enabled, no label values",
-			p:        Provider{tagsEnabled: true},
+			p:        &Provider{tagsEnabled: true},
 			name:     "http_requests",
 			want:     "http_requests",
 		},
 
 		{
 			scenario:    "tags enabled, with label values",
-			p:           Provider{tagsEnabled: true},
+			p:           &Provider{tagsEnabled: true},
 			name:        "http_requests",
 			labelValues: []string{"region", "us", "app", "myapp"},
 			want:        "http_requests",
