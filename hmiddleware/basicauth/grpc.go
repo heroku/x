@@ -9,7 +9,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/metadata"
 )
 
 // scheme is the Authorization prefix in the header, e.g. `Basic <base 64 blob>`.
@@ -60,29 +59,6 @@ func (c GRPCCredentials) RequireTransportSecurity() bool {
 }
 
 var errForbidden = grpc.Errorf(codes.Unauthenticated, "Forbidden")
-
-func authorize(ctx context.Context, checker *Checker) error {
-	md, ok := metadata.FromIncomingContext(ctx)
-	if !ok {
-		return errForbidden
-	}
-
-	auth := md.Get("authorization")
-	if len(auth) != 1 {
-		return errForbidden
-	}
-
-	user, pass, ok := parseBasicAuth(auth[0])
-	if !ok {
-		return errForbidden
-	}
-
-	if !checker.Valid(user, pass) {
-		return errForbidden
-	}
-
-	return nil
-}
 
 func parseBasicAuth(auth string) (user, pass string, ok bool) {
 	c, err := base64.StdEncoding.DecodeString(auth)
