@@ -19,12 +19,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func init() {
-	// Initialize the pseudo-random number generator with a unique value so we
-	// get unique sequences across runs.
-	rand.Seed(time.Now().UnixNano())
-}
-
 // Standard is a standard service.
 type Standard struct {
 	g run.Group
@@ -40,6 +34,10 @@ type Standard struct {
 //
 // It calls envdecode.MustStrictDecode on the provided appConfig.
 func New(appConfig interface{}, ofs ...OptionFunc) *Standard {
+	// Initialize the pseudo-random number generator with a unique value so we
+	// get unique sequences across runs.
+	rand.Seed(time.Now().UnixNano())
+
 	var sc standardConfig
 	envdecode.MustStrictDecode(&sc)
 	envdecode.MustStrictDecode(appConfig)
