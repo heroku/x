@@ -13,12 +13,12 @@ require (
 	github.com/go-ini/ini v1.33.0 // indirect
 	github.com/go-kit/kit v0.6.0
 	github.com/gogo/protobuf v1.2.1 // indirect
+	github.com/golangci/golangci-lint v1.17.1
 	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/google/uuid v1.1.1
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.0
 	github.com/grpc-ecosystem/grpc-gateway v1.9.0
 	github.com/hydrogen18/memlistener v0.0.0-20141126152155-54553eb933fb
-	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/influxdata/go-syslog v0.0.0-20190814180256-831896502726
 	github.com/jmespath/go-jmespath v0.0.0-20160202185014-0b12d6b521d8 // indirect
 	github.com/joeshaw/envdecode v0.0.0-20180129163420-d5f34bca07f3
@@ -31,12 +31,11 @@ require (
 	github.com/sirupsen/logrus v1.4.1
 	github.com/smartystreets/goconvey v0.0.0-20190330032615-68dc04aab96a // indirect
 	github.com/soveran/redisurl v0.0.0-20180322091936-eb325bc7a4b8
-	github.com/spf13/cobra v0.0.1
-	github.com/spf13/pflag v1.0.0 // indirect
+	github.com/spf13/cobra v0.0.2
 	github.com/stretchr/testify v1.3.0 // indirect
-	golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2
+	golang.org/x/crypto v0.0.0-20190313024323-a1f597ede03a
 	golang.org/x/net v0.0.0-20190502183928-7f726cade0ab // indirect
-	golang.org/x/sync v0.0.0-20180314180146-1d60e4601c6f
+	golang.org/x/sync v0.0.0-20190423024810-112230192c58
 	gonum.org/v1/gonum v0.0.0-20190502212712-4a2eb0188cbc // indirect
 	google.golang.org/grpc v1.20.1
 	gopkg.in/caio/go-tdigest.v2 v2.3.0

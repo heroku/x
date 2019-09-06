@@ -1,0 +1,41 @@
+# See https://github.com/golangci/golangci-lint#config-file
+run:
+  deadline: 1m #Default
+  issues-exit-code: 1 #Default
+  tests: true #Default
+
+linters:
+  enable:
+    - misspell
+    - goimports
+    - golint
+    - stylecheck
+    - unconvert
+    - dupl
+    - gosec
+    - scopelint
+    - nakedret
+    - gochecknoinits
+    - goconst
+    - gocritic
+    - gocyclo
+    - lll
+    - maligned
+    - prealloc
+    - unparam
+
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - goconst # Don't run on test files because they may often repeate the same string
+        - scopelint # Otherwise you need tc := tc. This isn't actually a problem unless tests are being run in parallel.
+        - lll # Don't do line length checks in test code.
+
+linters-settings:
+  misspell:
+    locale: US
+    #ignore-words:
+    #  - someword
+  goimports:
+    local-prefixes: github.com/heroku/x
