@@ -36,8 +36,8 @@ require (
 	github.com/spf13/cobra v0.0.2
 	github.com/unrolled/secure v1.0.1
 	github.com/urfave/cli v1.21.0
-	golang.org/x/crypto v0.0.0-20190313024323-a1f597ede03a
-	golang.org/x/net v0.0.0-20190502183928-7f726cade0ab // indirect
+	golang.org/x/crypto v0.0.0-20190829043050-9756ffdc2472
+	golang.org/x/net v0.0.0-20190827160401-ba9fcec4b297 // indirect
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58
 	gonum.org/v1/gonum v0.0.0-20190502212712-4a2eb0188cbc // indirect
 	google.golang.org/grpc v1.20.1

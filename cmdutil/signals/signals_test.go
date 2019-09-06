@@ -48,7 +48,9 @@ func TestNewServer(t *testing.T) {
 				return
 			default:
 			}
-			syscall.Kill(syscall.Getpid(), syscall.SIGWINCH)
+			if err := syscall.Kill(syscall.Getpid(), syscall.SIGWINCH); err != nil {
+				t.Error(err)
+			}
 			time.Sleep(time.Millisecond)
 		}
 	}()

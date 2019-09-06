@@ -30,7 +30,7 @@ func TestShouldIgnore(t *testing.T) {
 		{"DeadlineExceeded", context.DeadlineExceeded, true},
 		{"Canceled", context.Canceled, true},
 		{"grpc Canceled", status.Error(codes.Canceled, "context canceled"), true},
-		{"net operation canceled", generateOperationCanceled(t), true},
+		{"net operation canceled", generateOperationCanceled(), true},
 		{"EOF", io.EOF, true},
 		{"url.Error EOF", &url.Error{Err: io.EOF}, true},
 		{"transport is closing", status.Error(codes.Unavailable, "transport is closing"), true},
@@ -93,7 +93,7 @@ func (e timeoutError) Timeout() bool {
 	return e.timeout
 }
 
-func generateOperationCanceled(t testing.TB) error {
+func generateOperationCanceled() error {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 

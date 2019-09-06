@@ -71,7 +71,9 @@ func TestMultiServerStop(t *testing.T) {
 
 	done := make(chan struct{})
 	go func() {
-		ms.Run()
+		if err := ms.Run(); err != nil {
+			t.Error(err)
+		}
 		close(done)
 	}()
 
@@ -98,7 +100,9 @@ func TestMultiServer_InnerStop(t *testing.T) {
 
 	done := make(chan struct{})
 	go func() {
-		ms.Run()
+		if err := ms.Run(); err != nil {
+			t.Error(err)
+		}
 		close(done)
 	}()
 

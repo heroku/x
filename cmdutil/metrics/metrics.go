@@ -11,7 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// StartLibrato initalizes a new librato provider given the Config, and sets
+// StartLibrato initializes a new librato provider given the Config, and sets
 // up a runtimemetrics.Collector on it. The runtime collector will emit on
 // the librato.Provider every Config.ReportInterval ticks. You need to call
 // Stop on the librato.Provider before you tear down the process.

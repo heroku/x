@@ -15,7 +15,9 @@ func TestStandardHTTPServer(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	srv := &http.Server{
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			io.WriteString(w, "OK")
+			if _, err := io.WriteString(w, "OK"); err != nil {
+				t.Error(err)
+			}
 		}),
 		Addr: "127.0.0.1:0",
 	}
@@ -27,7 +29,9 @@ func TestStandardHTTPServer(t *testing.T) {
 
 	done := make(chan struct{})
 	go func() {
-		s.Run()
+		if err := s.Run(); err != nil {
+			t.Log(err)
+		}
 		close(done)
 	}()
 
@@ -53,7 +57,9 @@ func TestBypassHTTPServer(t *testing.T) {
 	l, _ := testlog.NewNullLogger()
 	srv := &http.Server{
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			io.WriteString(w, "OK")
+			if _, err := io.WriteString(w, "OK"); err != nil {
+				t.Error(err)
+			}
 		}),
 		Addr: "127.0.0.1:0",
 	}
@@ -65,7 +71,9 @@ func TestBypassHTTPServer(t *testing.T) {
 
 	done := make(chan struct{})
 	go func() {
-		s.Run()
+		if err := s.Run(); err != nil {
+			t.Log(err)
+		}
 		close(done)
 	}()
 
@@ -76,10 +84,15 @@ func TestBypassHTTPServer(t *testing.T) {
 	}
 	defer conn.Close()
 
-	io.WriteString(conn, "PROXY TCP4 127.0.0.1 127.0.0.1 44444 55555\n")
+	_, err = io.WriteString(conn, "PROXY TCP4 127.0.0.1 127.0.0.1 44444 55555\n")
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	req, _ := http.NewRequest("GET", "http://"+addr, nil)
-	req.Write(conn)
+	if err := req.Write(conn); err != nil {
+		t.Fatal(err)
+	}
 
 	r := bufio.NewReader(conn)
 	res, err := http.ReadResponse(r, nil)
