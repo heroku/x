@@ -23,7 +23,7 @@ func TestDisableKeepalive(t *testing.T) {
 	DisableKeepalive(h).ServeHTTP(rw, req)
 
 	if rw.Code != http.StatusOK {
-		t.Logf("body: %s", string(rw.Body.Bytes()))
+		t.Logf("body: %s", rw.Body.String())
 		t.Fatalf("expected rw.Code to be %d, got: %d", http.StatusOK, rw.Code)
 	}
 
