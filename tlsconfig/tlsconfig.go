@@ -17,9 +17,23 @@
 package tlsconfig
 
 import (
+	"bytes"
+	"compress/gzip"
+	"crypto"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/asn1"
+	"encoding/base64"
+	"encoding/pem"
+	"math/big"
+	"time"
 
+	"github.com/lstoll/grpce/identitydoc"
 	"github.com/pkg/errors"
 )
 
@@ -151,4 +165,185 @@ func NewMutualTLS(caCerts [][]byte, certPEM, keyPEM []byte) (*tls.Config, error)
 	cfg.ClientCAs = pool
 	cfg.RootCAs = pool
 	return cfg, nil
+}
+
+const (
+	InstanceIdentityDocID int = iota
+	InstanceIdentitySigID
+)
+
+var (
+	oidPrefix = []int{0x0, 0x0, 'D', 0x0, 'G', 'E'}
+
+	InstanceIdentityDocOID asn1.ObjectIdentifier = append(oidPrefix, InstanceIdentityDocID)
+	InstanceIdentitySigOID asn1.ObjectIdentifier = append(oidPrefix, InstanceIdentitySigID)
+)
+
+var ErrCannotAppendFromPEM = errors.New("cannot append from PEM")
+
+// CA is a certificate & key that generate new signed leaf TLS Certificates.
+type CA tls.Certificate
+
+// LoadCA initializes a TLS certificate and key, along with an optional
+// certificate chain from raw PEM encoded values.
+func LoadCA(certPEM, keyPEM []byte, chainPEMs ...[]byte) (*CA, error) {
+	kp, err := tls.X509KeyPair(certPEM, keyPEM)
+	if err != nil {
+		return nil, err
+	}
+
+	if kp.Leaf, err = x509.ParseCertificate(kp.Certificate[0]); err != nil {
+		return nil, err
+	}
+
+	ca := CA(kp)
+	for _, chainPEM := range chainPEMs {
+		var chainDER *pem.Block
+		for {
+			chainDER, chainPEM = pem.Decode(chainPEM)
+			if chainDER == nil {
+				break
+			}
+
+			ca.Certificate = append(ca.Certificate, chainDER.Bytes)
+		}
+	}
+
+	return &ca, nil
+}
+
+type LeafConfig struct {
+	// Hostname is used for the subject CN and DNSNames fields. Ignored if CSR is present.
+	Hostname string
+	// CSR is the x509 certificate request.
+	CSR *x509.CertificateRequest
+	// IID is the EC2 Instance Identity Document data and signature.
+	IID *identitydoc.InstanceIdentityDocument
+	// PublicKeyAlgorithm is the type of public key generated for the certificate.
+	PublicKeyAlgorithm x509.PublicKeyAlgorithm
+}
+
+// NewLeaf generates a new leaf certificate & key signed by c.
+func (c *CA) NewLeaf(config LeafConfig) (*tls.Certificate, error) {
+	sn, err := serialNumber()
+	if err != nil {
+		return nil, err
+	}
+
+	unsignedCert := &x509.Certificate{
+		BasicConstraintsValid: true,
+		SerialNumber:          sn,
+		SubjectKeyId:          sn.Bytes(),
+		Subject: pkix.Name{
+			Country:      []string{"US"},
+			Province:     []string{"California"},
+			Locality:     []string{"San Francisco"},
+			Organization: []string{"Heroku"},
+			CommonName:   config.Hostname,
+		},
+		NotBefore: time.Now().Add(-5 * time.Minute),
+		NotAfter:  time.Now().Add(3 * 8760 * time.Hour), // 3 years
+		DNSNames:  []string{config.Hostname},
+	}
+
+	var (
+		privateKey crypto.PrivateKey
+		publicKey  crypto.PublicKey
+	)
+
+	switch config.PublicKeyAlgorithm {
+	case x509.RSA:
+		priv, err := rsa.GenerateKey(rand.Reader, 2048)
+		if err != nil {
+			return nil, err
+		}
+
+		privateKey, publicKey = priv, &priv.PublicKey
+	case x509.ECDSA, x509.UnknownPublicKeyAlgorithm:
+		priv, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+		if err != nil {
+			return nil, err
+		}
+
+		privateKey, publicKey = priv, &priv.PublicKey
+	default:
+		return nil, errors.Errorf("unsupported x509 public key algorithm: %s", string(config.PublicKeyAlgorithm))
+	}
+
+	if csr := config.CSR; csr != nil {
+		privateKey, publicKey = nil, csr.PublicKey
+
+		unsignedCert.Subject.CommonName = csr.Subject.CommonName
+		unsignedCert.DNSNames = csr.DNSNames
+		unsignedCert.IPAddresses = csr.IPAddresses
+	}
+
+	if iid := config.IID; iid != nil {
+		if err := iid.CheckSignature(); err != nil {
+			return nil, err
+		}
+
+		unsignedCert.ExtraExtensions = []pkix.Extension{
+			pkix.Extension{
+				Id:    InstanceIdentityDocOID,
+				Value: b64(gz(iid.Doc)),
+			},
+			pkix.Extension{
+				Id:    InstanceIdentitySigOID,
+				Value: b64(iid.Sig),
+			},
+		}
+	}
+
+	certDER, err := x509.CreateCertificate(rand.Reader, unsignedCert, c.Leaf, publicKey, c.PrivateKey)
+	if err != nil {
+		return nil, err
+	}
+
+	signedCert, err := x509.ParseCertificate(certDER)
+	if err != nil {
+		return nil, err
+	}
+
+	return &tls.Certificate{
+		Certificate: append([][]byte{certDER}, c.Certificate...),
+		PrivateKey:  privateKey,
+		Leaf:        signedCert,
+	}, nil
+}
+
+// PoolFromPEM accepts a RootCA PEM in the form of a byte slice and returns a cert pool.
+func PoolFromPEM(cert []byte) (*x509.CertPool, error) {
+	pool := x509.NewCertPool()
+	if !pool.AppendCertsFromPEM(cert) {
+		return nil, ErrCannotAppendFromPEM
+	}
+	return pool, nil
+}
+
+func serialNumber() (*big.Int, error) {
+	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
+	return rand.Int(rand.Reader, serialNumberLimit)
+}
+
+func gz(p []byte) []byte {
+	var b bytes.Buffer
+	w, err := gzip.NewWriterLevel(&b, gzip.BestCompression)
+	if err != nil {
+		panic("impossible")
+	}
+
+	if _, err := w.Write(p); err != nil {
+		panic("impossible")
+	}
+	if err := w.Close(); err != nil {
+		panic("impossible")
+	}
+	return b.Bytes()
+}
+
+func b64(p []byte) []byte {
+	buf := make([]byte, base64.RawStdEncoding.EncodedLen(len(p)))
+	base64.RawStdEncoding.Encode(buf, p)
+	return buf
 }
