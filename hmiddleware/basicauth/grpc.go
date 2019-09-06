@@ -58,8 +58,6 @@ func (c GRPCCredentials) RequireTransportSecurity() bool {
 	return c.TransportSecurity
 }
 
-var errForbidden = grpc.Errorf(codes.Unauthenticated, "Forbidden")
-
 func parseBasicAuth(auth string) (user, pass string, ok bool) {
 	c, err := base64.StdEncoding.DecodeString(auth)
 	if err != nil {
