@@ -18,7 +18,7 @@ linters:
     - gochecknoinits
     - goconst
     - gocritic
-  #    - gocyclo
+    - gocyclo
   #    - lll
   #    - maligned
   #    - prealloc
@@ -44,6 +44,9 @@ issues:
     - path: cmd/s3env/main.go
       linters:
         - gochecknoinits # TODO: FixMe
+    - path: go-kit/metrics/provider/librato/librato_test.go
+      linters:
+        - gocyclo # TODO: Refactor TestLibratoHistogramJSONMarshalers
 
 linters-settings:
   misspell:
@@ -52,3 +55,6 @@ linters-settings:
     #  - someword
   goimports:
     local-prefixes: github.com/heroku/x
+  gocyclo:
+    # minimal code complexity to report, 30 by default (but we recommend 10-20)
+    min-complexity: 14
