@@ -19,10 +19,10 @@ linters:
     - goconst
     - gocritic
     - gocyclo
-  #    - lll
-  #    - maligned
-  #    - prealloc
-  #    - unparam
+    - lll
+    - maligned
+    - prealloc
+    - unparam
   disable: # TODO: enable these and the ones above
     - errcheck
     - staticcheck
@@ -47,6 +47,12 @@ issues:
     - path: go-kit/metrics/provider/librato/librato_test.go
       linters:
         - gocyclo # TODO: Refactor TestLibratoHistogramJSONMarshalers
+    - path: grpc/
+      linters:
+        - lll # GRPC code has notoriously long function signatures.
+    - path: go-kit/metrics/provider/librato/librato.go
+      linters:
+        - maligned # TODO: evaluate if this makes sense
 
 linters-settings:
   misspell:
@@ -58,3 +64,8 @@ linters-settings:
   gocyclo:
     # minimal code complexity to report, 30 by default (but we recommend 10-20)
     min-complexity: 14
+  lll:
+    # max line length, lines longer will be reported. Default is 120.
+    line-length: 130
+  maligned:
+    suggest-new: true

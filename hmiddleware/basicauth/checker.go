@@ -13,8 +13,9 @@ type Credentials []Credential
 // Decode implements the envdecode contract, allowing Credentials to be used in
 // config structs.
 func (c *Credentials) Decode(repl string) error {
-	var result []Credential
-	for _, part := range strings.Split(repl, ";") {
+	s := strings.Split(repl, ";")
+	result := make([]Credential, 0, len(s))
+	for _, part := range s {
 		cred, err := parseCredential(part)
 		if err != nil {
 			return err

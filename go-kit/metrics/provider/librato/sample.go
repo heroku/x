@@ -91,7 +91,7 @@ func (p *Provider) sample(period int) []measurement {
 	ts := p.now().Truncate(time.Second * time.Duration(period))
 
 	// Assemble all the data we have to send
-	var measurements []measurement
+	measurements := make([]measurement, 0, len(p.counters)+len(p.gauges)+len(p.histograms)+len(p.cardinalityCounters))
 	for _, c := range p.counters {
 		var v float64
 		if p.resetCounters {
