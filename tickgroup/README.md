@@ -12,7 +12,7 @@ the error is returned.
 This example uses the tickgroup package to create a simple 5 second timer.  A
 tickgroup `tg` with a cancel context is initialized.  Inside of `Go()`, `i`
 is incremented every 1 second; after 5 seconds the context is canceled and
-`Wait()` returns a nil value, which ceases the proccess.
+`Wait()` returns a nil value, which ceases the process.
 
 ```go
 ctx, cancel := context.WithCancel(context.Background())
