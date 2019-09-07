@@ -171,12 +171,14 @@ func canonicalizeQuotes(str string) string {
 	return fmt.Sprintf("%s=%s", key, val)
 }
 
+// Doesn't need quoting: a-z, A-Z, 0-9, '@', '-', '+', '.', '_', '/', & '@'
 func needsQuoting(text string) bool {
-	for _, ch := range text {
-		if !((ch >= 'a' && ch <= 'z') ||
-			(ch >= 'A' && ch <= 'Z') ||
-			(ch >= '0' && ch <= '9') ||
-			ch == '-' || ch == '.' || ch == '_' || ch == '/' || ch == '@' || ch == '^' || ch == '+') {
+	for _, ch := range text { // runes are bytes, so these are ascii lookups
+		if !((ch >= '@' && ch <= 'Z') || // ASCII 64 .. 90
+			(ch >= 'a' && ch <= 'z') || // ASCII 97 .. 122
+			(ch >= '.' && ch <= '9') || // ASCII 46 .. 57
+			(ch >= '^' && ch <= '_') || // ASCII 94 .. 95
+			ch == '+' || ch == '-') { // ASCII 43 & 45
 			return true
 		}
 	}
