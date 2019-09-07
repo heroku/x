@@ -12,7 +12,8 @@ import (
 // Should also sleep some amount of time to throttle connection attempts
 type WaitFunc func(time.Time) error
 
-// WaitForAvailability of the redis server located at the provided url, timeout if the Duration passes before being able to connect
+// WaitForAvailability of the redis server located at the provided url, timeout
+// if the Duration passes before being able to connect
 func WaitForAvailability(url string, d time.Duration, f WaitFunc) (bool, error) {
 	conn := make(chan struct{})
 	errs := make(chan error)

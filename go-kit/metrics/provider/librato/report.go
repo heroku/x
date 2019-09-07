@@ -57,7 +57,8 @@ func (e Error) Body() string {
 
 // Error interface
 func (e Error) Error() string {
-	return fmt.Sprintf("code: %d, retries remaining: %d, body: %s, rate-limit-agg: %s, rate-limit-std: %s", e.code, e.retries, e.body, e.rateLimitAgg, e.rateLimitStd)
+	return fmt.Sprintf("code: %d, retries remaining: %d, body: %s, rate-limit-agg: %s, rate-limit-std: %s",
+		e.code, e.retries, e.body, e.rateLimitAgg, e.rateLimitStd)
 }
 
 // reportWithRetry the metrics to the url, every interval, with max retries.
