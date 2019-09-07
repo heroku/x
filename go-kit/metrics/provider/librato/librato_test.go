@@ -669,7 +669,9 @@ func TestWithResetCounters(t *testing.T) {
 			if len(reqs) != 1 {
 				t.Errorf("expected 1 request, got %d", len(reqs))
 			}
-			p.report(reqs[0])
+			if err := p.report(reqs[0]); err != nil {
+				t.Fatal("unexpected error", err)
+			}
 
 			var expected float64
 			if reset {
@@ -712,7 +714,9 @@ func TestWithResetCountersCardinalityCounters(t *testing.T) {
 			if len(reqs) != 1 {
 				t.Errorf("expected 1 request, got %d", len(reqs))
 			}
-			p.report(reqs[0])
+			if err := p.report(reqs[0]); err != nil {
+				t.Fatal("unexpected error", err)
+			}
 
 			var expected float64
 			if reset {

@@ -56,9 +56,15 @@ func TestStreamServerInterceptor(t *testing.T) {
 	handler := func(err error) grpc.StreamHandler {
 		return func(srv interface{}, stream grpc.ServerStream) error {
 			if err == nil {
-				stream.SendMsg("ping")
-				stream.RecvMsg("pong")
-				stream.SendMsg("ping")
+				if err := stream.SendMsg("ping"); err != nil {
+					t.Fatal("unexpected error", err)
+				}
+				if err := stream.RecvMsg("pong"); err != nil {
+					t.Fatal("unexpected error", err)
+				}
+				if err := stream.SendMsg("ping"); err != nil {
+					t.Fatal("unexpected error", err)
+				}
 			}
 			return err
 		}

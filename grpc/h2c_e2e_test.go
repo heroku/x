@@ -30,8 +30,16 @@ func TestH2CE2E(t *testing.T) {
 		t.Fatalf("Error starting HTTP listener [%+v]", err)
 	}
 
-	go hSrv.Serve(lis)
-	defer hSrv.Shutdown(context.TODO())
+	go func() {
+		if err := hSrv.Serve(lis); err != nil && err != http.ErrServerClosed {
+			panic("unexpected error: " + err.Error())
+		}
+	}()
+	defer func() {
+		if err := hSrv.Shutdown(context.TODO()); err != nil && err != http.ErrServerClosed {
+			panic(err)
+		}
+	}()
 	defer gSrv.GracefulStop()
 
 	tr := &http.Transport{}
@@ -54,7 +62,8 @@ func TestH2CE2E(t *testing.T) {
 		t.Errorf("Expected HTTP/1.1 call to return %q, got %q", handle11resp, string(bb))
 	}
 
-	conn, err := grpcclient.DialH2C("http://"+lis.Addr().String(), grpc.WithWaitForHandshake())
+	//TODO: SA1019: grpc.WithWaitForHandshake is deprecated: this is the default behavior, and this option will be removed after the 1.18 release.  (staticcheck)
+	conn, err := grpcclient.DialH2C("http://"+lis.Addr().String(), grpc.WithWaitForHandshake()) //nolint:staticcheck
 	if err != nil {
 		t.Fatalf("Error dialing server [%+v]", err)
 	}
@@ -66,7 +75,8 @@ func TestH2CE2E(t *testing.T) {
 	_, err = hc.Check(
 		context.Background(),
 		&healthpb.HealthCheckRequest{},
-		grpc.FailFast(false),
+		//TODO: SA1019: grpc.FailFast is deprecated: use WaitForReady.  (staticcheck)
+		grpc.FailFast(false), //nolint:staticcheck
 	)
 	if err != nil {
 		t.Errorf("Error calling health backend [%+v]", err)

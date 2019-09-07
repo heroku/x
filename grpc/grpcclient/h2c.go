@@ -30,7 +30,8 @@ func DialH2C(serverURL string, opts ...grpc.DialOption) (*grpc.ClientConn, error
 	}
 
 	opts = append(opts, []grpc.DialOption{
-		grpc.WithDialer(h2c.Dialer{URL: ou}.DialGRPC),
+		//TODO: SA1019: grpc.WithDialer is deprecated: use WithContextDialer instead  (staticcheck)
+		grpc.WithDialer(h2c.Dialer{URL: ou}.DialGRPC), //nolint:staticcheck
 		// TLS is done at the HTTP/1.1 level, so we never know....
 		grpc.WithInsecure(),
 	}...)

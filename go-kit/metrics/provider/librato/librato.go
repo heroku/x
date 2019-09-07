@@ -404,7 +404,9 @@ func (h *Histogram) Observe(value float64) {
 	}
 	h.sumsq += value * value
 	h.last = value
-	h.h.Add(value)
+	if err := h.h.Add(value); err != nil {
+		panic(err)
+	}
 }
 
 // With returns a new LibratoHistogram with the same name / buckets but it is

@@ -21,12 +21,17 @@ func ExampleLocal() {
 	srv := New()
 	localsrv := Local(srv)
 
-	go localsrv.Run()
+	go func() {
+		if err := localsrv.Run(); err != nil {
+			panic(err)
+		}
+	}()
 	defer localsrv.Stop(nil)
 
 	c := healthpb.NewHealthClient(localsrv.Conn())
 
-	resp, err := c.Check(context.Background(), &healthpb.HealthCheckRequest{}, grpc.FailFast(true))
+	//TODO: SA1019: grpc.FailFast is deprecated: use WaitForReady.  (staticcheck)
+	resp, err := c.Check(context.Background(), &healthpb.HealthCheckRequest{}, grpc.FailFast(true)) //nolint:staticcheck
 	if err != nil {
 		fmt.Printf("Error = %v", err)
 		return

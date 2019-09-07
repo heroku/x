@@ -30,7 +30,9 @@ func (s *Sharder) Index(key string) int {
 	defer s.mu.Unlock()
 
 	s.hasher.Reset()
-	s.hasher.Write([]byte(key))
+	if _, err := s.hasher.Write([]byte(key)); err != nil {
+		panic(err)
+	}
 
 	i := int(s.hasher.Sum32()) % s.total
 	if i < 0 {

@@ -37,7 +37,11 @@ func (t *GRPCTestServer) Dial(opts ...grpc.DialOption) (*grpc.ClientConn, error)
 
 // Start will start the gRPC server in a goroutine.
 func (t *GRPCTestServer) Start() error {
-	go t.localsrv.Run()
+	go func() {
+		if err := t.localsrv.Run(); err != nil {
+			panic(err)
+		}
+	}()
 
 	conn, err := t.Dial()
 	if err != nil {
@@ -50,7 +54,8 @@ func (t *GRPCTestServer) Start() error {
 
 // Close closes the client connection, and stops the server from listening.
 func (t *GRPCTestServer) Close() error {
-	if err := t.Conn.Close(); err != nil && err != grpc.ErrClientConnClosing {
+	//TODO: SA1019: grpc.ErrClientConnClosing is deprecated: this error should not be relied upon by users; use the status code of Canceled instead.  (staticcheck)
+	if err := t.Conn.Close(); err != nil && err != grpc.ErrClientConnClosing { //nolint:staticcheck
 		log.Printf("GRPCTestServer failed to close client conn: %s", err)
 	}
 

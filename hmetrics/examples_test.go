@@ -16,13 +16,15 @@ import (
 
 func ExampleReport_basic() {
 	// Don't care about canceling or errors
-	go hmetrics.Report(context.Background(), hmetrics.DefaultEndpoint, nil)
+	go hmetrics.Report(context.Background(), hmetrics.DefaultEndpoint, nil) //nolint:errcheck
 
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
-	http.ListenAndServe(":"+port, nil)
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func ExampleReport_logging() {
@@ -60,5 +62,7 @@ func ExampleReport_advanced() {
 	if port == "" {
 		port = "8080"
 	}
-	http.ListenAndServe(":"+port, nil)
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
+		log.Fatal(err)
+	}
 }
