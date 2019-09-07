@@ -37,7 +37,11 @@ func (t *GRPCTestServer) Dial(opts ...grpc.DialOption) (*grpc.ClientConn, error)
 
 // Start will start the gRPC server in a goroutine.
 func (t *GRPCTestServer) Start() error {
-	go t.localsrv.Run()
+	go func() {
+		if err := t.localsrv.Run(); err != nil {
+			panic(err)
+		}
+	}()
 
 	conn, err := t.Dial()
 	if err != nil {

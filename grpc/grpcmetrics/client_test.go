@@ -25,9 +25,17 @@ func TestUnaryClientInterceptor(t *testing.T) {
 		}
 	}
 
-	uci(context.Background(), "/spec.Hello/Ping", nil, nil, nil, invoker(nil))
-	uci(context.Background(), "/spec.Hello/Ping", nil, nil, nil, invoker(status.Error(codes.Canceled, "canceled")))
-	uci(context.Background(), "/spec.Hello/Ping", nil, nil, nil, invoker(errors.New("test")))
+	if err := uci(context.Background(), "/spec.Hello/Ping", nil, nil, nil, invoker(nil)); err != nil {
+		t.Fatal("unexpected error", err)
+	}
+	eerr := status.Error(codes.Canceled, "canceled")
+	if err := uci(context.Background(), "/spec.Hello/Ping", nil, nil, nil, invoker(eerr)); err != eerr {
+		t.Fatal("unexpected error", err)
+	}
+	eerr = errors.New("test")
+	if err := uci(context.Background(), "/spec.Hello/Ping", nil, nil, nil, invoker(eerr)); err != eerr {
+		t.Fatal("unexpected error", err)
+	}
 
 	p.CheckCounter("grpc.client.hello.ping.requests", 3)
 	p.CheckCounter("grpc.client.hello.ping.response-codes.ok", 1)
@@ -49,16 +57,36 @@ func TestStreamClientInterceptor(t *testing.T) {
 		}
 	}
 
-	sci(context.Background(), nil, nil, "/spec.Hello/ClientStream", streamer(errors.New("client request error"), nil))
-	sci(context.Background(), nil, nil, "/spec.Hello/ClientStream", streamer(status.Error(codes.Canceled, "canceled"), nil))
+	eerr := errors.New("client request error")
+	if _, err := sci(context.Background(), nil, nil, "/spec.Hello/ClientStream", streamer(eerr, nil)); err != eerr {
+		t.Fatal("unexpected error", err)
+	}
+	eerr = status.Error(codes.Canceled, "canceled")
+	if _, err := sci(context.Background(), nil, nil, "/spec.Hello/ClientStream", streamer(eerr, nil)); err != eerr {
+		t.Fatal("unexpected error", err)
+	}
+	cs, err := sci(context.Background(), nil, nil, "/spec.Hello/ClientStream", streamer(nil, nil))
+	if err != nil {
+		t.Fatal("unexecpted error", err)
+	}
+	if err := cs.RecvMsg("test"); err != nil {
+		t.Fatal("unexpected error", err)
+	}
+	if err := cs.SendMsg("test"); err != nil {
+		t.Fatal("unexpected error", err)
+	}
 
-	cs, _ := sci(context.Background(), nil, nil, "/spec.Hello/ClientStream", streamer(nil, nil))
-	cs.RecvMsg("test")
-	cs.SendMsg("test")
-
-	cs, _ = sci(context.Background(), nil, nil, "/spec.Hello/ClientStream", streamer(nil, errors.New("client stream error")))
-	cs.RecvMsg("test")
-	cs.SendMsg("test")
+	eerr = errors.New("client stream error")
+	cs, err = sci(context.Background(), nil, nil, "/spec.Hello/ClientStream", streamer(nil, eerr))
+	if err != nil {
+		t.Fatal("unexpected error", err)
+	}
+	if err := cs.RecvMsg("test"); err != eerr {
+		t.Fatal("unexpected error", err)
+	}
+	if err := cs.SendMsg("test"); err != eerr {
+		t.Fatal("unexpected error", err)
+	}
 
 	p.CheckCounter("grpc.client.hello.client-stream.requests", 4)
 	p.CheckCounter("grpc.client.hello.client-stream.errors", 1)

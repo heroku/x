@@ -21,7 +21,11 @@ func ExampleLocal() {
 	srv := New()
 	localsrv := Local(srv)
 
-	go localsrv.Run()
+	go func() {
+		if err := localsrv.Run(); err != nil {
+			panic(err)
+		}
+	}()
 	defer localsrv.Stop(nil)
 
 	c := healthpb.NewHealthClient(localsrv.Conn())

@@ -63,7 +63,7 @@ func init() {
 			if time.Since(start) > 5*time.Minute {
 				backoff = 1
 			}
-			logger(err)
+			logger(err) //nolint:errcheck
 
 			time.Sleep(time.Duration(backoff*interval) * time.Second)
 		}

@@ -80,7 +80,9 @@ func TestServer_NestedChiRouters(t *testing.T) {
 	inner := chi.NewRouter()
 	inner.Get("/hello/{name}", func(w http.ResponseWriter, r *http.Request) {
 		name := chi.URLParam(r, "id")
-		io.WriteString(w, fmt.Sprintf("Hello %s!", name))
+		if _, err := io.WriteString(w, fmt.Sprintf("Hello %s!", name)); err != nil {
+			t.Fatal("unexpected error", err)
+		}
 	})
 
 	outer := chi.NewRouter()

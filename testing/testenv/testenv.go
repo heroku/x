@@ -58,7 +58,9 @@ func OpenDatabase(t *testing.T, dbname string) (tx *sql.Tx, close func()) {
 	}
 
 	close = func() {
-		tx.Rollback()
+		if err := tx.Rollback(); err != nil {
+			t.Fatal("unexpected error", err)
+		}
 		db.Close()
 	}
 

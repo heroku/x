@@ -10,7 +10,9 @@ import (
 
 func TestSigner(t *testing.T) {
 	var secretKey [32]byte
-	rand.Reader.Read(secretKey[:])
+	if _, err := rand.Reader.Read(secretKey[:]); err != nil {
+		t.Fatal("unexpected error", err)
+	}
 
 	s := NewSigner(&secretKey)
 	data := []byte("hello world")
@@ -77,10 +79,14 @@ func TestSigner(t *testing.T) {
 
 func TestMultiSigner(t *testing.T) {
 	var secretKey1 [32]byte
-	rand.Reader.Read(secretKey1[:])
+	if _, err := rand.Reader.Read(secretKey1[:]); err != nil {
+		t.Fatal("unexpected error", err)
+	}
 
 	var secretKey2 [32]byte
-	rand.Reader.Read(secretKey2[:])
+	if _, err := rand.Reader.Read(secretKey2[:]); err != nil {
+		t.Fatal("unexpected error", err)
+	}
 
 	data := []byte("hello world")
 	expectedSum1 := auth.Sum(data, &secretKey1)

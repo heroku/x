@@ -30,8 +30,16 @@ func TestH2CE2E(t *testing.T) {
 		t.Fatalf("Error starting HTTP listener [%+v]", err)
 	}
 
-	go hSrv.Serve(lis)
-	defer hSrv.Shutdown(context.TODO())
+	go func() {
+		if err := hSrv.Serve(lis); err != nil && err != http.ErrServerClosed {
+			t.Fatal("unexpected error", err)
+		}
+	}()
+	defer func() {
+		if err := hSrv.Shutdown(context.TODO()); err != nil && err != http.ErrServerClosed {
+			panic(err)
+		}
+	}()
 	defer gSrv.GracefulStop()
 
 	tr := &http.Transport{}

@@ -7,6 +7,7 @@
 package hmiddleware
 
 import (
+	"log"
 	"net/http"
 	"os"
 
@@ -21,7 +22,9 @@ func ExampleCORS() {
 
 	var h http.Handler
 
-	http.ListenAndServe(":"+os.Getenv("PORT"), CORS(h))
+	if err := http.ListenAndServe(":"+os.Getenv("PORT"), CORS(h)); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func ExampleDisableKeepalive() {
@@ -32,7 +35,9 @@ func ExampleDisableKeepalive() {
 
 	var h http.Handler
 
-	http.ListenAndServe(":"+os.Getenv("PORT"), DisableKeepalive(h))
+	if err := http.ListenAndServe(":"+os.Getenv("PORT"), DisableKeepalive(h)); err != nil {
+		log.Fatal(err)
+	}
 }
 
 func ExampleEnsureTLS() {
@@ -43,5 +48,7 @@ func ExampleEnsureTLS() {
 
 	var h http.Handler
 
-	http.ListenAndServe(":"+os.Getenv("PORT"), EnsureTLS(h))
+	if err := http.ListenAndServe(":"+os.Getenv("PORT"), EnsureTLS(h)); err != nil {
+		log.Fatal(err)
+	}
 }

@@ -123,7 +123,9 @@ func loadS3Object() {
 func displayVars(vars map[string]string) {
 	if outputJSON {
 		enc := json.NewEncoder(os.Stdout)
-		enc.Encode(vars)
+		if err := enc.Encode(vars); err != nil {
+			panic(err)
+		}
 		return
 	}
 

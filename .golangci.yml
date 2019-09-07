@@ -23,8 +23,8 @@ linters:
     - maligned
     - prealloc
     - unparam
-  disable: # TODO: enable these and the ones above
     - errcheck
+  disable: # TODO: enable these and the ones above
     - staticcheck
 
 issues:

@@ -17,13 +17,15 @@ func TestTCPServer(t *testing.T) {
 	server := NewTCPServer(logger, provider, "127.0.0.1:0")
 
 	if err := server.start(); err != nil {
-		t.Fatal(err)
+		t.Fatal("unexpected error", err)
 	}
 
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
-		server.serve()
+		if err := server.serve(); err == nil {
+			t.Fatal("expected error, but got nil") // accept error
+		}
 	}()
 
 	conn, err := net.DialTimeout("tcp", server.ln.Addr().String(), time.Second)
@@ -32,7 +34,9 @@ func TestTCPServer(t *testing.T) {
 	}
 	defer conn.Close()
 
-	conn.SetDeadline(time.Now().Add(time.Second))
+	if err := conn.SetDeadline(time.Now().Add(time.Second)); err != nil {
+		t.Fatal("unexpected error", err)
+	}
 
 	data, err := ioutil.ReadAll(conn)
 	if err != nil {
