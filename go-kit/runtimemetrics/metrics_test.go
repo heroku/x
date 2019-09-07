@@ -72,8 +72,7 @@ func TestCollectGCStats(t *testing.T) {
 }
 
 func pauseDurations(gs debug.GCStats) []float64 {
-	var ds []float64
-
+	ds := make([]float64, 0, len(gs.Pause))
 	for _, pause := range gs.Pause {
 		ds = append(ds, float64(pause)/1e6)
 	}
