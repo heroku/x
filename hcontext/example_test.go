@@ -34,4 +34,5 @@ func ExampleWithRequestID() {
 
 	ctx := WithRequestID(r.Context(), reqID)
 	r = r.WithContext(ctx)
+	_ = r
 }

@@ -24,7 +24,7 @@ func TestTCPServer(t *testing.T) {
 	go func() {
 		defer close(done)
 		if err := server.serve(); err == nil {
-			t.Fatal("expected error, but got nil") // accept error
+			panic("expected error, but got nil") // accept error
 		}
 	}()
 

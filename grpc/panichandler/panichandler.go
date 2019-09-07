@@ -44,5 +44,6 @@ func handleCrash(handler func(interface{})) {
 }
 
 func toPanicError(r interface{}) error {
-	return grpc.Errorf(codes.Internal, "panic: %v", r)
+	//TODO:  SA1019: grpc.Errorf is deprecated: use status.Errorf instead.  (staticcheck)
+	return grpc.Errorf(codes.Internal, "panic: %v", r) //nolint:staticcheck
 }

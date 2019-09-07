@@ -21,6 +21,7 @@ func ErrorToCode(err error) codes.Code {
 	case context.DeadlineExceeded:
 		return codes.DeadlineExceeded
 	default:
-		return grpc.Code(err)
+		//TODO: SA1019: grpc.Code is deprecated: use status.Code instead.  (staticcheck)
+		return grpc.Code(err) //nolint:staticcheck
 	}
 }

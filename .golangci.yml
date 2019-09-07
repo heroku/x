@@ -24,8 +24,6 @@ linters:
     - prealloc
     - unparam
     - errcheck
-  disable: # TODO: enable these and the ones above
-    - staticcheck
 
 issues:
   exclude-rules:

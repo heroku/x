@@ -17,7 +17,8 @@ func TestCode(t *testing.T) {
 		{nil, "ok"},
 		{context.Canceled, "canceled"},
 		{errors.New("custom"), "unknown"},
-		{grpc.Errorf(codes.InvalidArgument, ""), "invalid-argument"},
+		//TODO: SA1019: grpc.Errorf is deprecated: use status.Errorf instead.  (staticcheck)
+		{grpc.Errorf(codes.InvalidArgument, ""), "invalid-argument"}, //nolint:staticcheck
 	} {
 		got := code(tt.err)
 		if got != tt.want {

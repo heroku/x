@@ -39,7 +39,8 @@ func (s *LocalServer) Stop(err error) {
 // Conn returns a client connection to the in-process server.
 func (s *LocalServer) Conn(opts ...grpc.DialOption) *grpc.ClientConn {
 	defaultOptions := []grpc.DialOption{
-		grpc.WithDialer(func(addr string, timeout time.Duration) (net.Conn, error) {
+		// TODO: SA1019: grpc.WithDialer is deprecated: use WithContextDialer instead  (staticcheck)
+		grpc.WithDialer(func(addr string, timeout time.Duration) (net.Conn, error) { //nolint:staticcheck
 			return s.ln.Dial("mem", "")
 		}),
 		grpc.WithInsecure(),

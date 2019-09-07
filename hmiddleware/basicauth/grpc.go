@@ -25,11 +25,13 @@ func GRPCAuthFunc(checker *Checker) func(ctx context.Context) (context.Context, 
 
 		user, pass, ok := parseBasicAuth(blob)
 		if !ok {
-			return nil, grpc.Errorf(codes.Unauthenticated, "unauthenticated")
+			//TODO: SA1019: grpc.Errorf is deprecated: use status.Errorf instead.  (staticcheck)
+			return nil, grpc.Errorf(codes.Unauthenticated, "unauthenticated") //nolint:staticcheck
 		}
 
 		if !checker.Valid(user, pass) {
-			return nil, grpc.Errorf(codes.PermissionDenied, "permission denied")
+			//TODO: SA1019: grpc.Errorf is deprecated: use status.Errorf instead.  (staticcheck)
+			return nil, grpc.Errorf(codes.PermissionDenied, "permission denied") //nolint:staticcheck
 		}
 
 		return ctx, nil

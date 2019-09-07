@@ -27,6 +27,9 @@ func NewDynamoService(t *testing.T) *dynamodb.DynamoDB {
 		Endpoint: aws.String("http://" + host + ":8000/"),
 		Region:   aws.String("testing"),
 	}
-	sess := session.New(config)
+	sess, err := session.NewSession(config)
+	if err != nil {
+		t.Fatal("unexpected error", err)
+	}
 	return dynamodb.New(sess)
 }

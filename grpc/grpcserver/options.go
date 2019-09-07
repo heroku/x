@@ -178,11 +178,13 @@ func WithPeerValidator(f func(*x509.Certificate) bool) ServerOption {
 func validatePeer(ctx context.Context, f func(*x509.Certificate) bool) error {
 	cert, ok := getPeerCertFromContext(ctx)
 	if !ok {
-		return grpc.Errorf(codes.Unauthenticated, "unauthenticated")
+		//TODO: SA1019: grpc.Errorf is deprecated: use status.Errorf instead.  (staticcheck)
+		return grpc.Errorf(codes.Unauthenticated, "unauthenticated") //nolint:staticcheck
 	}
 
 	if !f(cert) {
-		return grpc.Errorf(codes.PermissionDenied, "forbidden")
+		//TODO: SA1019: grpc.Errorf is deprecated: use status.Errorf instead.  (staticcheck)
+		return grpc.Errorf(codes.PermissionDenied, "forbidden") //nolint:staticcheck
 	}
 
 	return nil
