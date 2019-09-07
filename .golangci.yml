@@ -11,11 +11,11 @@ linters:
     - golint
     - stylecheck
     - unconvert
-  #    - dupl
-  #    - gosec
-  #    - scopelint
-  #    - nakedret
-  #    - gochecknoinits
+    - dupl
+    - gosec
+    - scopelint
+    - nakedret
+    - gochecknoinits
   #    - goconst
   #    - gocritic
   #    - gocyclo
@@ -34,6 +34,16 @@ issues:
         - goconst # Don't run on test files because they may often repeate the same string
         - scopelint # Otherwise you need tc := tc. This isn't actually a problem unless tests are being run in parallel.
         - lll # Don't do line length checks in test code.
+        - dupl # Sometimes we duplicate a bunch in tests for the sake of clarity.
+    - path: nacl/secretbox
+      linters:
+        - gosec # Don't run gosec on nacl/secretbox* because we know it uses crypto/md5. TODO: Evaluate if this makes sense.
+    - path: hmetrics/onload/init.go
+      linters:
+        - gochecknoinits # The whole point of this package is to use init
+    - path: cmd/s3env/main.go
+      linters:
+        - gochecknoinits # TODO: FixMe
 
 linters-settings:
   misspell:
