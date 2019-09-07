@@ -7,14 +7,14 @@ import (
 
 // Message is a syslog message
 type Message struct {
-	Priority     uint8
-	Version      uint16
 	Timestamp    time.Time
 	Hostname     string
 	Application  string
 	Process      string
 	ID           string
 	Message      string
+	Version      uint16
+	Priority     uint8
 	RFCCompliant bool
 }
 

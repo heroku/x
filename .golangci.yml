@@ -20,7 +20,7 @@ linters:
     - gocritic
     - gocyclo
     - lll
-  #    - maligned
+    - maligned
   #    - prealloc
   #    - unparam
   disable: # TODO: enable these and the ones above
@@ -50,6 +50,9 @@ issues:
     - path: grpc/
       linters:
         - lll # GRPC code has notoriously long function signatures.
+    - path: go-kit/metrics/provider/librato/librato.go
+      linters:
+        - maligned # TODO: evaluate if this makes sense
 
 linters-settings:
   misspell:
@@ -64,3 +67,5 @@ linters-settings:
   lll:
     # max line length, lines longer will be reported. Default is 120.
     line-length: 130
+  maligned:
+    suggest-new: true
