@@ -12,8 +12,9 @@ import (
 func setup(t *testing.T) (*redigomock.Conn, DialURLFunc, func()) {
 	t.Helper()
 	conn := redigomock.NewConn()
-	redisDialURL := func(_ string, options ...redis.DialOption) (redis.Conn, error) {
-		return conn, nil
+	redisDialURL := func(_ string, _ ...redis.DialOption) (redis.Conn, error) { //nolint:unparam
+		var err error
+		return conn, err
 	}
 
 	return conn, redisDialURL, func() {

@@ -49,6 +49,7 @@ func TestGetOrRegisterHistogram(t *testing.T) {
 }
 
 func runCounterTests(t *testing.T, r Registry, p *testmetrics.Provider, prefix string) {
+	t.Helper()
 	r.GetOrRegisterCounter("foo").Add(1)
 	r.GetOrRegisterCounter("foo").Add(1)
 	p.CheckCounter(prefix+"foo", 2)
@@ -58,6 +59,7 @@ func runCounterTests(t *testing.T, r Registry, p *testmetrics.Provider, prefix s
 }
 
 func runHistogramTests(t *testing.T, r Registry, p *testmetrics.Provider, prefix string) {
+	t.Helper()
 	r.GetOrRegisterHistogram("foo", 1).Observe(1)
 	r.GetOrRegisterHistogram("foo", 1).Observe(1)
 	p.CheckObservationCount(prefix+"foo", 2)
@@ -67,6 +69,7 @@ func runHistogramTests(t *testing.T, r Registry, p *testmetrics.Provider, prefix
 }
 
 func runGaugeTests(t *testing.T, r Registry, p *testmetrics.Provider, prefix string) {
+	t.Helper()
 	r.GetOrRegisterGauge("foo").Add(1)
 	r.GetOrRegisterGauge("foo").Add(1)
 	p.CheckGauge(prefix+"foo", 2)
