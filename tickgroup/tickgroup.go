@@ -1,3 +1,4 @@
+// Package tickgroup allows a collection of goroutines to call a subtask every set time interval.
 package tickgroup
 
 import (
