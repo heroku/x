@@ -2,40 +2,104 @@ package encoding
 
 import (
 	"bufio"
+	"bytes"
 	"io"
 	"regexp"
 	"strconv"
 	"time"
 
-	"github.com/bmizerany/lpx"
-	syslog "github.com/influxdata/go-syslog"
-	"github.com/influxdata/go-syslog/octetcounting"
 	"github.com/pkg/errors"
 )
+
+// MaxFrameLength is the maximum message size to parse
+const MaxFrameLength = 10240
+
+// OptimalFrameLength is the initial buffer size for scanning
+const OptimalFrameLength = 1024
 
 // ErrBadFrame is returned when the scanner cannot parse syslog message boundaries
 var ErrBadFrame = errors.New("bad frame")
 
+// ErrInvalidStructuredData is returned when structure data has any value other than '-' (blank)
+// We do not
+var ErrInvalidStructuredData = errors.New("invalid structured data")
+
+var privalVersionRe = regexp.MustCompile(`<(\d+)>(\d)+`)
+
 // Decode converts a rfc5424 message to our model
-func Decode(res syslog.Message) Message {
-	return Message{
-		Priority:    *res.Priority(),
-		Version:     res.Version(),
-		Timestamp:   *res.Timestamp(),
-		Hostname:    nilStringPointer(res.Hostname()),
-		Application: nilStringPointer(res.Appname()),
-		Process:     nilStringPointer(res.ProcID()),
-		ID:          nilStringPointer(res.MsgID()),
-		Message:     nilStringPointer(res.Message()),
+func Decode(raw []byte, hasStructuredData bool) (Message, error) {
+	msg := Message{}
+
+	b := bytes.NewBuffer(raw)
+	priVal, err := syslogField(b)
+	if err != nil {
+		return msg, err
 	}
+
+	privalVersion := privalVersionRe.FindAllSubmatch(priVal, -1)
+	prio, err := strconv.ParseUint(string(privalVersion[0][1]), 10, 8)
+	if err != nil {
+		return msg, err
+	}
+	msg.Priority = uint8(prio)
+
+	version, err := strconv.ParseUint(string(privalVersion[0][1]), 10, 16)
+	if err != nil {
+		return msg, err
+	}
+	msg.Version = uint16(version)
+
+	rawTime, err := syslogField(b)
+	if err != nil {
+		return msg, err
+	}
+	msg.Timestamp, err = time.Parse(FlexibleSyslogTimeFormat, string(rawTime))
+	if err != nil {
+		return msg, err
+	}
+
+	hostname, err := syslogField(b)
+	if err != nil {
+		return msg, err
+	}
+	msg.Hostname = string(hostname)
+
+	application, err := syslogField(b)
+	if err != nil {
+		return msg, err
+	}
+	msg.Application = string(application)
+
+	process, err := syslogField(b)
+	if err != nil {
+		return msg, err
+	}
+	msg.Process = string(process)
+
+	id, err := syslogField(b)
+	if err != nil {
+		return msg, err
+	}
+	msg.ID = string(id)
+
+	if hasStructuredData {
+		// trash structured data, as we don't use it ever
+		if err = trashStructuredData(b); err != nil {
+			return msg, err
+		}
+	}
+
+	msg.Message = b.String()
+
+	return msg, nil
 }
 
 // syslogScanner is a octet-frame syslog parser
 type syslogScanner struct {
-	parser syslog.Parser
-	item   Message
-	err    error
-	more   chan *syslog.Result
+	parser       *bufio.Scanner
+	item         Message
+	err          error
+	rfcCompliant bool
 }
 
 // Scanner is the general purpose primitive for parsing message bodies coming
@@ -47,22 +111,20 @@ type Scanner interface {
 }
 
 // NewScanner is a syslog octet frame stream parser
-func NewScanner(r io.Reader) Scanner {
+func newSyslogScanner(r io.Reader, rfcCompliant bool) Scanner {
 	s := &syslogScanner{
-		more: make(chan *syslog.Result, 1),
+		parser:       bufio.NewScanner(r),
+		rfcCompliant: rfcCompliant,
 	}
-	s.parser = octetcounting.NewParser(syslog.WithListener(s.next))
-
-	go func() {
-		s.parser.Parse(r)
-		close(s.more)
-	}()
+	s.parser.Buffer(make([]byte, OptimalFrameLength), MaxFrameLength)
+	s.parser.Split(syslogParser())
 
 	return s
 }
 
-func (s *syslogScanner) next(r *syslog.Result) {
-	s.more <- r
+// NewScanner is a syslog octet frame stream parser
+func NewScanner(r io.Reader) Scanner {
+	return newSyslogScanner(r, true)
 }
 
 // Message returns the current message
@@ -72,91 +134,97 @@ func (s *syslogScanner) Message() Message {
 
 // Err returns the last scanner error
 func (s *syslogScanner) Err() error {
+	if err := s.parser.Err(); err != nil {
+		return err
+	}
+
 	return s.err
 }
 
 // Scan returns true until all messages are parsed or an error occurs.
 // When an error occur, the underlying error will be presented as `Err()`
 func (s *syslogScanner) Scan() bool {
-	r, ok := <-s.more
-	if !ok {
+	if !s.parser.Scan() {
 		return false
 	}
 
-	if r.Error != nil {
-		s.err = errors.Wrap(ErrBadFrame, r.Error.Error())
-		return false
-	}
-
-	s.item = Decode(r.Message)
-	return true
+	s.item, s.err = Decode(s.parser.Bytes(), s.rfcCompliant)
+	return s.err == nil
 }
-
-var privalVersionRe = regexp.MustCompile(`<(\d+)>(\d)+`)
 
 // NewDrainScanner returns a scanner for use with drain endpoints. The primary
 // difference is that it's lose and doesn't check for structured data.
 func NewDrainScanner(r io.ReadCloser) Scanner {
-	return &drainScanner{
-		lp: lpx.NewReader(bufio.NewReader(r)),
-	}
+	return newSyslogScanner(r, false)
 }
 
-type drainScanner struct {
-	message Message
-	lp      *lpx.Reader
-	err     error
-}
-
-// Message returns the last parsed message.
-func (s *drainScanner) Message() Message {
-	return s.message
-}
-
-// Err returns the last known error.
-func (s *drainScanner) Err() error {
-	if s.err != nil {
-		return s.err
-	}
-	return s.lp.Err()
-}
-
-// Scan returns true when a message was parsed. It returns false otherwise.
-func (s *drainScanner) Scan() bool {
-	if !s.lp.Next() {
-		return false
-	}
-
-	hdr := s.lp.Header()
-	ts, err := time.Parse(SyslogTimeFormat, string(hdr.Time))
+func syslogField(b *bytes.Buffer) ([]byte, error) {
+	g, err := b.ReadBytes(' ')
 	if err != nil {
-		s.err = err
-		return false
+		return nil, err
 	}
+	if len(g) > 0 {
+		g = g[:len(g)-1]
+	}
+	return g, nil
+}
 
-	privalVersion := privalVersionRe.FindAllSubmatch(hdr.PrivalVersion, -1)
-
-	priority, err := strconv.Atoi(string(privalVersion[0][1]))
+func trashStructuredData(b *bytes.Buffer) error {
+	// notice the quoting
+	// [meta sequenceId=\"518\"][meta somethingElse=\"bl\]ah\"]
+	firstChar, err := b.ReadByte()
 	if err != nil {
-		s.err = err
-		return false
+		return err
 	}
 
-	version, err := strconv.Atoi(string(privalVersion[0][2]))
-	if err != nil {
-		s.err = err
-		return false
+	if firstChar == '-' {
+		// trash the following space too
+		_, err = b.ReadByte()
+		return err
 	}
 
-	s.message = Message{
-		Priority:    uint8(priority),
-		Version:     uint16(version),
-		ID:          string(hdr.Msgid),
-		Timestamp:   ts,
-		Hostname:    string(hdr.Hostname),
-		Application: string(hdr.Name),
-		Process:     string(hdr.Procid),
-		Message:     string(s.lp.Bytes()),
+	if firstChar != '[' {
+		return ErrInvalidStructuredData
 	}
-	return true
+
+	quoting := false
+	bracketing := true
+
+	for {
+		c, err := b.ReadByte()
+		if err != nil {
+			return err
+		}
+
+		if !bracketing {
+			if c == ' ' {
+				// we done!
+				// consumed the last ']' and hit a space
+				break
+			}
+
+			if c != '[' {
+				return ErrInvalidStructuredData
+			}
+
+			bracketing = true
+			continue
+		}
+
+		// makes sure we dont catch '\]' as per RFC
+		// PARAM-VALUE     = UTF-8-STRING ; characters '"', '\' and ']' MUST be escaped.
+		if quoting {
+			quoting = false
+			continue
+		}
+
+		switch c {
+		case '\\':
+			quoting = true
+		case ']':
+			bracketing = false
+		}
+	}
+
+	return nil
 }

@@ -7,7 +7,6 @@ require (
 	github.com/armon/go-proxyproto v0.0.0-20190211145416-68259f75880e
 	github.com/aws/aws-sdk-go v1.13.10
 	github.com/axiomhq/hyperloglog v0.0.0-20180317131949-fe9507de0228
-	github.com/bmizerany/lpx v0.0.0-20130503172629-af85cf24c156
 	github.com/dgryski/go-metro v0.0.0-20180109044635-280f6062b5bc // indirect
 	github.com/go-chi/chi v3.3.2+incompatible
 	github.com/go-ini/ini v1.33.0 // indirect
@@ -21,7 +20,6 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway v1.9.0
 	github.com/heroku/rollrus v0.0.1
 	github.com/hydrogen18/memlistener v0.0.0-20141126152155-54553eb933fb
-	github.com/influxdata/go-syslog v0.0.0-20190814180256-831896502726
 	github.com/jmespath/go-jmespath v0.0.0-20160202185014-0b12d6b521d8 // indirect
 	github.com/joeshaw/envdecode v0.0.0-20180129163420-d5f34bca07f3
 	github.com/leesper/go_rng v0.0.0-20171009123644-5344a9259b21 // indirect

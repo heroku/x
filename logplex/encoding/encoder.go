@@ -4,13 +4,15 @@ import (
 	"fmt"
 	"io"
 	"strconv"
-	"time"
 
 	"github.com/pkg/errors"
 )
 
 // SyslogTimeFormat defines the exact time format used in our logs.
 const SyslogTimeFormat = "2006-01-02T15:04:05.999999-07:00"
+
+// FlexibleSyslogTimeFormat accepts both 'Z' and TZ notation for event time.
+const FlexibleSyslogTimeFormat = "2006-01-02T15:04:05.999999Z07:00"
 
 // L15Error is the message returned with an L15 error
 const L15Error = "L15: Error displaying log lines. Please try again."
@@ -114,26 +116,6 @@ func Encode(msg Message) ([]byte, error) {
 	)
 
 	return []byte(strconv.Itoa(len(line)) + " " + line), nil
-}
-
-// MakeL15Error assembles an L15 error message
-func MakeL15Error() Message {
-	return Message{
-		// old log-tails says "l15Prival = []byte("<40>1")" - how to translate?
-		Priority:    1,
-		Hostname:    "host",
-		Application: "heroku",
-		Process:     "logplex",
-		Message:     L15Error,
-		Timestamp:   time.Now().UTC(),
-	}
-}
-
-func nilStringPointer(p *string) string {
-	if p == nil {
-		return ""
-	}
-	return *p
 }
 
 func stringOrNil(s string) string {

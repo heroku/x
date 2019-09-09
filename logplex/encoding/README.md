@@ -8,8 +8,7 @@ syslog RFC5424 messages.
 ## How to use?
 
 We have 2 scanners available. If you're trying to build a logplex compatible ingress,
-you can use the regular scanner, which is mostly backed by
-[influxdata/go-syslog][https://github.com/influxdata/go-syslog].
+you can use the regular scanner.
 
 ### Scanner
 
