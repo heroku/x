@@ -20,7 +20,6 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway v1.9.0
 	github.com/heroku/rollrus v0.0.1
 	github.com/hydrogen18/memlistener v0.0.0-20141126152155-54553eb933fb
-	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jmespath/go-jmespath v0.0.0-20160202185014-0b12d6b521d8 // indirect
 	github.com/joeshaw/envdecode v0.0.0-20180129163420-d5f34bca07f3
 	github.com/leesper/go_rng v0.0.0-20171009123644-5344a9259b21 // indirect
