@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"time"
-
-	"github.com/heroku/runtime/lib/tickgroup"
 )
 
 // This example uses the tickgroup package to create a simple 5 second timer.
@@ -13,7 +11,7 @@ func Example() {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	// A tickgroup tg with a cancel context is initialized.
-	tg := tickgroup.New(ctx)
+	tg := New(ctx)
 
 	var i int
 	tg.Go(time.Second, func() error {
