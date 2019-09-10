@@ -12,13 +12,13 @@ require (
 	github.com/go-ini/ini v1.33.0 // indirect
 	github.com/go-kit/kit v0.6.0
 	github.com/gogo/protobuf v1.2.1 // indirect
-	github.com/golangci/golangci-lint v1.17.1
+	github.com/golangci/golangci-lint v1.18.0
 	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/google/gops v0.3.6
 	github.com/google/uuid v1.1.1
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.0
 	github.com/grpc-ecosystem/grpc-gateway v1.9.0
-	github.com/heroku/rollrus v0.0.1
+	github.com/heroku/rollrus v0.0.2
 	github.com/hydrogen18/memlistener v0.0.0-20141126152155-54553eb933fb
 	github.com/jmespath/go-jmespath v0.0.0-20160202185014-0b12d6b521d8 // indirect
 	github.com/joeshaw/envdecode v0.0.0-20180129163420-d5f34bca07f3
