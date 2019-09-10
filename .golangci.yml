@@ -51,6 +51,9 @@ issues:
     - path: go-kit/metrics/provider/librato/librato.go
       linters:
         - maligned # TODO: evaluate if this makes sense
+    - path: testing/mustcert/example_test.go
+      linters:
+        - gosec # Don't run gosec, it's insecure because it's a test
 
 linters-settings:
   misspell:

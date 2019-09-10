@@ -4,9 +4,9 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"io/ioutil"
 )
 
 // This example uses mustcert to create certificates, start a TLS server, and a client to
@@ -18,15 +18,17 @@ func Example() {
 
 	// Create the TLS Test Server
 	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("hello, world!"))
+		if _, err := w.Write([]byte("hello, world!")); err != nil {
+			fmt.Println(err)
+		}
 	}))
 
 	rootCAs := Pool(ca.TLS())
 	server.TLS = &tls.Config{
-		ClientAuth: tls.RequireAndVerifyClientCert,
+		ClientAuth:   tls.RequireAndVerifyClientCert,
 		Certificates: []tls.Certificate{*serverCert.TLS()},
-		RootCAs: rootCAs,
-		ClientCAs: rootCAs,
+		RootCAs:      rootCAs,
+		ClientCAs:    rootCAs,
 	}
 	server.StartTLS()
 	defer server.Close()
@@ -39,8 +41,8 @@ func Example() {
 	caCertPool := x509.NewCertPool()
 	caCertPool.AppendCertsFromPEM([]byte(ca.CertPEM()))
 	config := &tls.Config{
-		Certificates: []tls.Certificate{cert},
-		RootCAs: caCertPool,
+		Certificates:       []tls.Certificate{cert},
+		RootCAs:            caCertPool,
 		InsecureSkipVerify: true,
 	}
 	config.BuildNameToCertificate()
