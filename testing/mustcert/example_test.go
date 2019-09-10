@@ -2,7 +2,6 @@ package mustcert
 
 import (
 	"crypto/tls"
-	"crypto/x509"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -38,8 +37,7 @@ func Example() {
 	if err != nil {
 		fmt.Println(err)
 	}
-	caCertPool := x509.NewCertPool()
-	caCertPool.AppendCertsFromPEM([]byte(ca.CertPEM()))
+	caCertPool := Pool(ca.TLS())
 	config := &tls.Config{
 		Certificates:       []tls.Certificate{cert},
 		RootCAs:            caCertPool,
