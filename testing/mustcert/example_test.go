@@ -1,4 +1,4 @@
-package mustcert_test
+package mustcert
 
 import (
 	"crypto/tls"
@@ -7,23 +7,21 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"io/ioutil"
-
-	"github.com/heroku/dogwood/pkg/mustcert"
 )
 
 // This example uses mustcert to create certificates, start a TLS server, and a client to
 // talk to it.
 func Example() {
-	ca := mustcert.CA("root", nil)
-	serverCert := mustcert.Leaf("localhost", ca)
-	clientCert := mustcert.Leaf("client", ca)
+	ca := CA("root", nil)
+	serverCert := Leaf("localhost", ca)
+	clientCert := Leaf("client", ca)
 
 	// Create the TLS Test Server
 	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("hello, world!"))
 	}))
 
-	rootCAs := mustcert.Pool(ca.TLS())
+	rootCAs := Pool(ca.TLS())
 	server.TLS = &tls.Config{
 		ClientAuth: tls.RequireAndVerifyClientCert,
 		Certificates: []tls.Certificate{*serverCert.TLS()},
