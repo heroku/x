@@ -1,3 +1,4 @@
+// Package mustcert generates certificates for TLS testing
 package mustcert
 
 import (
