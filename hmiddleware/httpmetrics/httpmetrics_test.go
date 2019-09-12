@@ -14,7 +14,7 @@ import (
 )
 
 // This example shows how http metrics will be collected for requests
-func Example(){
+func Example() {
 	// Create a new Metrics Provider
 	provider := testmetrics.NewProvider(&testing.T{})
 	r := chi.NewRouter()
@@ -26,13 +26,13 @@ func Example(){
 
 	// Metrics will be collected around http OK statuses
 	// For all requests and for /foo requests
-	r.Get("/foo", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request){
+	r.Get("/foo", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
 	// Metrics will be collected around http Bad Request statuses
 	// For all requests and for /bar requests
-	r.Get("/bar", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request){
+	r.Get("/bar", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 	}))
 
@@ -40,11 +40,15 @@ func Example(){
 	defer server.Close()
 
 	// Metrics will be collected for each request
-	req, _ := http.NewRequest("GET", server.URL + "/foo", nil)
-	http.DefaultClient.Do(req)
+	req, _ := http.NewRequest("GET", server.URL+"/foo", nil)
+	if _, err := http.DefaultClient.Do(req); err != nil {
+		fmt.Println(err)
+	}
 
-	req, _ = http.NewRequest("GET", server.URL + "/bar", nil)
-	http.DefaultClient.Do(req)
+	req, _ = http.NewRequest("GET", server.URL+"/bar", nil)
+	if _, err := http.DefaultClient.Do(req); err != nil {
+		fmt.Println(err)
+	}
 
 	provider.PrintCounterValue("http.server.get.bar.response-statuses.400")
 	provider.PrintCounterValue("http.server.all.requests")
