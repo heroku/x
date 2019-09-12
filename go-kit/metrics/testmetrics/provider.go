@@ -1,3 +1,5 @@
+// Package testmetrics is for testing provider metrics
+// with a test Provider that adheres to the Provider interface
 package testmetrics
 
 import (
