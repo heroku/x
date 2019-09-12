@@ -13,7 +13,7 @@ import (
 	"github.com/heroku/x/go-kit/metrics/testmetrics"
 )
 
-// This example shows how http metrics will be collected for requests
+// This example demonstrates how to set up metrics and what will be collected on requests
 func Example() {
 	// Create a new Metrics Provider
 	provider := testmetrics.NewProvider(&testing.T{})
