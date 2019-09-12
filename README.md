@@ -1,7 +1,6 @@
 # x
 
-[![CircleCI](https://circleci.com/gh/heroku/x.svg?style=svg)](https://circleci.com/gh/heroku/x)&nbsp;
-[![GoDoc](http://godoc.org/badge.png)](http://godoc.org/github.com/heroku/x)
+[![CircleCI](https://circleci.com/gh/heroku/x.svg?style=svg)](https://circleci.com/gh/heroku/x)&nbsp;[![GoDoc](https://godoc.org/github.com/heroku/x?status.svg)](http://godoc.org/github.com/heroku/x)
 
 A set of packages for reuse within Heroku Go applications.
 
