@@ -1,32 +1,13 @@
-version: 2
-jobs:
-  build:
-    docker:
-      - image: circleci/golang:1.12
-        environment:
-          PGUSER: postgres
-          PGPASSWORD: example
-    environment:
-      ENV: test
-      GOTEST_OPT: -v -race
-      LINT_RUN_OPTS: ""
-    steps:
-      - checkout
-      - restore_cache:
-          keys:
-            - v1-mod-cache-{{ checksum "go.sum" }}
-      - run: go version; go env
-      - run: make lint
-      - run: make test
-      - run: make coverage
-      - save_cache: # Store cache of the /go/pkg directory
-          key: v1-mod-cache-{{ checksum "go.sum" }}
-          paths:
-            - "/go/pkg/mod"
-            - "/go/pkg/sumdb"
-      - run:
-          command: |
-            mkdir -p /tmp/coverage
-            cp coverage.html /tmp/coverage
-      - store_artifacts:
-          path: /tmp/coverage
+version: 2.1
+orbs:
+  golang: heroku/golang@volatile
+
+workflows:
+  ci:
+    jobs:
+      - golang/golangci-lint:
+          version: "v1.18.0"
+      - golang/test:
+          version: "1.13"
+      - golang/cover:
+          version: "1.13"
