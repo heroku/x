@@ -1,6 +1,6 @@
 version: 2.1
 orbs:
-  golang: heroku/golang@volatile
+  golang: heroku/golang@0.0.10
 
 workflows:
   ci:
