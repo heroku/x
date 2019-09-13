@@ -1,6 +1,9 @@
+// Package testmetrics is for testing provider metrics
+// with a test Provider that adheres to the Provider interface
 package testmetrics
 
 import (
+	"fmt"
 	"reflect"
 	"sort"
 	"strings"
@@ -125,6 +128,16 @@ func (p *Provider) CheckCounter(name string, v float64, labelValues ...string) {
 	if len(labelValues) > 0 && !reflect.DeepEqual(labelValues, c.labelValues) {
 		p.t.Fatalf("want counter label values: %#v, got %#v", labelValues, c.labelValues)
 	}
+}
+
+// PrintCounterValue prints the value of the specified counter and their current counts
+func (p *Provider) PrintCounterValue(name string) {
+	p.t.Helper()
+
+	p.Lock()
+	defer p.Unlock()
+
+	fmt.Printf("%s: %v\n", name, p.counters[name].getValue())
 }
 
 // CheckNoCounter checks that there is no registered counter with the name
