@@ -44,11 +44,9 @@ func Limiter(initial int64, backoffRatio float64) grpc.UnaryServerInterceptor {
 			return nil, status.Error(codes.Unavailable, "server concurrency limit reached")
 		}
 
-		// TODO: this captures the limit at the start of a request, but we don't
-		// record what the limits or inflight count is after requests complete.
 		stats.Record(ctx, RequestLimit.M(tx.limit), InflightRequests.M(tx.inflight))
 
-		defer l.finish(tx, err)
+		defer l.finish(ctx, tx, err)
 
 		return handler(ctx, req)
 	}
@@ -75,7 +73,7 @@ func (l *limiter) start() (*transaction, bool) {
 	return &transaction{inflight: l.inflight, limit: l.limit}, true
 }
 
-func (l *limiter) finish(tx *transaction, err error) {
+func (l *limiter) finish(ctx context.Context, tx *transaction, err error) {
 	l.Lock()
 	defer l.Unlock()
 
@@ -98,6 +96,10 @@ func (l *limiter) finish(tx *transaction, err error) {
 			l.limit++
 		}
 	}
+
+	l.inflight--
+
+	stats.Record(ctx, RequestLimit.M(tx.limit), InflightRequests.M(tx.inflight))
 }
 
 type transaction struct {
