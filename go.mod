@@ -33,6 +33,7 @@ require (
 	github.com/spf13/cobra v0.0.2
 	github.com/unrolled/secure v1.0.1
 	github.com/urfave/cli v1.21.0
+	go.opencensus.io v0.22.1
 	golang.org/x/crypto v0.0.0-20190829043050-9756ffdc2472
 	golang.org/x/net v0.0.0-20190827160401-ba9fcec4b297 // indirect
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58
