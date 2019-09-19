@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"go.opencensus.io/stats"
+	"go.opencensus.io/stats/view"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -26,6 +27,35 @@ var (
 		"Number of requests rejected because of concurrency limits",
 		stats.UnitDimensionless,
 	)
+)
+
+var (
+	RequestLimitLastValue = &view.View{
+		Name:        "github.com/heroku/x/grpc/grpcserver/concurrency_limit",
+		Measure:     RequestLimit,
+		Aggregation: view.LastValue(),
+		Description: "Concurrency limit",
+	}
+	RejectedRequestsCount = &view.View{
+		Name:        "github.com/heroku/x/grpc/grpcserver/rejected_requests",
+		Measure:     RejectedRequests,
+		Aggregation: view.Sum(),
+		Description: "Rejected requests",
+	}
+	InflightRequestsLastValue = &view.View{
+		Name:        "github.com/heroku/x/grpc/grpcserver/inflight_requests",
+		Measure:     InflightRequests,
+		Aggregation: view.LastValue(),
+		Description: "Inflight requests",
+	}
+)
+
+var (
+	DefaultLimiterViews = []*view.View{
+		RequestLimitLastValue,
+		RejectedRequestsCount,
+		InflightRequestsLastValue,
+	}
 )
 
 // Limiter implements an adaptive concurrency limiter for unary gRPC server
