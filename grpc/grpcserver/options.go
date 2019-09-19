@@ -31,6 +31,8 @@ type options struct {
 	authStreamInterceptor  grpc.StreamServerInterceptor
 	useValidateInterceptor bool
 
+	unaryInts []grpc.UnaryServerInterceptor
+
 	grpcOptions []grpc.ServerOption
 }
 
@@ -77,6 +79,12 @@ func ValidateInterceptor() ServerOption {
 	}
 }
 
+func UnaryInterceptor(i grpc.UnaryServerInterceptor) ServerOption {
+	return func(o *options) {
+		o.unaryInts = append(o.unaryInts, i)
+	}
+}
+
 func (o *options) unaryInterceptors() []grpc.UnaryServerInterceptor {
 	l := o.logEntry
 	if l == nil {
@@ -93,6 +101,7 @@ func (o *options) unaryInterceptors() []grpc.UnaryServerInterceptor {
 	if o.metricsProvider != nil {
 		i = append(i, grpcmetrics.NewUnaryServerInterceptor(o.metricsProvider)) // report metrics on unwrapped errors
 	}
+	i = append(i, o.unaryInts...)
 	i = append(i,
 		unaryServerErrorUnwrapper, // unwrap after we've logged
 		grpc_logrus.UnaryServerInterceptor(l, defaultLogOpts...),
