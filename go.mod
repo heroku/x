@@ -23,7 +23,6 @@ require (
 	github.com/joeshaw/envdecode v0.0.0-20180129163420-d5f34bca07f3
 	github.com/leesper/go_rng v0.0.0-20171009123644-5344a9259b21 // indirect
 	github.com/lstoll/grpce v1.7.0
-	github.com/mwitkow/go-grpc-middleware v1.0.0
 	github.com/oklog/run v1.0.0
 	github.com/pkg/errors v0.8.2-0.20190227000051-27936f6d90f9
 	github.com/rafaeljusto/redigomock v0.0.0-20190202135759-257e089e14a1
