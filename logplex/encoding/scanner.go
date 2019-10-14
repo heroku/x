@@ -43,7 +43,7 @@ func Decode(raw []byte, hasStructuredData bool) (Message, error) {
 	}
 	msg.Priority = uint8(prio)
 
-	version, err := strconv.ParseUint(string(privalVersion[0][1]), 10, 16)
+	version, err := strconv.ParseUint(string(privalVersion[0][2]), 10, 16)
 	if err != nil {
 		return msg, err
 	}
