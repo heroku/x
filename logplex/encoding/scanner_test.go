@@ -37,6 +37,13 @@ func TestScanner(t *testing.T) {
 			wantPriority: 190,
 		},
 
+		"fallback timeformat": {
+			log:          "58 <190>1 2019-07-21T22:13:34 shuttle t.http shuttle - - 168\n",
+			count:        1,
+			wantVersion:  1,
+			wantPriority: 190,
+		},
+
 		"bad frame size": {
 			log:          "64 <190>1 2019-07-20T17:50:10.879238Z shuttle token shuttle - - 99\n70 <190>1 2019-07-20T17:50:10.879238Z shuttle token shuttle - - 100",
 			count:        1,

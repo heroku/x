@@ -8,11 +8,15 @@ import (
 	"github.com/pkg/errors"
 )
 
-// SyslogTimeFormat defines the exact time format used in our logs.
+// SyslogTimeFormat defines the exact time format used in our egress logs.
 const SyslogTimeFormat = "2006-01-02T15:04:05.999999-07:00"
 
-// FlexibleSyslogTimeFormat accepts both 'Z' and TZ notation for event time.
+// FlexibleSyslogTimeFormat accepts both 'Z' and TZ notation for ingress event time.
 const FlexibleSyslogTimeFormat = "2006-01-02T15:04:05.999999Z07:00"
+
+// FallbackSyslogTimeFormat is a fallback for ingress event time.
+// It assumes UTC as timezone
+const FallbackSyslogTimeFormat = "2006-01-02T15:04:05"
 
 // L15Error is the message returned with an L15 error
 const L15Error = "L15: Error displaying log lines. Please try again."

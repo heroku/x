@@ -55,7 +55,14 @@ func Decode(raw []byte, hasStructuredData bool) (Message, error) {
 	}
 	msg.Timestamp, err = time.Parse(FlexibleSyslogTimeFormat, string(rawTime))
 	if err != nil {
-		return msg, err
+		if _, ok := err.(*time.ParseError); !ok {
+			return msg, err
+		}
+
+		msg.Timestamp, err = time.Parse(FallbackSyslogTimeFormat, string(rawTime))
+		if err != nil {
+			return msg, err
+		}
 	}
 
 	hostname, err := syslogField(b)
