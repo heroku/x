@@ -3,6 +3,7 @@ module github.com/heroku/x
 go 1.12
 
 require (
+	contrib.go.opencensus.io/exporter/ocagent v0.6.0
 	github.com/VividCortex/gohistogram v1.0.0 // indirect
 	github.com/armon/go-proxyproto v0.0.0-20190211145416-68259f75880e
 	github.com/aws/aws-sdk-go v1.13.10
@@ -35,12 +36,13 @@ require (
 	github.com/spf13/pflag v1.0.1 // indirect
 	github.com/unrolled/secure v1.0.1
 	github.com/urfave/cli v1.21.0
+	go.opencensus.io v0.22.1
 	golang.org/x/crypto v0.0.0-20190829043050-9756ffdc2472
 	golang.org/x/net v0.0.0-20190827160401-ba9fcec4b297 // indirect
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58
 	golang.org/x/sys v0.0.0-20191029155521-f43be2a4598c // indirect
 	gonum.org/v1/gonum v0.0.0-20190502212712-4a2eb0188cbc // indirect
-	google.golang.org/grpc v1.20.1
+	google.golang.org/grpc v1.22.0
 	gopkg.in/caio/go-tdigest.v2 v2.3.0
 	gopkg.in/ini.v1 v1.42.0 // indirect
 )

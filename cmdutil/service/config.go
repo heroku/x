@@ -5,16 +5,18 @@ import (
 
 	"github.com/heroku/x/cmdutil/debug"
 	"github.com/heroku/x/cmdutil/metrics"
+	"github.com/heroku/x/cmdutil/oc"
 	"github.com/heroku/x/cmdutil/rollbar"
 	"github.com/heroku/x/cmdutil/svclog"
 )
 
 // standardConfig is used when service.New is called.
 type standardConfig struct {
-	Debug   debug.Config
-	Logger  svclog.Config
-	Metrics metrics.Config
-	Rollbar rollbar.Config
+	Debug      debug.Config
+	Logger     svclog.Config
+	Metrics    metrics.Config
+	Rollbar    rollbar.Config
+	OpenCensus oc.Config
 }
 
 // platformConfig is used by HTTP and captures
