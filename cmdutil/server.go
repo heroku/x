@@ -9,6 +9,7 @@ import (
 // A Server can be run synchronously and return an error.
 //
 // Servers are typically used with oklog/run.Group.
+// TODO[freeformz]: Document why Stop takes an error and what to do with is.
 type Server interface {
 	Run() error
 	Stop(error)

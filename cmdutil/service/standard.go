@@ -13,6 +13,7 @@ import (
 	"github.com/heroku/x/cmdutil"
 	"github.com/heroku/x/cmdutil/debug"
 	"github.com/heroku/x/cmdutil/metrics"
+	"github.com/heroku/x/cmdutil/oc"
 	"github.com/heroku/x/cmdutil/rollbar"
 	"github.com/heroku/x/cmdutil/signals"
 	"github.com/heroku/x/cmdutil/svclog"
@@ -30,10 +31,9 @@ type Standard struct {
 	MetricsProvider xmetrics.Provider
 }
 
-// New returns a Standard service with logging, rollbar, metrics, debugging,
-// and common signal handling.
-//
-// It calls envdecode.MustStrictDecode on the provided appConfig.
+// New Standard Service with logging, rollbar, metrics, debugging, common signal
+// handling, and possibly more. envdecode.MustStrictDecode is called on the
+// provided appConfig to ensure that it is processed.
 func New(appConfig interface{}, ofs ...OptionFunc) *Standard {
 	// Initialize the pseudo-random number generator with a unique value so we
 	// get unique sequences across runs.
@@ -79,6 +79,14 @@ func New(appConfig interface{}, ofs ...OptionFunc) *Standard {
 	s.Add(debug.New(logger, sc.Debug.Port))
 	s.Add(signals.NewServer(logger, syscall.SIGINT, syscall.SIGTERM))
 
+	if o.enableOpenCensusTracing {
+		oce, err := oc.NewExporter(sc.OpenCensus.TraceConfig(), sc.OpenCensus.ExporterOptions(s.App)...)
+		if err != nil {
+			panic(err)
+		}
+		s.Add(oce)
+	}
+
 	return s
 }
 
@@ -110,43 +118,49 @@ func (s *Standard) Run() {
 }
 
 type options struct {
-	skipMetricsSuffix   bool
-	customMetricsSuffix string
+	customMetricsSuffix     string
+	skipMetricsSuffix       bool
+	enableOpenCensusTracing bool
 }
 
 // OptionFunc is a function that modifies internal service options.
 type OptionFunc func(*options)
 
-// SkipMetricsSuffix is an OptionFunc that has New skip automatically
-// adding the process type from DYNO as a suffix on metrics recorded with
-// MetricsProvider.
+// SkipMetricsSuffix prevents the Service from suffixing the process type to
+// metric names recorded by the MetricsProvider. The default suffix is
+// determined from $DYNO.
 func SkipMetricsSuffix() OptionFunc {
 	return func(o *options) {
 		o.skipMetricsSuffix = true
 	}
 }
 
-// CustomMetricsSuffix is an OptionFunc that has New use the given suffix
-// on metrics recorded with MetricsProvider instead of inferring it from
-// DYNO.
+// CustomMetricsSuffix to be added to metrics recorded by the MetricsProvider
+// instead of inferring it from $DYNO.
 func CustomMetricsSuffix(s string) OptionFunc {
 	return func(o *options) {
 		o.customMetricsSuffix = s
 	}
 }
 
-// metricsSuffixFromDyno determines a metrics suffix from
-// dyno. It uses the process type component from dyno, or
-// "server" if that's "web."
-// If dyno is empty, it returns an empty suffix.
+// EnableOpenCensusTracing on the Service by registering and starting an open
+// census agent exporter.
+func EnableOpenCensusTracing() OptionFunc {
+	return func(o *options) {
+		o.enableOpenCensusTracing = true
+	}
+}
+
+// metricsSuffixFromDyno determines a metrics suffix from the process part of
+// $DYNO. If $DYNO indicates a "web" process, the suffix is "server". If $DYNO
+// is empty, so is the suffix.
 func metricsSuffixFromDyno(dyno string) string {
 	if dyno == "" {
-		return ""
+		return dyno
 	}
 	parts := strings.SplitN(dyno, ".", 2)
-	pt := parts[0]
-	if pt == "web" {
-		pt = "server"
+	if parts[0] == "web" {
+		parts[0] = "server" // TODO[freeformz]: Document why this is server
 	}
-	return pt
+	return parts[0]
 }
