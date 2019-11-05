@@ -6,53 +6,56 @@ import (
 	"github.com/oklog/run"
 )
 
-// A Server can be run synchronously and return an error.
+// Server runs synchronously and returns any errors. The Run method is expected
+// to block until Stop is called or return an error asap. Servers are typically
+// used with oklog/run.Group, where the first Server.Run to return will cancel
+// the Group (regardless of the error returned). Use NewContextServer to create
+// a Server that can block on a Context until Stop is called.
 //
-// Servers are typically used with oklog/run.Group.
 // TODO[freeformz]: Document why Stop takes an error and what to do with is.
 type Server interface {
 	Run() error
 	Stop(error)
 }
 
-// ServerFunc is a function which implements the Server interface.
+// ensure ServerFunc implements Server
+var _ Server = ServerFunc(func() error { return nil })
+
+// ServerFunc adapts a function to the Server interface. This is useful to adapt
+// a closure to being a Server.
 type ServerFunc func() error
 
-// Run calls fn and returns any errors.
-//
-// It implements the Server interface.
+// Run the function, returning any errors.
 func (fn ServerFunc) Run() error { return fn() }
 
 // Stop is a noop for gradual compatibility with oklog run.Group.
-//
-// It implements the Server interface.
 func (fn ServerFunc) Stop(error) {}
 
-// ServerFuncs implements the Server interface with provided functions.
+// ensure ServerFuncs implements Server
+var _ Server = ServerFuncs{}
+
+// ServerFuncs adapts two functions, one for Run, one for Stop, to the Server
+// interface. This is useful for adapting closures so they can be used as a
+// Server.
 type ServerFuncs struct {
 	RunFunc  func() error
 	StopFunc func(error)
 }
 
-// Run calls RunFunc and returns any errors.
-//
-// It implements the Server interface.
+// Run the Server.
 func (sf ServerFuncs) Run() error {
 	return sf.RunFunc()
 }
 
-// Stop calls StopFunc, if it's non-nil.
-//
-// It implements the Server interface.
+// Stop the Server.
 func (sf ServerFuncs) Stop(err error) {
 	if sf.StopFunc != nil {
 		sf.StopFunc(err)
 	}
 }
 
-// NewContextServer returns a Server that runs the given
-// function with a context that is canceled when the Server
-// is stopped.
+// NewContextServer that when Run(), calls the given function with a context
+// that is canceled when Stop() is called.
 func NewContextServer(fn func(context.Context) error) Server {
 	ctx, cancel := context.WithCancel(context.Background())
 
@@ -67,9 +70,9 @@ func NewContextServer(fn func(context.Context) error) Server {
 
 }
 
-// MultiServer returns a new kit.Server which will run all of the provided
-// servers until one of them fails or the server is stopped.
-func MultiServer(srvs ...Server) Server {
+// MultiServer which, when Run, will run all of the servers until one of them
+// returns or is itself Stopped.
+func MultiServer(servers ...Server) Server {
 	var g run.Group
 
 	s := NewContextServer(func(ctx context.Context) error {
@@ -79,7 +82,7 @@ func MultiServer(srvs ...Server) Server {
 
 	g.Add(s.Run, s.Stop)
 
-	for _, srv := range srvs {
+	for _, srv := range servers {
 		g.Add(srv.Run, srv.Stop)
 	}
 

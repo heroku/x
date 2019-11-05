@@ -3,7 +3,12 @@ package cmdutil
 import (
 	"context"
 	"errors"
+	"fmt"
+	"io"
 	"testing"
+	"time"
+
+	"github.com/oklog/run"
 )
 
 func TestServerFunc(t *testing.T) {
@@ -133,4 +138,105 @@ func newStoppingServer() *stoppingServer {
 		return ctx.Err()
 	})
 	return s
+}
+
+func ExampleServerFunc() {
+	var a Server = ServerFunc(
+		func() error {
+			fmt.Println("A")
+			return nil
+		},
+	)
+	var g run.Group
+	g.Add(a.Run, a.Stop)
+	if err := g.Run(); err != nil {
+		panic(err)
+	}
+	// Output: A
+}
+
+func ExampleServerFuncs() {
+	var a Server = ServerFuncs{
+		RunFunc: func() error {
+			fmt.Println("A")
+			return nil
+		},
+		StopFunc: func(err error) {
+
+		},
+	}
+	var g run.Group
+	g.Add(a.Run, a.Stop)
+	if err := g.Run(); err != nil {
+		panic(err)
+	}
+	// Output: A
+}
+
+func ExampleNewContextServer() {
+	s := NewContextServer(
+		func(ctx context.Context) error {
+			// do something that doesn't block ex:
+			fmt.Println("A")
+			<-ctx.Done() // block waiting for context to be canceled
+			// can do any cleanup after this, or just return nil
+			// return cleanup()
+			return nil
+		},
+	)
+	var exitFast Server = ServerFunc(
+		// doesn't do anything, just returns
+		func() error {
+			return nil
+		},
+	)
+	var g run.Group
+	g.Add(s.Run, s.Stop)
+	g.Add(exitFast.Run, exitFast.Stop)
+	if err := g.Run(); err != nil {
+		panic(err)
+	}
+	// Output: A
+}
+
+func ExampleMultiServer() {
+	s := MultiServer(
+		ServerFunc(
+			func() error {
+				fmt.Println("A")
+				return nil
+			}),
+	)
+	if err := s.Run(); err != nil {
+		panic(err)
+	}
+	// Output: A
+}
+
+func ExampleMultiServer_stop() {
+	done := make(chan struct{})
+	s := MultiServer(
+		ServerFuncs{
+			RunFunc: func() error {
+				fmt.Println("A")
+				<-done
+				fmt.Println("B")
+				return nil
+			},
+			StopFunc: func(err error) {
+				fmt.Println(err)
+				close(done)
+			},
+		},
+	)
+	go func() {
+		time.Sleep(1 * time.Second)
+		s.Stop(io.EOF)
+	}()
+	if err := s.Run(); err != nil && err != context.Canceled {
+		panic(err)
+	}
+	// Output: A
+	// context canceled
+	// B
 }
