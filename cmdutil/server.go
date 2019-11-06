@@ -7,7 +7,7 @@ import (
 )
 
 // Server runs synchronously and returns any errors. The Run method is expected
-// to block until Stop is called or return an error asap. Servers are typically
+// to block until finished, returning any error, or until Stop is called.
 // used with oklog/run.Group, where the first Server.Run to return will cancel
 // the Group (regardless of the error returned). Use NewContextServer to create
 // a Server that can block on a Context until Stop is called.
