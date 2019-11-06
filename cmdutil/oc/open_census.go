@@ -1,6 +1,7 @@
 package oc
 
 import (
+	"context"
 	"time"
 
 	"contrib.go.opencensus.io/exporter/ocagent"
@@ -60,10 +61,13 @@ func NewExporter(tc trace.Config, opts ...ocagent.ExporterOption) (cmdutil.Serve
 	trace.RegisterExporter(oce)
 	trace.ApplyConfig(tc)
 
-	return cmdutil.ServerFuncs{
-		RunFunc: oce.Start,
-		StopFunc: func(err error) {
-			_ = oce.Stop()
+	return cmdutil.NewContextServer(
+		func(ctx context.Context) error {
+			if err := oce.Start(); err != nil {
+				return err
+			}
+			<-ctx.Done() // wait for ctx to be canceled
+			return oce.Stop()
 		},
-	}, nil
+	), nil
 }
