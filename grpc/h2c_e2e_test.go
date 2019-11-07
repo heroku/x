@@ -15,9 +15,7 @@ import (
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 )
 
-// TestH2CE2E exercises both the H2C server and H2C client in an end to end
-// fashion
-func TestH2CE2E(t *testing.T) {
+func TestH2CContextE2E(t *testing.T) {
 	handle11resp := "http 1.1 requested"
 	handle11 := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, handle11resp)
@@ -62,11 +60,11 @@ func TestH2CE2E(t *testing.T) {
 		t.Errorf("Expected HTTP/1.1 call to return %q, got %q", handle11resp, string(bb))
 	}
 
-	//TODO: SA1019: grpc.WithWaitForHandshake is deprecated: this is the default behavior, and this option will be removed after the 1.18 release.  (staticcheck)
-	conn, err := grpcclient.DialH2C("http://"+lis.Addr().String(), grpc.WithWaitForHandshake()) //nolint:staticcheck
+	conn, err := grpcclient.DialH2CContext(context.Background(), "http://"+lis.Addr().String())
 	if err != nil {
 		t.Fatalf("Error dialing server [%+v]", err)
 	}
+
 	defer conn.Close()
 
 	hc := healthpb.NewHealthClient(conn)
@@ -75,8 +73,7 @@ func TestH2CE2E(t *testing.T) {
 	_, err = hc.Check(
 		context.Background(),
 		&healthpb.HealthCheckRequest{},
-		//TODO: SA1019: grpc.FailFast is deprecated: use WaitForReady.  (staticcheck)
-		grpc.FailFast(false), //nolint:staticcheck
+		grpc.WaitForReady(false),
 	)
 	if err != nil {
 		t.Errorf("Error calling health backend [%+v]", err)
