@@ -24,9 +24,9 @@ import (
 
 // New configures a gRPC Server with default options and a health server.
 func New(opts ...ServerOption) *grpc.Server {
-	o := &options{}
+	var o options
 	for _, so := range opts {
-		so(o)
+		so(&o)
 	}
 
 	srv := grpc.NewServer(o.serverOptions()...)
@@ -67,9 +67,7 @@ func NewStandardServer(logger log.FieldLogger, port int, serverCACerts [][]byte,
 		logger.Fatal(err)
 	}
 
-	opts = append(opts, tls)
-	opts = append(opts, LogEntry(logger.WithField("component", "grpc")))
-
+	opts = append(opts, tls, LogEntry(logger.WithField("component", "grpc")))
 	grpcsrv := New(opts...)
 
 	if err := server.Start(grpcsrv); err != nil {
@@ -79,16 +77,16 @@ func NewStandardServer(logger log.FieldLogger, port int, serverCACerts [][]byte,
 	return TCP(logger, grpcsrv, net.JoinHostPort("", strconv.Itoa(port)))
 }
 
-// NewStandardH2C create a set of servers suitible for serving gRPC services
-// using H2C (aka client upgrades). This is suitible for serving gRPC services
+// NewStandardH2C create a set of servers suitable for serving gRPC services
+// using H2C (aka client upgrades). This is suitable for serving gRPC services
 // via both hermes and dogwood-router. HTTP 1.x traffic will be passed to the
 // provided handler. This will return a *grpc.Server configured with our
 // standard set of services, and a HTTP server that should be what is served on
 // a listener.
 func NewStandardH2C(http11 http.Handler, opts ...ServerOption) (*grpc.Server, *http.Server) {
-	o := &options{}
+	var o options
 	for _, so := range opts {
-		so(o)
+		so(&o)
 	}
 
 	gSrv := grpc.NewServer(o.serverOptions()...)
