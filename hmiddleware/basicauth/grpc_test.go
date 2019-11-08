@@ -37,13 +37,13 @@ func TestGRPCPerRPCCredentialBasicAuth(t *testing.T) {
 	srv := httptest.NewServer(hSrv.Handler)
 	defer srv.Close()
 
-	conn, err := grpcclient.DialH2C(
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	conn, err := grpcclient.DialH2CContext(
+		ctx,
 		srv.URL,
-		//TODO: grpc.WithTimeout is deprecated: use DialContext and context.WithTimeout instead.  (staticcheck)
-		grpc.WithTimeout(10*time.Second), //nolint:staticcheck
 		grpc.WithBlock(),
-		//TODO: SA1019: grpc.WithWaitForHandshake is deprecated: this is the default behavior, and this option will be removed after the 1.18 release.  (staticcheck)
-		grpc.WithWaitForHandshake(), //nolint:staticcheck
 		grpc.WithPerRPCCredentials(&GRPCCredentials{Username: "user", Password: "pass"}),
 	)
 	if err != nil {
