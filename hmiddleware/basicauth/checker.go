@@ -1,6 +1,7 @@
 package basicauth
 
 import (
+	"crypto/subtle"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -63,7 +64,9 @@ func NewChecker(credentials []Credential) *Checker {
 // Valid is true if username and password represent acceptable credentials.
 func (c *Checker) Valid(username, password string) bool {
 	for _, cred := range c.credentials {
-		if cred.Username == username && cred.Password == password {
+		userValid := subtle.ConstantTimeCompare([]byte(cred.Username), []byte(username)) == 1
+		passwordValid := subtle.ConstantTimeCompare([]byte(cred.Password), []byte(password)) == 1
+		if userValid && passwordValid {
 			return true
 		}
 	}
