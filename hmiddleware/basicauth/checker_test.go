@@ -87,8 +87,8 @@ func TestChecker(t *testing.T) {
 		{"username", "password", true},
 		{"invalid", "password", false},
 		{"username", "invalid", false},
-		{"different", "", true},
-		{"", "secret", true},
+		{"different", "", false},        // can't have empty password
+		{"", "secret", false},           // can't have empty username
 		{"", "", false},                 // username and password required
 		{"different", "invalid", false}, // password match required
 		{"invalid", "secret", false},    // username match required
