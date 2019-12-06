@@ -79,8 +79,14 @@ func New(appConfig interface{}, ofs ...OptionFunc) *Standard {
 	s.Add(debug.New(logger, sc.Debug.Port))
 	s.Add(signals.NewServer(logger, syscall.SIGINT, syscall.SIGTERM))
 
-	if o.enableOpenCensusTracing {
-		oce, err := oc.NewExporter(sc.OpenCensus.TraceConfig(), sc.OpenCensus.ExporterOptions(s.App)...)
+	// only setup an exporter if indicated && the AgentAddress is set
+	// this separates the code change saying yes, do tracing from
+	// the operational aspect of deciding where it goes.
+	if o.enableOpenCensusTracing && sc.OpenCensus.AgentAddress != "" {
+		oce, err := oc.NewExporter(
+			sc.OpenCensus.TraceConfig(),
+			sc.OpenCensus.ExporterOptions(s.App)...,
+		)
 		if err != nil {
 			panic(err)
 		}
