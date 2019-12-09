@@ -14,9 +14,9 @@ import (
 //
 // TODO[freeformz]: Support the other ocagent.WithXX options
 type Config struct {
-	// AgentAddress in the form of 'host:port'. Defaults to localhost:55678
+	// AgentAddress in the form of 'host:port'. Leave empty to disable.
 	// (ocagent.WithAddress).
-	AgentAddress string `env:"OC_AGENT_ADDR,default=localhost:55678"`
+	AgentAddress string `env:"OC_AGENT_ADDR"`
 	// ReconnectionPeriod to use when reconnecting to the agent. Defaults to
 	// 5s.(ocagent.WithReconnectionPeriod).
 	ReconnectionPeriod time.Duration `env:"OC_RECONNECTION_PERIOD,default=5s"`
