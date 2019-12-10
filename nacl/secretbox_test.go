@@ -51,6 +51,15 @@ func TestSecretBox(t *testing.T) {
 		}
 	})
 
+	t.Run("encrypted message too short", func(t *testing.T) {
+		box := NewSecretBox(&secretKey, nil)
+
+		// Try to open a 23-length msg (min length is 24)
+		if _, err := box.Open([]byte("12345678901234567890123")); err != ErrEncryptedMsgTooShort {
+			t.Fatalf("want error: %v, got %v", ErrEncryptedMsgTooShort, err)
+		}
+	})
+
 	t.Run("get secret key sig", func(t *testing.T) {
 		box := NewSecretBox(&secretKey, nil)
 		sig := box.GetSecretKeySig()

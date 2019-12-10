@@ -16,6 +16,9 @@ var (
 
 	// ErrDecrypt is returned when opening an encrypted message fails.
 	ErrDecrypt = errors.New("failed to decrypt value")
+
+	// ErrEncryptedMsgTooShort is returned when the encrypted message is shorter than 24 bytes
+	ErrEncryptedMsgTooShort = errors.New("failed to read encrypted message: minimum length = 24")
 )
 
 // Box opens and seals secrets.
@@ -56,6 +59,10 @@ func (s *SecretBox) Seal(message []byte) ([]byte, error) {
 
 // Open decrypts the provided message.
 func (s *SecretBox) Open(encrypted []byte) ([]byte, error) {
+	if len(encrypted) < 24 {
+		return nil, ErrEncryptedMsgTooShort
+	}
+
 	var decryptNonce [24]byte
 	copy(decryptNonce[:], encrypted[:24])
 
