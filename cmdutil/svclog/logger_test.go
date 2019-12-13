@@ -98,10 +98,8 @@ func TestLossyLogger(t *testing.T) {
 		}
 	}()
 
-	select {
-	case <-timer.C:
-		if len(hook.Entries()) != expectedLimit {
-			t.Fatalf("want %d, got %d", expectedLimit, len(hook.Entries()))
-		}
+	<-timer.C
+	if len(hook.Entries()) != expectedLimit {
+		t.Fatalf("want %d, got %d", expectedLimit, len(hook.Entries()))
 	}
 }
