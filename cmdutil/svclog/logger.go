@@ -42,6 +42,8 @@ type printfer interface {
 	Printf(format string, args ...interface{})
 }
 
+// SampleLogger is a logger that allows to use Printf sampling. Burst logs are
+// limited to N reports per given window.
 type SampleLogger struct {
     logger printfer
 	limiter *rate.Limiter
@@ -57,6 +59,7 @@ func NewSampleLogger(printfer printfer, logsBurstLimit int, logBurstWindow time.
 	}
 }
 
+// Printf may log depending on if the limiter is exceeded or not.
 func (l *SampleLogger) Printf(format string, args ...interface{}) {
 	if l.limiter.Allow() {
 		l.logger.Printf(format, args...)
