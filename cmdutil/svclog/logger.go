@@ -45,7 +45,7 @@ type printfer interface {
 // SampleLogger is a logger that allows to use Printf sampling. Burst logs are
 // limited to N reports per given window.
 type SampleLogger struct {
-    logger printfer
+	logger  printfer
 	limiter *rate.Limiter
 }
 
