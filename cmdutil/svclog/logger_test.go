@@ -2,7 +2,9 @@ package svclog
 
 import (
 	"testing"
+	"time"
 
+	"github.com/heroku/x/testing/testlog"
 	log "github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 )
@@ -79,5 +81,27 @@ func TestLoggerTrimsNewLineFromSaramaLoggerMsg(t *testing.T) {
 
 	if entry.Message != newMsg {
 		t.Fatalf("wanted message with new line char removed, got %q", entry.Message)
+	}
+}
+
+func TestLossyLogger(t *testing.T) {
+	expectedLimit := 10
+	burstWindow := time.Millisecond * 50
+
+	logger, hook := testlog.NewNullLogger()
+	sampler := NewSampleLogger(logger, expectedLimit, burstWindow)
+	timer := time.NewTimer(burstWindow)
+
+	go func() {
+		for i := 0; i < 1000; i++ {
+			sampler.Printf("message")
+		}
+	}()
+
+	select {
+	case <-timer.C:
+		if len(hook.Entries()) != expectedLimit {
+			t.Fatalf("want %d, got %d", expectedLimit, len(hook.Entries()))
+		}
 	}
 }

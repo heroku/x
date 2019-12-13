@@ -41,7 +41,12 @@ require (
 	golang.org/x/crypto v0.0.0-20190829043050-9756ffdc2472
 	golang.org/x/net v0.0.0-20190827160401-ba9fcec4b297 // indirect
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58
+<<<<<<< HEAD
 	golang.org/x/sys v0.0.0-20200121082415-34d275377bf9 // indirect
+=======
+	golang.org/x/sys v0.0.0-20191029155521-f43be2a4598c // indirect
+	golang.org/x/time v0.0.0-20181108054448-85acf8d2951c
+>>>>>>> 6ca04ae... Implement sample logger
 	gonum.org/v1/gonum v0.0.0-20190502212712-4a2eb0188cbc // indirect
 	google.golang.org/grpc v1.22.0
 	gopkg.in/caio/go-tdigest.v2 v2.3.0
