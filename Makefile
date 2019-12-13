@@ -55,6 +55,7 @@ precommit: lint test coverage
 # Ensures the correct version of golangci-lint is present
 $(GOLANGCI_LINT):
 	rm -f $(TOOLS_DIR)/golangci-lint*
+	mkdir -p $(TOOLS_DIR)
 	curl -L $(GOLANGCI_LINT_URL) | tar -zxf - -C $(TOOLS_DIR) --strip=1 golangci-lint-$(GOLANGCI_LINT_VERSION)-$(GOOS)-$(GOARCH)/golangci-lint
 	mv $(TOOLS_DIR)/golangci-lint $(GOLANGCI_LINT)
 
