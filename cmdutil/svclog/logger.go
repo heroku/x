@@ -49,8 +49,19 @@ type SampleLogger struct {
 	limiter *rate.Limiter
 }
 
-// NewSampleLogger creates a rate limited logrus.FieldLogger that samples logs
-// configurable per second.
+// NewSampleLogger creates a rate limited logger that samples logs. The parameter
+// logsBurstLimit defines how many logs are allowed per logBurstWindow duration.
+//
+// A SampleLogger can be created using https://godoc.org/github.com/sirupsen/logrus#Printf.
+// The caller must explicitly call Printf to sample logs. Any other logging call
+// will not be sampled.
+//
+//  sampledLogger := NewSampleLogger(logger, burstLimit, burstWindow)
+//  sampledLogger.Printf("LOSSY")
+//  sampledLogger.Debug("NOT LOSSY")
+//  sampledLogger.Info("NOT LOSSY")
+//  sampledLogger.Error("NOT LOSSY")
+//
 func NewSampleLogger(printfer printfer, logsBurstLimit int, logBurstWindow time.Duration) *SampleLogger {
 	limiter := rate.NewLimiter(rate.Every(logBurstWindow), logsBurstLimit)
 	return &SampleLogger{
