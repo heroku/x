@@ -22,7 +22,8 @@ $(TOOLS_BIN)/protoc: | $(TOOLS_DIR)
 	unzip -od ${TOOLS_DIR} $(PROTOC_ASSET) -x readme.txt
 	rm $(PROTOC_ASSET)
 
-$(TOOLS_BIN)/protoc-gen-loggingtags: | $(TOOLS_BIN)
+.PHONY: generator
+generator: $(TOOLS_BIN)/protoc $(TOOLS_BIN)/protoc-gen-go | $(TOOLS_BIN)
 	$(TOOLS_BIN)/protoc \
 		--plugin=$(TOOLS_BIN)/protoc-gen-go \
 		--go_out=paths=source_relative:. \
@@ -31,7 +32,7 @@ $(TOOLS_BIN)/protoc-gen-loggingtags: | $(TOOLS_BIN)
 	go build -o $(TOOLS_BIN)/protoc-gen-loggingtags .
 
 .PHONY: proto
-proto: $(TOOLS_BIN)/protoc $(TOOLS_BIN)/protoc-gen-go $(TOOLS_BIN)/protoc-gen-loggingtags
+proto: $(TOOLS_BIN)/protoc $(TOOLS_BIN)/protoc-gen-go generator
 	rm internal/test/*.pb*.go || true
 
 	$(TOOLS_BIN)/protoc \
