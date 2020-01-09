@@ -14,7 +14,7 @@ tags for logging.
 
 ```go
 syntax = "proto3";
-import "heroku/loggingtags/safe.proto";
+import "github.com/heroku/x/cmd/protoc-gen-loggingtags/heroku/loggingtags/safe.proto";
 
 package loggingtags.examples;
 
@@ -30,15 +30,20 @@ name and value of the `safe` field.
 The field values are unmodified, except for protobuf Timestamp and Duration
 fields, which are unpacked to return the native Go type.
 
-Assuming `protoc-gen-loggingtags` is installed into your path, code can be
-generated for the above proto definition with:
+Assuming `protoc-gen-loggingtags` and `protoc-gen-go` are installed into your
+path, code can be generated for the above proto definition with:
 
 ```
 protoc \
+  --proto_path=$GOPATH/src \
+  --proto_path=. \
   --go_out=. \
   --loggingtags_out=. \
   sample.proto
 ```
+
+If `protoc-gen-loggingtags` is vendored, the first `proto_path` directive
+should instead refer to the vendor's src directory.
 
 ## Development
 
