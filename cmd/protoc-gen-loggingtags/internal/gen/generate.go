@@ -84,17 +84,6 @@ func Generate(req *plugin.CodeGeneratorRequest, pkgMap map[string]string) (*plug
 			continue
 		}
 
-		// Only generate loggingtags for files which include loggingtag directives.
-		imported := false
-		for _, dep := range fdp.Dependency {
-			if dep == "heroku/loggingtags/safe.proto" {
-				imported = true
-			}
-		}
-		if !imported {
-			continue
-		}
-
 		t, err := template.New("loggingtags").Parse(tmpl)
 		if err != nil {
 			return nil, err
@@ -116,10 +105,18 @@ func Generate(req *plugin.CodeGeneratorRequest, pkgMap map[string]string) (*plug
 					})
 				}
 			}
+			if len(fields) == 0 {
+				continue
+			}
+
 			msgs = append(msgs, messageData{
 				Name:   dp.GetName(),
 				Fields: fields,
 			})
+		}
+
+		if len(msgs) == 0 {
+			continue
 		}
 
 		pkg := fdp.Options.GetGoPackage()
