@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 
 	"github.com/heroku/x/requestid"
@@ -60,12 +59,6 @@ func logRequest(l logrus.FieldLogger, r *http.Request, status int, bytes int, se
 		"protocol":    r.URL.Scheme,
 		"at":          at,
 	})
-
-	if r.Context().Value(chi.RouteCtxKey) != nil {
-		if id := chi.URLParam(r, "app_id"); id != "" {
-			log = log.WithField("appID", id)
-		}
-	}
 
 	if status > 0 {
 		log = log.WithField("status", status)

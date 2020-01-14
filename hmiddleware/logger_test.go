@@ -103,27 +103,6 @@ func TestPostRequestLogger(t *testing.T) {
 	})
 }
 
-func TestPostRequestLoggerIncludesChiAppID(t *testing.T) {
-	logger, hook := testlog.NewNullLogger()
-
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		_, err := w.Write([]byte("ok"))
-
-		if err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	r := chi.NewRouter()
-	r.Use(PostRequestLogger(logger))
-	r.Get("/{app_id}", handler)
-
-	t.Run("using with chi", func(t *testing.T) {
-		runPostRequestLoggerIncludesChiAppIDTest(t, r, hook)
-	})
-}
-
 func TestPostRequestLoggerDoesNotDoubleWrapTheResponseWriter(t *testing.T) {
 	logger, hook := testlog.NewNullLogger()
 
@@ -230,45 +209,6 @@ func runPostRequestLoggerTest(t testing.TB, h http.Handler, hook *testlog.Hook) 
 		"at=finish",
 		"status=200",
 		"bytes=2",
-	)
-}
-
-func runPostRequestLoggerIncludesChiAppIDTest(t testing.TB, h http.Handler, hook *testlog.Hook) {
-	defer hook.Reset()
-
-	s := httptest.NewServer(h)
-	defer s.Close()
-
-	rsp, err := http.Get(s.URL + "/12345")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer rsp.Body.Close()
-
-	if rsp.StatusCode != http.StatusOK {
-		t.Fatalf("StatusCode = %v, want %v", rsp.StatusCode, http.StatusOK)
-	}
-
-	if data, _ := ioutil.ReadAll(rsp.Body); string(data) != "ok" {
-		t.Fatalf("Body = %v, want %v", string(data), "ok")
-	}
-
-	hook.CheckAllContained(t,
-		// check only for the existence of these fields
-		"host=",
-		"request_id=",
-		"remote_addr=",
-		"service=",
-		"user_agent=",
-
-		// check exact values on these fields
-		"method=GET",
-		"path=/12345",
-		"protocol=",
-		"at=finish",
-		"status=200",
-		"bytes=2",
-		"appID=12345",
 	)
 }
 
