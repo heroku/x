@@ -8,7 +8,8 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
-	"github.com/heroku/runtime/lib/testlog"
+
+	"github.com/heroku/x/testing/testlog"
 )
 
 func TestPreRequestLogger(t *testing.T) {
@@ -16,7 +17,11 @@ func TestPreRequestLogger(t *testing.T) {
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("ok"))
+		_, err := w.Write([]byte("ok"))
+
+		if err != nil {
+			t.Fatal(err)
+		}
 	})
 
 	preRequestLoggerHandler := PreRequestLogger(logger)(handler)
@@ -49,7 +54,11 @@ func TestPreRequestLoggerDoesNotDoubleWrapTheResponseWriter(t *testing.T) {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("ok"))
+		_, err := w.Write([]byte("ok"))
+
+		if err != nil {
+			t.Fatal(err)
+		}
 	})
 
 	preRequestLoggerHandler := PreRequestLogger(logger)(PreRequestLogger(logger)(handler))
@@ -72,7 +81,11 @@ func TestPostRequestLogger(t *testing.T) {
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("ok"))
+		_, err := w.Write([]byte("ok"))
+
+		if err != nil {
+			t.Fatal(err)
+		}
 	})
 
 	postRequestLoggerHandler := PostRequestLogger(logger)(handler)
@@ -95,7 +108,11 @@ func TestPostRequestLoggerIncludesChiAppID(t *testing.T) {
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("ok"))
+		_, err := w.Write([]byte("ok"))
+
+		if err != nil {
+			t.Fatal(err)
+		}
 	})
 
 	r := chi.NewRouter()
@@ -122,7 +139,11 @@ func TestPostRequestLoggerDoesNotDoubleWrapTheResponseWriter(t *testing.T) {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("ok"))
+		_, err := w.Write([]byte("ok"))
+
+		if err != nil {
+			t.Fatal(err)
+		}
 	})
 
 	postRequestLoggerHandler := PostRequestLogger(logger)(PostRequestLogger(logger)(handler))
@@ -257,7 +278,11 @@ func TestRobotAllLogger(t *testing.T) {
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("ok"))
+		_, err := w.Write([]byte("ok"))
+
+		if err != nil {
+			t.Fatal(err)
+		}
 	})
 
 	r := chi.NewRouter()

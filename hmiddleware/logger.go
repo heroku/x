@@ -7,7 +7,9 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
-	"github.com/heroku/x/requestid"
+
+	httprequestid "github.com/heroku/x/requestid"
+
 	"github.com/sirupsen/logrus"
 )
 
@@ -49,7 +51,7 @@ func PostRequestLogger(l logrus.FieldLogger) func(next http.Handler) http.Handle
 
 func logRequest(l logrus.FieldLogger, r *http.Request, status int, bytes int, service time.Duration, at string) {
 	log := l.WithFields(logrus.Fields{
-		"request_id":  requestid.Get(r),
+		"request_id":  httprequestid.Get(r),
 		"method":      r.Method,
 		"host":        r.Host,
 		"path":        r.URL.RequestURI(),
