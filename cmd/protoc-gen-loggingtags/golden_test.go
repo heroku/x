@@ -133,7 +133,25 @@ func fileExists(t *testing.T, name string) bool {
 }
 
 func protoc(t *testing.T, args []string) {
-	cmd := exec.Command("protoc", "--plugin=protoc-gen-loggingtags="+os.Args[0])
+	root, _ := filepath.Abs(filepath.Join("..", ".."))
+	protoc := filepath.Join(root, ".tools", "bin", "protoc")
+
+	if !fileExists(t, protoc) {
+		cmd := exec.Command("make", protoc)
+		cmd.Dir = "../.."
+		out, err := cmd.CombinedOutput()
+		if len(out) > 0 || err != nil {
+			t.Log("RUNNING: ", strings.Join(cmd.Args, " "))
+		}
+		if len(out) > 0 {
+			t.Log(string(out))
+		}
+		if err != nil {
+			t.Fatalf("make: %v", err)
+		}
+	}
+
+	cmd := exec.Command(protoc, "--plugin=protoc-gen-loggingtags="+os.Args[0])
 	cmd.Args = append(cmd.Args, args...)
 	// We set the RUN_AS_PROTOC_GEN_LOGGINGTAGS environment variable to indicate that
 	// the subprocess should act as a proto compiler rather than a test.

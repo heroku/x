@@ -3,6 +3,7 @@ GOOS = $(shell go env GOOS)
 GOARCH = $(shell go env GOARCH)
 GOPATH = $(shell go env GOPATH)
 TOOLS_DIR = $(TOP_LEVEL)/.tools
+TOOLS_BIN = $(TOOLS_DIR)/bin
 CIRCLECI_DIR = $(TOP_LEVEL)/.circleci
 # Make sure this is in-sync with the version in the circle ci config
 GOLANGCI_LINT_VERSION := 1.18.0
@@ -16,11 +17,29 @@ GOTEST := go test $(MOD)
 COVER_PROFILE = coverage.out
 GOTEST_COVERAGE_OPT := -coverprofile=$(COVER_PROFILE) -covermode=atomic
 
+# protoc config
+ARCH = $(shell uname -m)
+PROTOC_VERSION = 3.11.2
+PROTOC_OS = $(shell uname -s | sed 's/Darwin/osx/' | sed 's/Linux/linux/')
+PROTOC_ASSET = protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(ARCH).zip
+PROTOC_DOWNLOAD_URL = https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOC_VERSION)/$(PROTOC_ASSET)
+
 # Additive or overridable variables
 override GOTEST_OPT += -timeout 30s
 LINT_RUN_OPTS ?= --fix
 
 .DEFAULT_GOAL := precommit
+
+$(TOOLS_DIR):
+	mkdir -p $(TOOLS_DIR)
+
+$(TOOLS_BIN): | $(TOOLS_DIR)
+	mkdir -p $(TOOLS_BIN)
+
+$(TOOLS_BIN)/protoc: | $(TOOLS_DIR)
+	curl -fsLJO $(PROTOC_DOWNLOAD_URL)
+	unzip -od ${TOOLS_DIR} $(PROTOC_ASSET) -x readme.txt
+	rm $(PROTOC_ASSET)
 
 # Processes the circle ci config locally
 $(CIRCLECI_CONFIG):
