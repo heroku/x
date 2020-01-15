@@ -41,6 +41,9 @@ $(TOOLS_BIN)/protoc: | $(TOOLS_DIR)
 	unzip -od ${TOOLS_DIR} $(PROTOC_ASSET) -x readme.txt
 	rm $(PROTOC_ASSET)
 
+$(TOOLS_BIN)/protoc-gen-go: | $(TOOLS_BIN)
+	go build -o $(TOOLS_BIN)/protoc-gen-go github.com/golang/protobuf/protoc-gen-go
+
 # Processes the circle ci config locally
 $(CIRCLECI_CONFIG):
 $(PROCESSED_CIRCLECI_CONFIG): $(CIRCLECI_CONFIG)
@@ -86,6 +89,26 @@ test: ## Runs go test. Override defaults with GOTEST_OPT
 coverage: ## Generates a coverage profile and opens a web browser with the results
 	$(GOTEST) $(GOTEST_OPT) $(GOTEST_COVERAGE_OPT) $(PKG_SPEC)
 	go tool cover -html=$(COVER_PROFILE)
+
+.PHONY: proto
+proto: $(TOOLS_BIN)/protoc $(TOOLS_BIN)/protoc-gen-go | $(TOOLS_BIN) ## Regenerate protobuf files
+	rm loggingtags/*.pb*.go || true
+
+	$(TOOLS_BIN)/protoc \
+		--plugin=$(TOOLS_BIN)/protoc-gen-go \
+		--go_out=paths=source_relative:. \
+		loggingtags/*.proto
+
+	go build -o $(TOOLS_BIN)/protoc-gen-loggingtags ./cmd/protoc-gen-loggingtags
+
+	rm ./cmd/protoc-gen-loggingtags/internal/test/*.pb*.go || true
+	$(TOOLS_BIN)/protoc \
+		--plugin=$(TOOLS_BIN)/protoc-gen-go \
+		--plugin=$(TOOLS_BIN)/protoc-gen-loggingtags \
+		--go_out=:. \
+		--loggingtags_out=. \
+		./cmd/protoc-gen-loggingtags/internal/test/*.proto
+
 
 .PHONY: ci-lint
 ci-lint: ## Runs the ci based lint job locally.
