@@ -24,4 +24,6 @@ proto                          Regenerate protobuf files
 ci-lint                        Runs the ci based lint job locally.
 ci-test                        Runs the ci based test job locally
 ci-coverage                    Runs the ci based coverage job locally
+
+'ci-' targets require the CircleCI cli tool: https://circleci.com/docs/2.0/local-cli/
 ```
