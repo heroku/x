@@ -31,11 +31,12 @@ message T {
 `))
 
 func TestGenerate(t *testing.T) {
-	type testCase struct {
-		name          string
-		ImportPath    string
-		Annotate      bool
-		protocArgs    []string
+	type testCase struct { // nolint: maligned
+		name       string
+		ImportPath string
+		Annotate   bool
+		protocArgs []string
+
 		wantGenerated bool
 	}
 

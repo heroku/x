@@ -76,7 +76,7 @@ type fieldData struct {
 // Generate processes req to generate loggingtags code for files mapped to
 // package names in pkgMap.
 func Generate(req *plugin.CodeGeneratorRequest, pkgMap map[string]string) (*plugin.CodeGeneratorResponse, error) {
-	var files []*plugin.CodeGeneratorResponse_File
+	files := make([]*plugin.CodeGeneratorResponse_File, 0, len(req.GetProtoFile()))
 	for _, fdp := range req.GetProtoFile() {
 		protoFilename := fdp.GetName()
 
