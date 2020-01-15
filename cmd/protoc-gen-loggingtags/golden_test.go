@@ -10,11 +10,13 @@ import (
 	"text/template"
 )
 
-func init() {
-	if os.Getenv("RUN_AS_PROTOC_GEN_LOGGINGTAGS") != "" {
+func TestMain(m *testing.M) {
+	if os.Getenv("RUN_AS_PLUGIN") != "" {
 		main()
 		os.Exit(0)
 	}
+
+	os.Exit(m.Run())
 }
 
 var protoTmpl = template.Must(template.New("proto").Parse(`
@@ -152,9 +154,9 @@ func protoc(t *testing.T, args []string) {
 
 	cmd := exec.Command(protoc, "--plugin=protoc-gen-loggingtags="+os.Args[0], "--proto_path="+root)
 	cmd.Args = append(cmd.Args, args...)
-	// We set the RUN_AS_PROTOC_GEN_LOGGINGTAGS environment variable to indicate that
+	// We set the RUN_AS_PLUGIN environment variable to indicate that
 	// the subprocess should act as a proto compiler rather than a test.
-	cmd.Env = append(os.Environ(), "RUN_AS_PROTOC_GEN_LOGGINGTAGS=1")
+	cmd.Env = append(os.Environ(), "RUN_AS_PLUGIN=1")
 	out, err := cmd.CombinedOutput()
 	if len(out) > 0 || err != nil {
 		t.Log("RUNNING: ", strings.Join(cmd.Args, " "))
