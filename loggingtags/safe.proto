@@ -11,7 +11,7 @@ import "google/protobuf/descriptor.proto";
 //         string public_data = 2 [(heroku.loggingtags.safe) = true];
 //     }
 package heroku.loggingtags;
-option go_package = "github.com/heroku/x/cmd/protoc-gen-loggingtags/heroku/loggingtags;loggingtags";
+option go_package = "github.com/heroku/x/loggingtags;loggingtags";
 
 extend google.protobuf.FieldOptions {
   bool safe = 50000;

@@ -8,7 +8,7 @@ import (
 	proto "github.com/golang/protobuf/proto"
 	duration "github.com/golang/protobuf/ptypes/duration"
 	timestamp "github.com/golang/protobuf/ptypes/timestamp"
-	_ "github.com/heroku/x/cmd/protoc-gen-loggingtags/heroku/loggingtags"
+	_ "github.com/heroku/x/loggingtags"
 	math "math"
 )
 
