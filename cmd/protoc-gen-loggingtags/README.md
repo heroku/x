@@ -1,10 +1,10 @@
 # protoc-gen-loggingtags
 
-A `protoc` plugin that generates `LoggingTags() map[string]interface{}`
-functions on Go proto message structs based on field options inside the source
-`.proto` files. The logging tags returned are safe to log without leaking
-information. The logging tag functions are code-generated so it's always in
-sync with the source files.
+A `protoc` plugin that generates `LoggingTags() map[string]interface{}` methods
+on Go proto message structs based on field options inside the source `.proto`
+files. The logging tags returned are safe to log without leaking information.
+The logging tag methods are code-generated so it's always in sync with the
+source files.
 
 The `grpcserver` package automatically checks if request or response messages
 implement the LoggingTags method and includes the returned tags in the context
@@ -50,5 +50,5 @@ should instead refer to the vendor's src directory.
 The `internal/test` package contains sample protobuf messages with loggingtag
 annotations and a test suite to exercise them.
 
-Run `make proto` to regenerate the loggingtags code for the sample messages
-using the current local version of the generator.
+Run `make proto` from the root to regenerate the loggingtags code for the
+sample messages using the current local version of the generator.
