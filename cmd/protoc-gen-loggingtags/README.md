@@ -14,7 +14,7 @@ tags for logging.
 
 ```go
 syntax = "proto3";
-import "github.com/heroku/x/cmd/protoc-gen-loggingtags/heroku/loggingtags/safe.proto";
+import "github.com/heroku/x/loggingtags/safe.proto";
 
 package loggingtags.examples;
 

@@ -44,16 +44,15 @@ func TestGenerate(t *testing.T) {
 		},
 		{
 			name:          "imported and used",
-			ImportPath:    "heroku/loggingtags/safe.proto",
+			ImportPath:    "loggingtags/safe.proto",
 			Annotate:      true,
-			protocArgs:    []string{"--proto_path=."},
 			wantGenerated: true,
 		},
 		{
 			name:          "custom import path",
-			ImportPath:    "loggingtags/safe.proto",
+			ImportPath:    "safe.proto",
 			Annotate:      true,
-			protocArgs:    []string{"--proto_path=./heroku"},
+			protocArgs:    []string{"--proto_path=../../loggingtags"},
 			wantGenerated: true,
 		},
 	} {
@@ -151,7 +150,7 @@ func protoc(t *testing.T, args []string) {
 		}
 	}
 
-	cmd := exec.Command(protoc, "--plugin=protoc-gen-loggingtags="+os.Args[0])
+	cmd := exec.Command(protoc, "--plugin=protoc-gen-loggingtags="+os.Args[0], "--proto_path="+root)
 	cmd.Args = append(cmd.Args, args...)
 	// We set the RUN_AS_PROTOC_GEN_LOGGINGTAGS environment variable to indicate that
 	// the subprocess should act as a proto compiler rather than a test.

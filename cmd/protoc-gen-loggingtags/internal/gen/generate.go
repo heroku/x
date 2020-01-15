@@ -9,7 +9,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/protoc-gen-go/generator"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
-	loggingtags "github.com/heroku/x/cmd/protoc-gen-loggingtags/heroku/loggingtags"
+	"github.com/heroku/x/loggingtags"
 )
 
 var tmpl = `
