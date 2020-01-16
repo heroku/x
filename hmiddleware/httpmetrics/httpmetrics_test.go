@@ -13,62 +13,7 @@ import (
 	"github.com/heroku/x/go-kit/metrics/testmetrics"
 )
 
-// This example demonstrates how to set up metrics and what will be collected on requests
-func Example() {
-	// Create a new Metrics Provider
-	provider := testmetrics.NewProvider(&testing.T{})
-	r := chi.NewRouter()
-
-	// Use the Metrics Provider to create a new HTTP Handler
-	r.Use(func(next http.Handler) http.Handler {
-		return NewServer(provider, next)
-	})
-
-	// Metrics will be collected around http OK statuses
-	// For all requests and for /foo requests
-	r.Get("/foo", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-
-	// Metrics will be collected around http Bad Request statuses
-	// For all requests and for /bar requests
-	r.Get("/bar", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusBadRequest)
-	}))
-
-	server := httptest.NewServer(r)
-	defer server.Close()
-
-	// Metrics will be collected for each request
-	req, _ := http.NewRequest("GET", server.URL+"/foo", nil)
-	if _, err := http.DefaultClient.Do(req); err != nil {
-		fmt.Println(err)
-	}
-
-	req, _ = http.NewRequest("GET", server.URL+"/bar", nil)
-	if _, err := http.DefaultClient.Do(req); err != nil {
-		fmt.Println(err)
-	}
-
-	provider.PrintCounterValue("http.server.get.bar.response-statuses.400")
-	provider.PrintCounterValue("http.server.all.requests")
-	provider.PrintCounterValue("http.server.all.response-statuses.200")
-	provider.PrintCounterValue("http.server.get.foo.requests")
-	provider.PrintCounterValue("http.server.get.foo.response-statuses.200")
-	provider.PrintCounterValue("http.server.all.response-statuses.400")
-	provider.PrintCounterValue("http.server.get.bar.requests")
-
-	// Output:
-	// http.server.get.bar.response-statuses.400: 1
-	// http.server.all.requests: 2
-	// http.server.all.response-statuses.200: 1
-	// http.server.get.foo.requests: 1
-	// http.server.get.foo.response-statuses.200: 1
-	// http.server.all.response-statuses.400: 1
-	// http.server.get.bar.requests: 1
-}
-
-func TestServer(t *testing.T) {
+func TestNewServer(t *testing.T) {
 	p := testmetrics.NewProvider(t)
 
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -85,7 +30,24 @@ func TestServer(t *testing.T) {
 	p.CheckObservationCount("http.server.all.request-duration.ms", 1)
 }
 
-func TestServer_ResponseStatus(t *testing.T) {
+func TestMiddleware(t *testing.T) {
+	p := testmetrics.NewProvider(t)
+
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	})
+
+	r := httptest.NewRequest("GET", "http://example.org/foo/bar", nil)
+	w := httptest.NewRecorder()
+
+	hand := New(p)(next)
+	hand.ServeHTTP(w, r)
+
+	p.CheckCounter("http.server.all.requests", 1)
+	p.CheckCounter("http.server.all.response-statuses.200", 1)
+	p.CheckObservationCount("http.server.all.request-duration.ms", 1)
+}
+
+func TestResponseStatus(t *testing.T) {
 	p := testmetrics.NewProvider(t)
 
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -95,7 +57,7 @@ func TestServer_ResponseStatus(t *testing.T) {
 	r := httptest.NewRequest("GET", "http://example.org/foo/bar", nil)
 	w := httptest.NewRecorder()
 
-	hand := NewServer(p, next)
+	hand := New(p)(next)
 	hand.ServeHTTP(w, r)
 
 	p.CheckCounter("http.server.all.requests", 1)
@@ -103,7 +65,7 @@ func TestServer_ResponseStatus(t *testing.T) {
 	p.CheckObservationCount("http.server.all.request-duration.ms", 1)
 }
 
-func TestServer_Chi(t *testing.T) {
+func TestChi(t *testing.T) {
 	p := testmetrics.NewProvider(t)
 
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -117,7 +79,7 @@ func TestServer_Chi(t *testing.T) {
 
 	w := httptest.NewRecorder()
 
-	hand := NewServer(p, next)
+	hand := New(p)(next)
 	hand.ServeHTTP(w, r)
 
 	p.CheckCounter("http.server.all.requests", 1)
@@ -129,7 +91,7 @@ func TestServer_Chi(t *testing.T) {
 	p.CheckObservationCount("http.server.get.apps.foo-id.bars.bar-id.request-duration.ms", 1)
 }
 
-func TestServer_NestedChiRouters(t *testing.T) {
+func TestNestedChiRouters(t *testing.T) {
 	p := testmetrics.NewProvider(t)
 
 	inner := chi.NewRouter()
@@ -141,9 +103,7 @@ func TestServer_NestedChiRouters(t *testing.T) {
 	})
 
 	outer := chi.NewRouter()
-	outer.Use(func(next http.Handler) http.Handler {
-		return NewServer(p, next)
-	})
+	outer.Use(New(p))
 	outer.Mount("/", inner)
 
 	r := httptest.NewRequest("GET", "http://example.org/hello/world", nil)

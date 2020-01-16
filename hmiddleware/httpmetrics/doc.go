@@ -1,4 +1,4 @@
-// Package httpmetrics provides an http.Handler for collecting metrics about http servers.
+// Package httpmetrics provides middleware for collecting metrics about http servers.
 //
 // Metrics are prefixed with:
 //
