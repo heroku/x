@@ -16,7 +16,7 @@ require (
 	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/gogo/protobuf v1.2.1 // indirect
 	github.com/gomodule/redigo v2.0.0+incompatible
-	github.com/google/gops v0.3.7-0.20190802051910-59c8be2eaddf
+	github.com/google/gops v0.3.7
 	github.com/google/uuid v1.1.1
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.0
 	github.com/grpc-ecosystem/grpc-gateway v1.9.6
