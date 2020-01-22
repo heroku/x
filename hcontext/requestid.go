@@ -22,12 +22,14 @@ var headersToSearch = []string{
 	"Request-ID", "X-Request-ID",
 }
 
-// FromRequest fetches the given request's request ID if it has one,
-// and returns a new random request ID if it does not.
+// FromRequest fetches the given request's request ID from the Headers.
+// If one is found, it appends a new request ID and sets the comma separated value as the header.
+// If one is not found, it sets a new request ID as the header.
 func FromRequest(r *http.Request) (id string, ok bool) {
 	for _, try := range headersToSearch {
 		if id = r.Header.Get(try); id != "" {
-			return id, true
+			newRequestID := uuid.New().String() + "," + id
+			return newRequestID, true
 		}
 	}
 

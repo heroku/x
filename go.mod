@@ -9,6 +9,7 @@ require (
 	github.com/armon/go-proxyproto v0.0.0-20190211145416-68259f75880e
 	github.com/aws/aws-sdk-go v1.13.10
 	github.com/axiomhq/hyperloglog v0.0.0-20180317131949-fe9507de0228
+	github.com/davecgh/go-spew v1.1.1
 	github.com/dgryski/go-metro v0.0.0-20180109044635-280f6062b5bc // indirect
 	github.com/go-chi/chi v3.3.2+incompatible
 	github.com/go-ini/ini v1.33.0 // indirect
@@ -16,6 +17,7 @@ require (
 	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/gogo/protobuf v1.2.1 // indirect
 	github.com/gomodule/redigo v2.0.0+incompatible
+	github.com/google/go-cmp v0.3.0
 	github.com/google/gops v0.3.7
 	github.com/google/uuid v1.1.1
 	github.com/grpc-ecosystem/go-grpc-middleware v1.0.0
