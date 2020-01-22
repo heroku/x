@@ -27,9 +27,8 @@ var headersToSearch = []string{
 func FromRequest(r *http.Request) (id string, ok bool) {
 	for _, try := range headersToSearch {
 		if id = r.Header.Get(try); id != "" {
-			return id, true
+			return id + "," + uuid.New().String(), true
 		}
-	}
 
 	newRID := uuid.New().String()
 	r.Header.Set("X-Request-Id", newRID)
