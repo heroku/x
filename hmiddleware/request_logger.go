@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/middleware"
+	"github.com/pkg/errors"
 
 	"github.com/heroku/x/requestid"
 
@@ -62,9 +63,8 @@ func (l *StructuredLoggerEntry) Write(status, bytes int, elapsed time.Duration) 
 // Panic is called by Chi's Recoverer middleware.
 // See https://github.com/go-chi/chi/blob/baf4ef5b139e284b297573d89daf587457153aa3/middleware/recoverer.go
 func (l *StructuredLoggerEntry) Panic(v interface{}, stack []byte) {
-	p := fmt.Sprintf("%+v", v)
+	werr := errors.Errorf("panic: %v", v)
 	l.Logger.WithFields(logrus.Fields{
 		"stack": string(stack),
-		"panic": p,
-	}).Panic()
+	}).WithError(werr).Error("unhandled panic")
 }
