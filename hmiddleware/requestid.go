@@ -12,6 +12,5 @@ func RequestID(next http.Handler) http.Handler {
 		requestID, _ := hcontext.FromRequest(r)
 		ctx = hcontext.WithRequestID(ctx, requestID)
 		next.ServeHTTP(w, r.WithContext(ctx))
-
 	})
 }
