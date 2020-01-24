@@ -23,6 +23,7 @@ require (
 	github.com/heroku/rollrus v0.1.1
 	github.com/hydrogen18/memlistener v0.0.0-20141126152155-54553eb933fb
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
+	github.com/jkakar/envtest v0.0.0-20170115215233-0c5338d308e8
 	github.com/jmespath/go-jmespath v0.0.0-20160202185014-0b12d6b521d8 // indirect
 	github.com/joeshaw/envdecode v0.0.0-20180129163420-d5f34bca07f3
 	github.com/keybase/go-ps v0.0.0-20190827175125-91aafc93ba19 // indirect

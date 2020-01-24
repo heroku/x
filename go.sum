@@ -90,6 +90,8 @@ github.com/hydrogen18/memlistener v0.0.0-20141126152155-54553eb933fb h1:EPRgaDqX
 github.com/hydrogen18/memlistener v0.0.0-20141126152155-54553eb933fb/go.mod h1:qEIFzExnS6016fRpRfxrExeVn2gbClQA99gQhnIcdhE=
 github.com/inconshreveable/mousetrap v1.0.0 h1:Z8tu5sraLXCXIcARxBp/8cbvlwVa7Z1NHg9XEKhtSvM=
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
+github.com/jkakar/envtest v0.0.0-20170115215233-0c5338d308e8 h1:7KapheEPSM2nPEs4nlczt3/Lg1N34YF26PT9rYKGRNw=
+github.com/jkakar/envtest v0.0.0-20170115215233-0c5338d308e8/go.mod h1:VQJ0CbS6ZY0QnHGe1gdVESbCmZSGutTugUXhxbQ3pKU=
 github.com/jmespath/go-jmespath v0.0.0-20160202185014-0b12d6b521d8 h1:12VvqtR6Aowv3l/EQUlocDHW2Cp4G9WJVH7uyH8QFJE=
 github.com/jmespath/go-jmespath v0.0.0-20160202185014-0b12d6b521d8/go.mod h1:Nht3zPeWKUH0NzdCt2Blrr5ys8VGpn0CEB0cQHVjt7k=
 github.com/joeshaw/envdecode v0.0.0-20180129163420-d5f34bca07f3 h1:Uzr4zoGuuuWdXeI65mG5l2yK2AbrifXXb5PtX/ym6Ig=

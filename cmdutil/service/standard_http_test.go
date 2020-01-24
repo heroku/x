@@ -6,8 +6,12 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"os"
 	"testing"
 
+	"github.com/jkakar/envtest"
+
+	"github.com/heroku/x/go-kit/metrics/testmetrics"
 	"github.com/heroku/x/testing/testlog"
 )
 
@@ -109,4 +113,25 @@ func TestBypassHTTPServer(t *testing.T) {
 	s.Stop(nil)
 
 	<-done
+}
+
+func TestHTTPServerConfiguration(t *testing.T) {
+	teardown := envtest.Setup()
+	defer teardown()
+
+	os.Setenv("PORT", "1234")
+	os.Setenv("ADDITIONAL_PORT", "4567")
+
+	var configuredServers []string
+	config := func(s *http.Server) {
+		configuredServers = append(configuredServers, s.Addr)
+	}
+
+	l, _ := testlog.NewNullLogger()
+	p := testmetrics.NewProvider(t)
+	HTTP(l, p, nil, WithHTTPServerHook(config))
+
+	if len(configuredServers) != 2 {
+		t.Fatalf("expected 2 servers to be configured, got %v", configuredServers)
+	}
 }
