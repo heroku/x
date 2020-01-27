@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/heroku/x/testing/testlog"
+
 	"github.com/sirupsen/logrus"
 )
 

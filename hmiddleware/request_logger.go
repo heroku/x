@@ -16,7 +16,8 @@ import (
 // StructuredLogger implements the LogFormatter interface from Chi.
 // LogFormatter initiates the beginning of a new LogEntry per request.
 // See https://github.com/go-chi/chi/blob/708d187cdc2beff37b6835250dd574f395ebaa03/middleware/logger.go#L54
-// For an example of how to use this middleware to combine Logrus logging with the Chi router, see https://github.com/go-chi/chi/blob/cca4135d8dddff765463feaf1118047a9e506b4a/_examples/logging/main.go#L2
+// For an example of how to use this middleware to combine Logrus logging with the Chi router, see
+// https://github.com/go-chi/chi/blob/cca4135d8dddff765463feaf1118047a9e506b4a/_examples/logging/main.go#L2
 type StructuredLogger struct {
 	Logger logrus.FieldLogger
 }
@@ -24,7 +25,8 @@ type StructuredLogger struct {
 // StructuredLoggerEntry implements the LogEntry interface from Chi.
 // LogEntry records the final log when a request completes.
 // See https://github.com/go-chi/chi/blob/708d187cdc2beff37b6835250dd574f395ebaa03/middleware/logger.go#L60
-// For an example of how to use this middleware to combine Logrus logging with the Chi router, see https://github.com/go-chi/chi/blob/cca4135d8dddff765463feaf1118047a9e506b4a/_examples/logging/main.go#L2
+// For an example of how to use this middleware to combine Logrus logging with the Chi router, see
+// https://github.com/go-chi/chi/blob/cca4135d8dddff765463feaf1118047a9e506b4a/_examples/logging/main.go#L2
 type StructuredLoggerEntry struct {
 	Logger logrus.FieldLogger
 }
