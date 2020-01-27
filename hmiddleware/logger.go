@@ -14,6 +14,7 @@ import (
 
 // PreRequestLogger is a middleware for the github.com/sirupsen/logrus to log requests.
 // It logs things similar to heroku logs and adds remote_addr and user_agent.
+// If you are using Chi, consider using the RequestLogger middleware instead.
 func PreRequestLogger(l logrus.FieldLogger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
@@ -30,6 +31,7 @@ func PreRequestLogger(l logrus.FieldLogger) func(next http.Handler) http.Handler
 
 // PostRequestLogger is a middleware for the github.com/sirupsen/logrus to log requests.
 // It logs things similar to heroku logs and adds remote_addr and user_agent.
+// If you are using Chi, consider using the RequestLogger middleware instead.
 func PostRequestLogger(l logrus.FieldLogger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		fn := func(w http.ResponseWriter, r *http.Request) {
