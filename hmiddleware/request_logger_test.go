@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/heroku/x/testing/testlog"
 	"github.com/sirupsen/logrus"
 )
 
@@ -24,7 +25,7 @@ func TestNewLogEntry(t *testing.T) {
 
 func TestLogEntryWrite(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodGet, "/", nil)
-	logger := logrus.New()
+	logger, hook := testlog.NewNullLogger()
 	l := &StructuredLogger{
 		Logger: logger,
 	}
@@ -34,11 +35,17 @@ func TestLogEntryWrite(t *testing.T) {
 	elapsed := time.Duration(100)
 
 	e.Write(status, bytes, elapsed)
+
+	hook.CheckContained(t,
+		`level="info"`,
+		`at="finished"`,
+		`status="200"`,
+	)
 }
 
 func TestLogEntryPanic(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodGet, "/", nil)
-	logger := logrus.New()
+	logger, hook := testlog.NewNullLogger()
 	l := &StructuredLogger{
 		Logger: logger,
 	}
@@ -47,4 +54,9 @@ func TestLogEntryPanic(t *testing.T) {
 	var i interface{}
 	b := []byte{65, 66}
 	e.Panic(&i, b)
+
+	hook.CheckContained(t,
+		`level="error"`,
+		`msg="unhandled panic"`,
+	)
 }
