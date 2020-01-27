@@ -53,7 +53,7 @@ func TestFromRequest(t *testing.T) {
 	}
 }
 
-func TestFromRequestRequestIDFormat(t *testing.T) {
+func TestFromRequest_AppendsIncomingRequestID(t *testing.T) {
 	originalRequestID := uuid.New().String()
 	req := httptest.NewRequest("GET", "/", nil)
 	req.Header.Set("X-Request-Id", originalRequestID)
@@ -74,7 +74,7 @@ func TestFromRequestRequestIDFormat(t *testing.T) {
 
 }
 
-func TestRequestIDStorage(t *testing.T) {
+func TestRequestIDFromContext(t *testing.T) {
 	const reqID = `hunter2`
 
 	ctx := context.Background()
