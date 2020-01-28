@@ -1,6 +1,8 @@
 // Package debug wraps the gops agent for use as a cmdutil-compatible Server.
 //
-// The debug server will be started on DEBUG_PORT (default 9999). Get a stack trace, profile memory, etc. by running the gops command line connected to locahost:9999 like:
+// The debug server will be started on DEBUG_PORT (default 9999). Get a stack
+// trace, profile memory, etc. by running the gops command line connected to
+// locahost:9999 like:
 //
 //		$ gops stack localhost:9999
 //		goroutine 50 [running]:

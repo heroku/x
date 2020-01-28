@@ -1,4 +1,5 @@
-// Package cmdutil provides abstractions for building things which can be started and stopped as a part of a executable's process lifecycle.
+// Package cmdutil provides abstractions for building things which can be
+// started and stopped as a part of a executable's process lifecycle.
 package cmdutil
 
 import (
