@@ -1,0 +1,18 @@
+syntax = "proto3";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+import "loggingtags/safe.proto";
+
+package test;
+
+message Sample {
+                     string safe      = 1 [(heroku.loggingtags.safe) = true];
+                     string unsafe    = 2; 
+  google.protobuf.Timestamp timestamp = 3 [(heroku.loggingtags.safe) = true];
+   google.protobuf.Duration duration  = 4 [(heroku.loggingtags.safe) = true];
+}
+
+message NestedSample {
+  Sample data = 1 [(heroku.loggingtags.safe) = true];
+}
+

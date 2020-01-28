@@ -1,0 +1,18 @@
+syntax = "proto3";
+import "google/protobuf/descriptor.proto";
+
+// protoc-gen-loggingtags generates a LoggingTags() map[string]interface{}
+// function for every message in a protobuf spec. This extension adds the
+// ability to mark a field as safe to opt it into being logged via that
+// mechanism. You can annotate individual fields, like so:
+//
+//     message Confidential {
+//         string secret_data = 1;
+//         string public_data = 2 [(heroku.loggingtags.safe) = true];
+//     }
+package heroku.loggingtags;
+option go_package = "github.com/heroku/x/loggingtags;loggingtags";
+
+extend google.protobuf.FieldOptions {
+  bool safe = 50000;
+}
