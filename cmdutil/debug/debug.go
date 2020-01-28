@@ -1,3 +1,15 @@
+// Package debug wraps the gops agent for use as a cmdutil-compatible Server.
+//
+// The debug server will be started on DEBUG_PORT (default 9999). Get a stack trace, profile memory, etc. by running the gops command line connected to locahost:9999 like:
+//
+//		$ gops stack localhost:9999
+//		goroutine 50 [running]:
+//		  runtime/pprof.writeGoroutineStacks(0x4a18a20, 0xc000010138, 0x0, 0x0)
+//		  	/usr/local/Cellar/go/1.13.5/libexec/src/runtime/pprof/pprof.go:679 +0x9d
+//		  runtime/pprof.writeGoroutine(0x4a18a20, 0xc000010138, 0x2, 0x0, 0x0)
+//		  ...
+//
+// Learn more about gops at https://github.com/google/gops.
 package debug
 
 import (
