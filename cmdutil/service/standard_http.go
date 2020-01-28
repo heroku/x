@@ -44,24 +44,30 @@ func HTTP(l logrus.FieldLogger, m metrics.Provider, h http.Handler, opts ...func
 	var srvs []cmdutil.Server
 
 	if cfg.Platform.Port != 0 {
-		srvs = append(srvs, standardServer(l, &http.Server{
+		s := &http.Server{
 			Handler: h,
 			Addr:    fmt.Sprintf(":%d", cfg.Platform.Port),
-		}))
+		}
+		o.configureServer(s)
+		srvs = append(srvs, standardServer(l, s))
 	}
 
 	if cfg.Platform.AdditionalPort != 0 {
-		srvs = append(srvs, standardServer(l, &http.Server{
+		s := &http.Server{
 			Handler: h,
 			Addr:    fmt.Sprintf(":%d", cfg.Platform.AdditionalPort),
-		}))
+		}
+		o.configureServer(s)
+		srvs = append(srvs, standardServer(l, s))
 	}
 
 	if cfg.Bypass.InsecurePort != 0 {
-		srvs = append(srvs, bypassServer(l, &http.Server{
+		s := &http.Server{
 			Handler: h,
 			Addr:    fmt.Sprintf(":%d", cfg.Bypass.InsecurePort),
-		}))
+		}
+		o.configureServer(s)
+		srvs = append(srvs, bypassServer(l, s))
 	}
 
 	if cfg.Bypass.SecurePort != 0 {
@@ -70,11 +76,13 @@ func HTTP(l logrus.FieldLogger, m metrics.Provider, h http.Handler, opts ...func
 			tlsConfig = newTLSConfig(cfg.Bypass.TLS)
 		}
 
-		srvs = append(srvs, bypassServer(l, &http.Server{
+		s := &http.Server{
 			Handler:   h,
 			Addr:      fmt.Sprintf(":%d", cfg.Bypass.SecurePort),
 			TLSConfig: tlsConfig,
-		}))
+		}
+		o.configureServer(s)
+		srvs = append(srvs, bypassServer(l, s))
 	}
 
 	if cfg.Bypass.HealthPort != 0 {
@@ -89,6 +97,13 @@ func HTTP(l logrus.FieldLogger, m metrics.Provider, h http.Handler, opts ...func
 type httpOptions struct {
 	skipEnforceHTTPS bool
 	tlsConfig        *tls.Config
+	serverHook       func(*http.Server)
+}
+
+func (o *httpOptions) configureServer(s *http.Server) {
+	if o.serverHook != nil {
+		o.serverHook(s)
+	}
 }
 
 // SkipEnforceHTTPS allows services to opt-out of SSL enforcement required for
@@ -97,6 +112,15 @@ type httpOptions struct {
 func SkipEnforceHTTPS() func(*httpOptions) {
 	return func(o *httpOptions) {
 		o.skipEnforceHTTPS = true
+	}
+}
+
+// WithHTTPServerHook allows services to provide a function to
+// adjust settings on any HTTP server before after the defaults are
+// applied but before the server is started.
+func WithHTTPServerHook(fn func(*http.Server)) func(*httpOptions) {
+	return func(o *httpOptions) {
+		o.serverHook = fn
 	}
 }
 
