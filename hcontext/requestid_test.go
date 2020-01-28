@@ -10,6 +10,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/google/uuid"
@@ -19,29 +20,31 @@ func TestFromRequest(t *testing.T) {
 	for _, h := range headersToSearch {
 		t.Run(h, func(t *testing.T) {
 			cases := []struct {
-				name       string
-				doer       func() *http.Request
-				shouldWork bool
+				name   string
+				doer   func() *http.Request
+				wantOK bool
 			}{
 				{
-					name: "everything works as normal",
+					name: "with request id header set",
 					doer: func() *http.Request {
 						req := httptest.NewRequest("GET", "/", nil)
 						req.Header.Set(h, uuid.New().String())
 						return req
 					},
+					wantOK: true,
 				},
 				{
-					name:       "everything doesn't work",
-					doer:       func() *http.Request { return httptest.NewRequest("GET", "/", nil) },
-					shouldWork: false,
+					name:   "without request id header set",
+					doer:   func() *http.Request { return httptest.NewRequest("GET", "/", nil) },
+					wantOK: false,
 				},
 			}
 
 			for _, cs := range cases {
 				t.Run(cs.name, func(t *testing.T) {
 					_, ok := FromRequest(cs.doer())
-					if !ok && cs.shouldWork {
+
+					if !ok && cs.wantOK {
 						t.Fatalf("expected to fetch request ID, but couldn't")
 					}
 				})
@@ -50,7 +53,28 @@ func TestFromRequest(t *testing.T) {
 	}
 }
 
-func TestRequestIDStorage(t *testing.T) {
+func TestFromRequest_AppendsIncomingRequestID(t *testing.T) {
+	originalRequestID := uuid.New().String()
+	req := httptest.NewRequest("GET", "/", nil)
+	req.Header.Set("X-Request-Id", originalRequestID)
+	requestID, ok := FromRequest(req)
+	requestIDs := strings.Split(requestID, ",")
+
+	if !ok {
+		t.Fatalf("no RequestID found in Headers")
+	}
+
+	if len(requestIDs) != 2 {
+		t.Fatalf("got %v Request IDs, want 2", len(requestIDs))
+	}
+
+	if requestIDs[1] != originalRequestID {
+		t.Fatalf("second Request ID was %v, want %v", requestIDs[1], originalRequestID)
+	}
+
+}
+
+func TestRequestIDFromContext(t *testing.T) {
 	const reqID = `hunter2`
 
 	ctx := context.Background()
