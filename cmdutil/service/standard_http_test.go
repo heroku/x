@@ -9,8 +9,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/jkakar/envtest"
-
 	"github.com/heroku/x/go-kit/metrics/testmetrics"
 	"github.com/heroku/x/testing/testlog"
 )
@@ -116,11 +114,12 @@ func TestBypassHTTPServer(t *testing.T) {
 }
 
 func TestHTTPServerConfiguration(t *testing.T) {
-	teardown := envtest.Setup()
-	defer teardown()
-
 	os.Setenv("PORT", "1234")
 	os.Setenv("ADDITIONAL_PORT", "4567")
+	defer func() {
+		os.Unsetenv("PORT")
+		os.Unsetenv("ADDITIONAL_PORT")
+	}()
 
 	var configuredServers []string
 	config := func(s *http.Server) {
