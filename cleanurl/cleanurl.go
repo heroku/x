@@ -1,3 +1,5 @@
+// Package cleanurl provides utilities for scrubbing basic auth credentials
+// from URLs.
 package cleanurl
 
 import "net/url"

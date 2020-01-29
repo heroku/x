@@ -1,3 +1,4 @@
+// Package health provides cmdutil-compatible healthcheck utilities.
 package health
 
 import (
