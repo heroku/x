@@ -59,6 +59,7 @@ func TestFromRequest_AppendsIncomingRequestID(t *testing.T) {
 	req.Header.Set("X-Request-Id", originalRequestID)
 	requestID, ok := FromRequest(req)
 	requestIDs := strings.Split(requestID, ",")
+	reqIDInHeader := req.Header.Get("X-Request-Id")
 
 	if !ok {
 		t.Fatalf("no RequestID found in Headers")
@@ -72,6 +73,9 @@ func TestFromRequest_AppendsIncomingRequestID(t *testing.T) {
 		t.Fatalf("second Request ID was %v, want %v", requestIDs[1], originalRequestID)
 	}
 
+	if reqIDInHeader != requestID {
+		t.Fatalf("request ID in header was %v, want %v", req.Header.Get("X-Request-Id"), requestID)
+	}
 }
 
 func TestRequestIDFromContext(t *testing.T) {

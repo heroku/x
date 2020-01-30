@@ -8,6 +8,7 @@ package hcontext
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -26,14 +27,16 @@ var headersToSearch = []string{
 // If one is found, it appends a new request ID and sets the comma separated value as the header.
 // If one is not found, it sets a new request ID as the header.
 func FromRequest(r *http.Request) (id string, ok bool) {
+	newRID := uuid.New().String()
+
 	for _, try := range headersToSearch {
 		if id = r.Header.Get(try); id != "" {
-			newRequestID := uuid.New().String() + "," + id
-			return newRequestID, true
+			newRID = fmt.Sprintf("%s,%s", newRID, id)
+			r.Header.Set("X-Request-Id", newRID)
+			return newRID, true
 		}
 	}
 
-	newRID := uuid.New().String()
 	r.Header.Set("X-Request-Id", newRID)
 	return newRID, false
 }
