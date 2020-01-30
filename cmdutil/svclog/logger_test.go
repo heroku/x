@@ -99,6 +99,12 @@ func (d *dummyOutput) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
+func (d *dummyOutput) allCalls() [][]byte {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.calls
+}
+
 func TestLossyLogger(t *testing.T) {
 	expectedLimit := 10
 	burstWindow := time.Millisecond * 50
@@ -123,7 +129,7 @@ func TestLossyLogger(t *testing.T) {
 	}()
 
 	<-timer.C
-	if want, got := expectedLimit, len(output.calls); got != want {
+	if want, got := expectedLimit, len(output.allCalls()); got != want {
 		t.Fatalf("want %v, got %v", want, got)
 	}
 
