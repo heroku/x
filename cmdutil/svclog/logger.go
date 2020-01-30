@@ -38,43 +38,35 @@ func NewLogger(cfg Config) logrus.FieldLogger {
 	return logger
 }
 
-type printfer interface {
-	Printf(format string, args ...interface{})
-}
-
-// SampleLogger is a logger that allows to use Printf sampling. Burst logs are
-// limited to N reports per given window.
-type SampleLogger struct {
-	logger  printfer
-	limiter *rate.Limiter
-}
-
 // NewSampleLogger creates a rate limited logger that samples logs. The parameter
 // logsBurstLimit defines how many logs are allowed per logBurstWindow duration.
-//
-// A SampleLogger can be created using https://godoc.org/github.com/sirupsen/logrus#Printf.
-// The caller must explicitly call Printf to sample logs. Any other logging call
-// will not be sampled.
-//
-//  sampledLogger := NewSampleLogger(logger, burstLimit, burstWindow)
-//  sampledLogger.Printf("LOSSY")
-//  sampledLogger.Debug("NOT LOSSY")
-//  sampledLogger.Info("NOT LOSSY")
-//  sampledLogger.Error("NOT LOSSY")
-//
-func NewSampleLogger(printfer printfer, logsBurstLimit int, logBurstWindow time.Duration) *SampleLogger {
-	limiter := rate.NewLimiter(rate.Every(logBurstWindow), logsBurstLimit)
-	return &SampleLogger{
-		logger:  printfer,
-		limiter: limiter,
+// The returned logger derives from the parentLogger, but without inheriting any Hooks.
+// All log entries derived from SampleLogger will contain 'sampled=true' field.
+func NewSampleLogger(parentLogger logrus.FieldLogger, logsBurstLimit int, logBurstWindow time.Duration) logrus.FieldLogger {
+	entry := parentLogger.WithField("sampled", true)
+	ll := logrus.New()
+	ll.Out = entry.Logger.Out
+	ll.Level = entry.Logger.Level
+	ll.ReportCaller = entry.Logger.ReportCaller
+	ll.Formatter = &sampleFormatter{
+		origFormatter: entry.Logger.Formatter,
+		limiter:       rate.NewLimiter(rate.Every(logBurstWindow), logsBurstLimit),
 	}
+
+	return ll.WithFields(entry.Data)
 }
 
-// Printf may log depending on if the limiter is exceeded or not.
-func (l *SampleLogger) Printf(format string, args ...interface{}) {
-	if l.limiter.Allow() {
-		l.logger.Printf(format, args...)
+type sampleFormatter struct {
+	limiter       *rate.Limiter
+	origFormatter logrus.Formatter
+}
+
+func (sf *sampleFormatter) Format(e *logrus.Entry) ([]byte, error) {
+	if sf.limiter.Allow() {
+		return sf.origFormatter.Format(e)
 	}
+
+	return nil, nil
 }
 
 // SaramaLogger takes FieldLogger and returns a saramaLogger.

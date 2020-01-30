@@ -1,13 +1,12 @@
 package svclog
 
 import (
+	"sync"
 	"testing"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
-
-	"github.com/heroku/x/testing/testlog"
 )
 
 func TestLoggerEmitsAppAndDeployData(t *testing.T) {
@@ -85,22 +84,64 @@ func TestLoggerTrimsNewLineFromSaramaLoggerMsg(t *testing.T) {
 	}
 }
 
+type dummyOutput struct {
+	calls [][]byte
+	mu    sync.Mutex
+}
+
+func (d *dummyOutput) Write(p []byte) (n int, err error) {
+	d.mu.Lock()
+	if len(p) != 0 {
+		d.calls = append(d.calls, p)
+	}
+	d.mu.Unlock()
+
+	return len(p), nil
+}
+
 func TestLossyLogger(t *testing.T) {
 	expectedLimit := 10
 	burstWindow := time.Millisecond * 50
 
-	logger, hook := testlog.NewNullLogger()
-	sampler := NewSampleLogger(logger, expectedLimit, burstWindow)
+	cfg := Config{
+		AppName: "sushi",
+		Deploy:  "production",
+	}
+
+	sampler := NewSampleLogger(NewLogger(cfg), expectedLimit, burstWindow)
+	baseLogger := sampler.(*log.Entry).Logger
+	hook := test.NewLocal(baseLogger)
+	output := &dummyOutput{}
+	baseLogger.SetOutput(output)
 	timer := time.NewTimer(burstWindow)
 
+	emitAmount := 1000
 	go func() {
-		for i := 0; i < 1000; i++ {
+		for i := 0; i < emitAmount; i++ {
 			sampler.Printf("message")
 		}
 	}()
 
 	<-timer.C
-	if len(hook.Entries()) != expectedLimit {
-		t.Fatalf("want %d, got %d", expectedLimit, len(hook.Entries()))
+	if want, got := expectedLimit, len(output.calls); got != want {
+		t.Fatalf("want %v, got %v", want, got)
 	}
+
+	allEntries := hook.AllEntries()
+	if want, got := emitAmount, len(allEntries); got != want {
+		t.Fatalf("want %v, got %v", want, got)
+	}
+
+	for _, e := range allEntries {
+		if want, got := "sushi", e.Data["app"]; got != want {
+			t.Fatalf("want %v, got %v", want, got)
+		}
+		if want, got := "production", e.Data["deploy"]; got != want {
+			t.Fatalf("want %v, got %v", want, got)
+		}
+		if want, got := true, e.Data["sampled"]; got != want {
+			t.Fatalf("want %v, got %v", want, got)
+		}
+	}
+
 }
