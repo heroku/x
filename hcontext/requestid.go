@@ -8,6 +8,7 @@ package hcontext
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -30,7 +31,7 @@ func FromRequest(r *http.Request) (id string, ok bool) {
 
 	for _, try := range headersToSearch {
 		if id = r.Header.Get(try); id != "" {
-			newRID = newRID + "," + id
+			newRID = fmt.Sprintf("%s,%s", newRID, id)
 			r.Header.Set("X-Request-Id", newRID)
 			return newRID, true
 		}
