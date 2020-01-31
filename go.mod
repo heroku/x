@@ -11,13 +11,13 @@ require (
 	github.com/dgryski/go-metro v0.0.0-20180109044635-280f6062b5bc // indirect
 	github.com/go-chi/chi v3.3.2+incompatible
 	github.com/go-ini/ini v1.33.0 // indirect
-	github.com/go-kit/kit v0.6.0
+	github.com/go-kit/kit v0.9.0
 	github.com/gogo/protobuf v1.3.0 // indirect
 	github.com/golang/protobuf v1.3.2
 	github.com/gomodule/redigo v2.0.0+incompatible
 	github.com/google/gops v0.3.7
 	github.com/google/uuid v1.1.1
-	github.com/grpc-ecosystem/go-grpc-middleware v1.0.0
+	github.com/grpc-ecosystem/go-grpc-middleware v1.1.1-0.20200128160657-3c51f7f33212
 	github.com/grpc-ecosystem/grpc-gateway v1.9.6
 	github.com/heroku/rollrus v0.1.1
 	github.com/hydrogen18/memlistener v0.0.0-20141126152155-54553eb933fb

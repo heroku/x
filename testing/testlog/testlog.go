@@ -106,7 +106,7 @@ func (t *Hook) CheckContained(tb testing.TB, strs ...string) {
 
 	found := false
 	for _, str := range strs {
-		found = contains(t.String(), str)
+		found = found || contains(t.String(), str)
 	}
 
 	if !found {
