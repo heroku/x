@@ -2,11 +2,15 @@ package hmiddleware
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
+	"github.com/go-chi/chi"
+	tags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	"github.com/heroku/x/testing/testlog"
 
+	"github.com/go-chi/chi/middleware"
 	"github.com/sirupsen/logrus"
 )
 
@@ -37,9 +41,9 @@ func TestLogEntryWrite(t *testing.T) {
 
 	e.Write(status, bytes, elapsed)
 
-	hook.CheckContained(t,
+	hook.CheckAllContained(t,
 		`level="info"`,
-		`at="finished"`,
+		`at="finish"`,
 		`status="200"`,
 	)
 }
@@ -56,8 +60,100 @@ func TestLogEntryPanic(t *testing.T) {
 	b := []byte{65, 66}
 	e.Panic(&i, b)
 
-	hook.CheckContained(t,
+	hook.CheckAllContained(t,
 		`level="error"`,
 		`msg="unhandled panic"`,
+	)
+}
+
+func TestTags(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tags.Extract(r.Context()).Set("foo", "bar")
+		w.WriteHeader(http.StatusOK)
+	})
+	r := chi.NewRouter()
+	r.Use(Tags)
+	logger, hook := testlog.NewNullLogger()
+	l := &StructuredLogger{
+		Logger: logger,
+	}
+	r.Use(middleware.RequestLogger(l))
+	r.Get("/", handler)
+	s := httptest.NewServer(r)
+	defer s.Close()
+
+	rsp, err := http.Get(s.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rsp.Body.Close()
+
+	hook.CheckAllContained(t,
+		`level="info"`,
+		`at="finish"`,
+		`status="200"`,
+		`foo="bar"`,
+	)
+}
+
+func TestTagsNoMiddleware(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tags.Extract(r.Context()).Set("foo", "bar")
+		w.WriteHeader(http.StatusOK)
+	})
+	r := chi.NewRouter()
+	logger, hook := testlog.NewNullLogger()
+	l := &StructuredLogger{
+		Logger: logger,
+	}
+	r.Use(middleware.RequestLogger(l))
+	r.Get("/", handler)
+	s := httptest.NewServer(r)
+	defer s.Close()
+
+	rsp, err := http.Get(s.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rsp.Body.Close()
+
+	hook.CheckAllContained(t,
+		`level="info"`,
+		`at="finish"`,
+		`status="200"`,
+	)
+	hook.CheckNotContained(t,
+		`foo="bar"`,
+	)
+}
+
+func TestTagsPanic(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tags.Extract(r.Context()).Set("foo", "bar")
+		panic("ohno!")
+	})
+	r := chi.NewRouter()
+	r.Use(Tags)
+	logger, hook := testlog.NewNullLogger()
+	l := &StructuredLogger{
+		Logger: logger,
+	}
+	r.Use(middleware.RequestLogger(l))
+	r.Use(middleware.Recoverer) // recovers from panics
+
+	r.Get("/", handler)
+	s := httptest.NewServer(r)
+	defer s.Close()
+
+	rsp, err := http.Get(s.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer rsp.Body.Close()
+
+	hook.CheckAllContained(t,
+		`level="error"`,
+		`msg="unhandled panic"`,
+		`foo="bar"`,
 	)
 }
