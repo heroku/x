@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-chi/chi"
 	tags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
+
 	"github.com/heroku/x/testing/testlog"
 
 	"github.com/go-chi/chi/middleware"
