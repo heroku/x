@@ -26,7 +26,7 @@ func TestNewLogEntry(t *testing.T) {
 
 func TestLogEntryWrite(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodGet, "/", nil)
-	logger, hook := testlog.NewNullLogger()
+	logger, hook := testlog.New()
 	l := &StructuredLogger{
 		Logger: logger,
 	}
@@ -46,7 +46,7 @@ func TestLogEntryWrite(t *testing.T) {
 
 func TestLogEntryPanic(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodGet, "/", nil)
-	logger, hook := testlog.NewNullLogger()
+	logger, hook := testlog.New()
 	l := &StructuredLogger{
 		Logger: logger,
 	}
