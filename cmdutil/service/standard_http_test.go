@@ -14,7 +14,7 @@ import (
 )
 
 func TestStandardHTTPServer(t *testing.T) {
-	l, _ := testlog.NewNullLogger()
+	l, _ := testlog.New()
 	srv := &http.Server{
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if _, err := io.WriteString(w, "OK"); err != nil {
@@ -56,7 +56,7 @@ func TestStandardHTTPServer(t *testing.T) {
 }
 
 func TestBypassHTTPServer(t *testing.T) {
-	l, _ := testlog.NewNullLogger()
+	l, _ := testlog.New()
 	srv := &http.Server{
 		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if _, err := io.WriteString(w, "OK"); err != nil {
@@ -126,7 +126,7 @@ func TestHTTPServerConfiguration(t *testing.T) {
 		configuredServers = append(configuredServers, s.Addr)
 	}
 
-	l, _ := testlog.NewNullLogger()
+	l, _ := testlog.New()
 	p := testmetrics.NewProvider(t)
 	HTTP(l, p, nil, WithHTTPServerHook(config))
 

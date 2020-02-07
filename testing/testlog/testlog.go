@@ -1,3 +1,4 @@
+// Package testlog provides a test logger and helpers to check log output.
 package testlog
 
 import (
@@ -17,8 +18,9 @@ type Hook struct {
 	entries []*logrus.Entry
 }
 
-// NewNullLogger Creates a discarding logger and installs the test hook.
-func NewNullLogger() (*logrus.Logger, *Hook) {
+// New sets up a test logger that produces no output. Use the returned hook to
+// observe and make assertions about what was logged.
+func New() (*logrus.Logger, *Hook) {
 	l := logrus.New()
 	l.Out = ioutil.Discard
 
@@ -26,7 +28,13 @@ func NewNullLogger() (*logrus.Logger, *Hook) {
 	l.Hooks.Add(hook)
 
 	return l, hook
+}
 
+// NewNullLogger Creates a discarding logger and installs the test hook.
+//
+// Deprecated: Use New instead.
+func NewNullLogger() (*logrus.Logger, *Hook) {
+	return New()
 }
 
 // Entries is a thread safe accessor for all entries.

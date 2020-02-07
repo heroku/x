@@ -18,7 +18,7 @@ import (
 )
 
 func TestGRPCPerRPCCredentialBasicAuth(t *testing.T) {
-	l, _ := testlog.NewNullLogger()
+	l, _ := testlog.New()
 	mux := http.NewServeMux()
 
 	checker := NewChecker([]Credential{{"user", "pass"}})

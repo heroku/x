@@ -23,7 +23,7 @@ func TestWithNotifyCancel(t *testing.T) {
 }
 
 func TestNewServer(t *testing.T) {
-	logger, _ := testlog.NewNullLogger()
+	logger, _ := testlog.New()
 
 	sv := NewServer(logger, syscall.SIGWINCH)
 
@@ -71,7 +71,7 @@ func TestNewServer(t *testing.T) {
 // Ensure Run returns when Stop is called, even if no signal
 // has been received.
 func TestNewServerNoSignal(t *testing.T) {
-	logger, _ := testlog.NewNullLogger()
+	logger, _ := testlog.New()
 
 	sv := NewServer(logger, syscall.SIGWINCH)
 

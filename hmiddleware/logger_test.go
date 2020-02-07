@@ -13,7 +13,7 @@ import (
 )
 
 func TestPreRequestLogger(t *testing.T) {
-	logger, hook := testlog.NewNullLogger()
+	logger, hook := testlog.New()
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -40,7 +40,7 @@ func TestPreRequestLogger(t *testing.T) {
 }
 
 func TestPreRequestLoggerDoesNotDoubleWrapTheResponseWriter(t *testing.T) {
-	logger, hook := testlog.NewNullLogger()
+	logger, hook := testlog.New()
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ww, ok := w.(middleware.WrapResponseWriter)
@@ -77,7 +77,7 @@ func TestPreRequestLoggerDoesNotDoubleWrapTheResponseWriter(t *testing.T) {
 }
 
 func TestPostRequestLogger(t *testing.T) {
-	logger, hook := testlog.NewNullLogger()
+	logger, hook := testlog.New()
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -104,7 +104,7 @@ func TestPostRequestLogger(t *testing.T) {
 }
 
 func TestPostRequestLoggerDoesNotDoubleWrapTheResponseWriter(t *testing.T) {
-	logger, hook := testlog.NewNullLogger()
+	logger, hook := testlog.New()
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ww, ok := w.(middleware.WrapResponseWriter)
@@ -213,7 +213,7 @@ func runPostRequestLoggerTest(t testing.TB, h http.Handler, hook *testlog.Hook) 
 }
 
 func TestRobotAllLogger(t *testing.T) {
-	logger, hook := testlog.NewNullLogger()
+	logger, hook := testlog.New()
 	defer hook.Reset()
 
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

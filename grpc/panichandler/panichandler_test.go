@@ -13,7 +13,7 @@ import (
 )
 
 func TestLoggingUnaryPanicHandler_NoPanic(t *testing.T) {
-	l, hook := testlog.NewNullLogger()
+	l, hook := testlog.New()
 
 	var (
 		uhCalled bool
@@ -47,7 +47,7 @@ func TestLoggingUnaryPanicHandler_NoPanic(t *testing.T) {
 }
 
 func TestLoggingUnaryPanicHandler_Panic(t *testing.T) {
-	l, hook := testlog.NewNullLogger()
+	l, hook := testlog.New()
 
 	var (
 		uhCalled bool
@@ -79,7 +79,7 @@ func TestLoggingUnaryPanicHandler_Panic(t *testing.T) {
 }
 
 func TestLoggingStreamPanicHandler_NoPanic(t *testing.T) {
-	l, hook := testlog.NewNullLogger()
+	l, hook := testlog.New()
 
 	var (
 		shCalled bool
@@ -108,7 +108,7 @@ func TestLoggingStreamPanicHandler_NoPanic(t *testing.T) {
 }
 
 func TestLoggingStreamPanicHandler_Panic(t *testing.T) {
-	l, hook := testlog.NewNullLogger()
+	l, hook := testlog.New()
 
 	var (
 		shCalled bool
