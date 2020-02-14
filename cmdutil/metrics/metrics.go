@@ -1,3 +1,4 @@
+// Package metrics provides helpers for setting up metrics reporting.
 package metrics
 
 import (

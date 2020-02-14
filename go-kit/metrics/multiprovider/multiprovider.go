@@ -1,3 +1,4 @@
+// Package multiprovider allows multiple metrics.Providers to be composed together to report metrics to multiple places.
 package multiprovider
 
 import (

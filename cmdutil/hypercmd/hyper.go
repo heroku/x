@@ -1,3 +1,6 @@
+// Package hypercmd provides utilities for creating "hyper commands", where
+// multiple commands are bundled into a single executable to get faster builds
+// and smaller binaries.
 package hypercmd
 
 import (

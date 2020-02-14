@@ -1,3 +1,4 @@
+// Package oc provides a cmdutil.Server for opencensus.
 package oc
 
 import (
