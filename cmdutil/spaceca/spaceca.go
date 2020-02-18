@@ -1,3 +1,4 @@
+// Package spaceca provides helpers for setting up TLS from a CA configuration.
 package spaceca
 
 import (

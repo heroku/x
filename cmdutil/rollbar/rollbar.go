@@ -1,3 +1,4 @@
+// Package rollbar provides helpers for setting up rollbar error reporting.
 package rollbar
 
 import (

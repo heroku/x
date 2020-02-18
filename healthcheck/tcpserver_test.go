@@ -6,13 +6,12 @@ import (
 	"testing"
 	"time"
 
-	logtest "github.com/sirupsen/logrus/hooks/test"
-
 	"github.com/heroku/x/go-kit/metrics/testmetrics"
+	"github.com/heroku/x/testing/testlog"
 )
 
 func TestTCPServer(t *testing.T) {
-	logger, _ := logtest.NewNullLogger()
+	logger, _ := testlog.New()
 	provider := testmetrics.NewProvider(t)
 	server := NewTCPServer(logger, provider, "127.0.0.1:0")
 
