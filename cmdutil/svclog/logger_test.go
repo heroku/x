@@ -121,8 +121,11 @@ func TestLossyLogger(t *testing.T) {
 	baseLogger.SetOutput(output)
 	timer := time.NewTimer(burstWindow)
 
+	done := make(chan struct{})
 	emitAmount := 1000
 	go func() {
+		defer close(done)
+
 		for i := 0; i < emitAmount; i++ {
 			sampler.Printf("message")
 		}
@@ -133,6 +136,7 @@ func TestLossyLogger(t *testing.T) {
 		t.Fatalf("want %v, got %v", want, got)
 	}
 
+	<-done
 	allEntries := hook.AllEntries()
 	if want, got := emitAmount, len(allEntries); got != want {
 		t.Fatalf("want %v, got %v", want, got)
