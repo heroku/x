@@ -8,9 +8,10 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/heroku/x/testing/testlog"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	"github.com/heroku/x/testing/testlog"
 )
 
 func TestShouldIgnore(t *testing.T) {
