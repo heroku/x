@@ -1,3 +1,4 @@
+// Package metricsregistry provides utilities for working with dynamically created metrics.
 package metricsregistry
 
 import (

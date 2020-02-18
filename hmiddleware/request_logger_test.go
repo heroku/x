@@ -74,7 +74,7 @@ func TestTags(t *testing.T) {
 	})
 	r := chi.NewRouter()
 	r.Use(Tags)
-	logger, hook := testlog.NewNullLogger()
+	logger, hook := testlog.New()
 	l := &StructuredLogger{
 		Logger: logger,
 	}
@@ -103,7 +103,7 @@ func TestTagsNoMiddleware(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 	r := chi.NewRouter()
-	logger, hook := testlog.NewNullLogger()
+	logger, hook := testlog.New()
 	l := &StructuredLogger{
 		Logger: logger,
 	}
@@ -135,7 +135,7 @@ func TestTagsPanic(t *testing.T) {
 	})
 	r := chi.NewRouter()
 	r.Use(Tags)
-	logger, hook := testlog.NewNullLogger()
+	logger, hook := testlog.New()
 	l := &StructuredLogger{
 		Logger: logger,
 	}

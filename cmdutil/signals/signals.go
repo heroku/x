@@ -1,3 +1,4 @@
+// Package signals provides a signal handler which is usable as a cmdutil.Server.
 package signals
 
 import (
