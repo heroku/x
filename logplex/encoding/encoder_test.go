@@ -102,7 +102,7 @@ func TestEncoderTypes(t *testing.T) {
 				Timestamp:   lockedDate,
 				Message:     "hi",
 			},
-			wantEncodedMsg: "2019-01-12T11:45:26.371+00:00 application[process]: hi",
+			wantEncodedMsg: "2019-01-12T11:45:26.371000+00:00 application[process]: hi",
 		},
 		{
 			name:        "successful encoding with SSE encoder",
@@ -117,7 +117,7 @@ func TestEncoderTypes(t *testing.T) {
 				Timestamp:   lockedDate,
 				Message:     "hi",
 			},
-			wantEncodedMsg: "id: 1547293526\ndata: 2019-01-12T11:45:26.371+00:00 application[process]: hi\n\n\n",
+			wantEncodedMsg: "id: 1547293526\ndata: 2019-01-12T11:45:26.371000+00:00 application[process]: hi\n\n\n",
 		},
 	}
 
