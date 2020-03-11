@@ -14,6 +14,9 @@ const SyslogTimeFormat = "2006-01-02T15:04:05.999999-07:00"
 // FlexibleSyslogTimeFormat accepts both 'Z' and TZ notation for event time.
 const FlexibleSyslogTimeFormat = "2006-01-02T15:04:05.999999Z07:00"
 
+// HumanTimeFormat defines the human friendly time format used in CLI/UI.
+const HumanTimeFormat = "2006-01-02T15:04:05.000000-07:00"
+
 // L15Error is the message returned with an L15 error
 const L15Error = "L15: Error displaying log lines. Please try again."
 
@@ -88,7 +91,7 @@ func (s *sseEncoder) separator() {
 }
 
 func messageToString(msg Message) string {
-	return fmt.Sprintf("%s %s[%s]: %s", msg.Timestamp.Format(SyslogTimeFormat), msg.Application, msg.Process, msg.Message)
+	return fmt.Sprintf("%s %s[%s]: %s", msg.Timestamp.Format(HumanTimeFormat), msg.Application, msg.Process, msg.Message)
 }
 
 // Encode serializes a syslog message into their wire format ( octet-framed syslog )
