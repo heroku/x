@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"time"
 
 	proxyproto "github.com/armon/go-proxyproto"
 	"github.com/pkg/errors"
@@ -22,6 +23,8 @@ func Serve(handler http.Handler, cfg Config, opts ...func(*http.Server)) error {
 		srv        = &http.Server{
 			Addr:    fmt.Sprintf(":%d", cfg.SecurePort),
 			Handler: handler,
+			WriteTimeout: cfg.WriteTimeout * time.Second,
+			ReadTimeout:  cfg.ReadTimeout * time.Second,
 		}
 	)
 
