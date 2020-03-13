@@ -1,5 +1,7 @@
 package https
 
+import "time"
+
 // Config for HTTP and HTTPS servers.
 type Config struct {
 	InsecurePort int `env:"HEROKU_ROUTER_HTTP_PORT,required"`
@@ -7,7 +9,9 @@ type Config struct {
 
 	// These environement variables are automatically set by ACM in
 	// relation to Let's Encrypt certificates.
-	ServerCert  string `env:"SERVER_CERT,required"`
-	ServerKey   string `env:"SERVER_KEY,required"`
-	UseAutocert bool   `env:"HTTPS_USE_AUTOCERT"`
+	ServerCert   string        `env:"SERVER_CERT,required"`
+	ServerKey    string        `env:"SERVER_KEY,required"`
+	UseAutocert  bool          `env:"HTTPS_USE_AUTOCERT"`
+	ReadTimeout  time.Duration `env:"READ_TIMEOUT"`
+	WriteTimeout time.Duration `env:"WRITE_TIMEOUT"`
 }
