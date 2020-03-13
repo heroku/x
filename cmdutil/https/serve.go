@@ -21,8 +21,8 @@ func Serve(handler http.Handler, cfg Config, opts ...func(*http.Server)) error {
 		serverCert = []byte(cfg.ServerCert)
 		serverKey  = []byte(cfg.ServerKey)
 		srv        = &http.Server{
-			Addr:    fmt.Sprintf(":%d", cfg.SecurePort),
-			Handler: handler,
+			Addr:         fmt.Sprintf(":%d", cfg.SecurePort),
+			Handler:      handler,
 			WriteTimeout: cfg.WriteTimeout * time.Second,
 			ReadTimeout:  cfg.ReadTimeout * time.Second,
 		}
