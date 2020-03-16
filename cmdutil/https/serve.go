@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"time"
 
 	proxyproto "github.com/armon/go-proxyproto"
 	"github.com/pkg/errors"
