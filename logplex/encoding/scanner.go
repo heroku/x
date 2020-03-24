@@ -21,10 +21,12 @@ const OptimalFrameLength = 1024
 var ErrBadFrame = errors.New("bad frame")
 
 // ErrInvalidStructuredData is returned when structure data has any value other than '-' (blank)
-// We do not
 var ErrInvalidStructuredData = errors.New("invalid structured data")
 
-var privalVersionRe = regexp.MustCompile(`<(\d+)>(\d)+`)
+// ErrInvalidPriVal is returned when pri-val is not properly formatted
+var ErrInvalidPriVal = errors.New("invalid pri-val")
+
+var privalVersionRe = regexp.MustCompile(`<(\d+)>(\d)`)
 
 // Decode converts a rfc5424 message to our model
 func Decode(raw []byte, hasStructuredData bool) (Message, error) {
@@ -37,6 +39,9 @@ func Decode(raw []byte, hasStructuredData bool) (Message, error) {
 	}
 
 	privalVersion := privalVersionRe.FindAllSubmatch(priVal, -1)
+	if len(privalVersion) != 1 || len(privalVersion[0]) != 3 {
+		return msg, ErrInvalidPriVal
+	}
 	prio, err := strconv.ParseUint(string(privalVersion[0][1]), 10, 8)
 	if err != nil {
 		return msg, err
