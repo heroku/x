@@ -105,11 +105,9 @@ func TestScanner(t *testing.T) {
 		},
 
 		"bad prival": {
-			log:          "64 <190>11 2019-07-20T17:50:10.879238Z shuttle token shuttle - - 99\n 65 <190>1 2019-07-20T17:50:10.879238Z shuttle token shuttle - - 10",
-			count:        1,
-			err:          ErrBadFrame,
-			wantVersion:  1,
-			wantPriority: 190,
+			log:   "64 <190>   2019-07-20T17:50:10.879238Z shuttle token shuttle - - 99\n 65 <190>1 2019-07-20T17:50:10.879238Z shuttle token shuttle - - 10",
+			count: 0,
+			err:   ErrInvalidPriVal,
 		},
 	}
 
