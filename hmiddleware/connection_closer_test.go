@@ -23,11 +23,11 @@ func TestConnectionClosingContext(t *testing.T) {
 
 func TestConnectionClosingMiddleware(t *testing.T) {
 	tests := []struct {
-		name                 string
-		maxRequests          int
-		requestCount         int
-		wantConnections      int
-		wantCloseHeaders     int
+		name             string
+		maxRequests      int
+		requestCount     int
+		wantConnections  int
+		wantCloseHeaders int
 	}{
 		{
 			name:            "too few requests",
@@ -36,18 +36,18 @@ func TestConnectionClosingMiddleware(t *testing.T) {
 			wantConnections: 1,
 		},
 		{
-			name:                 "exactly max requests",
-			maxRequests:          10,
-			requestCount:         10,
-			wantConnections:      1,
-			wantCloseHeaders:     1,
+			name:             "exactly max requests",
+			maxRequests:      10,
+			requestCount:     10,
+			wantConnections:  1,
+			wantCloseHeaders: 1,
 		},
 		{
-			name:                 "several times max requests",
-			maxRequests:          10,
-			requestCount:         100,
-			wantConnections:      10,
-			wantCloseHeaders:     10,
+			name:             "several times max requests",
+			maxRequests:      10,
+			requestCount:     100,
+			wantConnections:  10,
+			wantCloseHeaders: 10,
 		},
 	}
 
@@ -76,7 +76,7 @@ func TestConnectionClosingMiddleware(t *testing.T) {
 			handler = middleware(handler)
 
 			server := httptest.NewUnstartedServer(handler)
-			server.Config.ConnContext = ConnectionClosingContext
+			server.Config.ConnContext = ConnectionClosingContext //nolint:typecheck
 			server.Start()
 			defer server.Close()
 

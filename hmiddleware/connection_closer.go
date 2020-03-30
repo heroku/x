@@ -8,6 +8,7 @@ import (
 
 	"github.com/google/uuid"
 	lru "github.com/hashicorp/golang-lru"
+
 	"github.com/heroku/x/go-kit/metrics"
 )
 
