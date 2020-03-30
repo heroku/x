@@ -2,7 +2,6 @@ package hmiddleware
 
 import (
 	"context"
-	"log"
 	"net"
 	"net/http"
 	"sync"
@@ -26,7 +25,7 @@ func ConnectionClosingContext(ctx context.Context, c net.Conn) context.Context {
 // connection has produced maxRequests http requests. The cacheSize determines the size of the LRU cache which tracks
 // connection request counts. This middleware requires the http.Server sets ConnectionClosingContext for it's
 // ConnContext field.
-func ConnectionClosingMiddleware(mp metrics.Provider, maxRequests, cacheSize int) func(http.Handler) http.Handler {
+func ConnectionClosingMiddleware(mp metrics.Provider, maxRequests, cacheSize int) (func(http.Handler) http.Handler, error) {
 	var (
 		closed = mp.NewCounter("server.connection.closes.total")
 		mtx    sync.Mutex
@@ -34,10 +33,10 @@ func ConnectionClosingMiddleware(mp metrics.Provider, maxRequests, cacheSize int
 
 	cache, err := lru.New(cacheSize)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
-	return func(next http.Handler) http.Handler {
+	handler := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			shouldClose := false
 			connID, ok := r.Context().Value(connCloseID).(string)
@@ -64,12 +63,14 @@ func ConnectionClosingMiddleware(mp metrics.Provider, maxRequests, cacheSize int
 				mtx.Unlock()
 			}
 
-			next.ServeHTTP(w, r)
-
 			if shouldClose {
 				closed.Add(1)
 				w.Header().Add("connection", "close")
 			}
+
+			next.ServeHTTP(w, r)
 		})
 	}
+
+	return handler, nil
 }

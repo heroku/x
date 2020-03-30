@@ -2,8 +2,11 @@ package hmiddleware
 
 import (
 	"context"
+	"io"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 
 	"github.com/heroku/x/go-kit/metrics/provider/discard"
@@ -23,54 +26,86 @@ func TestConnectionClosingMiddleware(t *testing.T) {
 		name                 string
 		maxRequests          int
 		requestCount         int
-		wantCloseMetricCount float64
+		wantConnections      int
 		wantCloseHeaders     int
 	}{
 		{
-			name:         "too few requests",
-			maxRequests:  10,
-			requestCount: 5,
+			name:            "too few requests",
+			maxRequests:     10,
+			requestCount:    5,
+			wantConnections: 1,
 		},
 		{
 			name:                 "exactly max requests",
 			maxRequests:          10,
 			requestCount:         10,
-			wantCloseMetricCount: 1,
+			wantConnections:      1,
 			wantCloseHeaders:     1,
 		},
 		{
 			name:                 "several times max requests",
 			maxRequests:          10,
 			requestCount:         100,
-			wantCloseMetricCount: 10,
+			wantConnections:      10,
 			wantCloseHeaders:     10,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			mp := testmetrics.NewProvider(t)
-			ctx := ConnectionClosingContext(context.TODO(), nil)
-			next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var (
+				gotConnIDs = make(map[string]bool)
+				mtx        sync.Mutex
+			)
+			var handler http.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				connIDValue := r.Context().Value(connCloseID)
+				if connID, ok := connIDValue.(string); ok {
+					mtx.Lock()
+					gotConnIDs[connID] = true
+					mtx.Unlock()
+				}
 				_, _ = w.Write([]byte("hello world"))
 			})
 
-			middleware := ConnectionClosingMiddleware(mp, test.maxRequests, 1024)
-			handler := middleware(next)
+			mp := testmetrics.NewProvider(t)
+			middleware, err := ConnectionClosingMiddleware(mp, test.maxRequests, 1024)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			handler = middleware(handler)
+
+			server := httptest.NewUnstartedServer(handler)
+			server.Config.ConnContext = ConnectionClosingContext
+			server.Start()
+			defer server.Close()
+
+			client := server.Client()
 
 			gotCloseHeader := 0
 			for i := 0; i < test.requestCount; i++ {
-				req := httptest.NewRequest(http.MethodGet, "/", nil).WithContext(ctx)
-				recorder := httptest.NewRecorder()
+				req, err := http.NewRequest(http.MethodGet, server.URL, nil)
+				if err != nil {
+					t.Fatal(err)
+				}
 
-				handler.ServeHTTP(recorder, req)
+				res, err := client.Do(req)
+				if err != nil {
+					t.Fatal(err)
+				}
+				_, _ = io.Copy(ioutil.Discard, res.Body)
+				_ = res.Body.Close()
 
-				if recorder.Header().Get("connection") == "close" {
+				if res.Close {
 					gotCloseHeader++
 				}
 			}
 
-			mp.CheckCounter("server.connection.closes.total", test.wantCloseMetricCount)
+			if want, got := test.wantConnections, len(gotConnIDs); want != got {
+				t.Fatalf("want unique connects: %d, got %d", want, got)
+			}
+
+			mp.CheckCounter("server.connection.closes.total", float64(test.wantCloseHeaders))
 
 			if want, got := test.wantCloseHeaders, gotCloseHeader; want != got {
 				t.Fatalf("want close header count: %d, got %d", want, got)
@@ -80,7 +115,11 @@ func TestConnectionClosingMiddleware(t *testing.T) {
 }
 
 func BenchmarkConnectionClosingMiddleware_Cache1024(b *testing.B) {
-	middleware := ConnectionClosingMiddleware(discard.New(), 100, 1024)
+	middleware, err := ConnectionClosingMiddleware(discard.New(), 100, 1024)
+	if err != nil {
+		b.Fatal(err)
+	}
+
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte("hello world"))
 	})
