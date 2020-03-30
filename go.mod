@@ -19,6 +19,7 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.0
 	github.com/grpc-ecosystem/grpc-gateway v1.9.6
+	github.com/hashicorp/golang-lru v0.5.1
 	github.com/heroku/rollrus v0.1.1
 	github.com/hydrogen18/memlistener v0.0.0-20141126152155-54553eb933fb
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
