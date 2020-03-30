@@ -27,7 +27,7 @@ func ConnectionClosingContext(ctx context.Context, c net.Conn) context.Context {
 // ConnContext field.
 func ConnectionClosingMiddleware(mp metrics.Provider, maxRequests, cacheSize int) (func(http.Handler) http.Handler, error) {
 	var (
-		closed = mp.NewCounter("server.connection.closes.total")
+		closed = mp.NewCounter("connection.closes.total")
 		mtx    sync.Mutex
 	)
 

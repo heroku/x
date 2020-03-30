@@ -105,7 +105,7 @@ func TestConnectionClosingMiddleware(t *testing.T) {
 				t.Fatalf("want unique connects: %d, got %d", want, got)
 			}
 
-			mp.CheckCounter("server.connection.closes.total", float64(test.wantCloseHeaders))
+			mp.CheckCounter("connection.closes.total", float64(test.wantCloseHeaders))
 
 			if want, got := test.wantCloseHeaders, gotCloseHeader; want != got {
 				t.Fatalf("want close header count: %d, got %d", want, got)
