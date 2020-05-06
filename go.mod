@@ -14,7 +14,7 @@ require (
 	github.com/go-kit/kit v0.9.0
 	github.com/gogo/protobuf v1.3.0 // indirect
 	github.com/golang/protobuf v1.3.2
-	github.com/gomodule/redigo v1.8.0
+	github.com/gomodule/redigo v1.8.1
 	github.com/google/gops v0.3.8-0.20200229223415-3a98d6d24562
 	github.com/google/uuid v1.1.1
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.0
