@@ -144,6 +144,25 @@ func TestEncoderTypes(t *testing.T) {
 	}
 }
 
+var result string
+
+func BenchmarkMessageToString(b *testing.B) {
+	lockedDate, _ := time.Parse("2006-01-02T15:04:05.000Z", "2019-01-12T11:45:26.371Z")
+	msg := Message{
+		Version:     1,
+		Priority:    134,
+		Hostname:    "hostname",
+		Application: "application",
+		Process:     "process",
+		ID:          "msgid",
+		Timestamp:   lockedDate,
+		Message:     "hi",
+	}
+	for n := 0; n < b.N; n++ {
+		result = messageToString(msg)
+	}
+}
+
 type failWrite struct{}
 
 func (failWrite) Write([]byte) (int, error) {
