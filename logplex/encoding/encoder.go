@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"strconv"
-	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -93,15 +92,7 @@ func (s *sseEncoder) separator() {
 
 func messageToString(msg Message) string {
 	// equivalent to fmt.Sprintf("%s %s[%s]: %s", msg.Timestamp.Format(HumanTimeFormat), msg.Application, msg.Process, msg.Message)
-	var s strings.Builder
-	s.WriteString(msg.Timestamp.Format(HumanTimeFormat))
-	s.WriteString(" ")
-	s.WriteString(msg.Application)
-	s.WriteString("[")
-	s.WriteString(msg.Process)
-	s.WriteString("]: ")
-	s.WriteString(msg.Message)
-	return s.String()
+	return msg.Timestamp.Format(HumanTimeFormat) + " " + msg.Application + "[" + msg.Process + "]: " + msg.Message
 }
 
 // Encode serializes a syslog message into their wire format ( octet-framed syslog )
