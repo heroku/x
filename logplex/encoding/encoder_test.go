@@ -147,7 +147,10 @@ func TestEncoderTypes(t *testing.T) {
 var result string
 
 func BenchmarkMessageToString(b *testing.B) {
-	lockedDate, _ := time.Parse("2006-01-02T15:04:05.000Z", "2019-01-12T11:45:26.371Z")
+	lockedDate, err := time.Parse("2006-01-02T15:04:05.000Z", "2019-01-12T11:45:26.371Z")
+	if err != nil {
+		b.Fatal("unexpected error parsing benchmark input", err)
+	}
 	msg := Message{
 		Version:     1,
 		Priority:    134,
@@ -158,9 +161,35 @@ func BenchmarkMessageToString(b *testing.B) {
 		Timestamp:   lockedDate,
 		Message:     "hi",
 	}
+	var result string
+	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		result = messageToString(msg)
 	}
+	_ = result
+}
+
+func BenchmarkEncode(b *testing.B) {
+	lockedDate, err := time.Parse("2006-01-02T15:04:05.000Z", "2019-01-12T11:45:26.371Z")
+	if err != nil {
+		b.Fatal("unexpected error parsing benchmark input", err)
+	}
+	msg := Message{
+		Version:     1,
+		Priority:    134,
+		Hostname:    "hostname",
+		Application: "application",
+		Process:     "process",
+		ID:          "msgid",
+		Timestamp:   lockedDate,
+		Message:     "hi",
+	}
+	var result []byte
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		result, _ = Encode(msg)
+	}
+	_ = result
 }
 
 type failWrite struct{}

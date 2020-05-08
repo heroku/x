@@ -107,17 +107,14 @@ func Encode(msg Message) ([]byte, error) {
 		return nil, errors.Wrap(ErrInvalidMessage, "version")
 	}
 
-	line := fmt.Sprintf("<%d>%d %s %s %s %s %s %s%s",
-		msg.Priority,
-		msg.Version,
-		msg.Timestamp.Format(SyslogTimeFormat),
-		stringOrNil(msg.Hostname),
-		stringOrNil(msg.Application),
-		stringOrNil(msg.Process),
-		stringOrNil(msg.ID),
-		sd,
-		msg.Message,
-	)
+	line := "<" + strconv.Itoa(int(msg.Priority)) + ">" + strconv.Itoa(int(msg.Version)) + " " +
+		msg.Timestamp.Format(SyslogTimeFormat) + " " +
+		stringOrNil(msg.Hostname) + " " +
+		stringOrNil(msg.Application) + " " +
+		stringOrNil(msg.Process) + " " +
+		stringOrNil(msg.ID) + " " +
+		sd +
+		msg.Message
 
 	return []byte(strconv.Itoa(len(line)) + " " + line), nil
 }
