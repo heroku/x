@@ -144,8 +144,6 @@ func TestEncoderTypes(t *testing.T) {
 	}
 }
 
-var result string
-
 func BenchmarkMessageToString(b *testing.B) {
 	lockedDate, err := time.Parse("2006-01-02T15:04:05.000Z", "2019-01-12T11:45:26.371Z")
 	if err != nil {

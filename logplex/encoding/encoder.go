@@ -91,7 +91,6 @@ func (s *sseEncoder) separator() {
 }
 
 func messageToString(msg Message) string {
-	// equivalent to fmt.Sprintf("%s %s[%s]: %s", msg.Timestamp.Format(HumanTimeFormat), msg.Application, msg.Process, msg.Message)
 	return msg.Timestamp.Format(HumanTimeFormat) + " " + msg.Application + "[" + msg.Process + "]: " + msg.Message
 }
 
