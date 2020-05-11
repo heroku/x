@@ -91,7 +91,7 @@ func (s *sseEncoder) separator() {
 }
 
 func messageToString(msg Message) string {
-	return fmt.Sprintf("%s %s[%s]: %s", msg.Timestamp.Format(HumanTimeFormat), msg.Application, msg.Process, msg.Message)
+	return msg.Timestamp.Format(HumanTimeFormat) + " " + msg.Application + "[" + msg.Process + "]: " + msg.Message
 }
 
 // Encode serializes a syslog message into their wire format ( octet-framed syslog )
@@ -106,17 +106,14 @@ func Encode(msg Message) ([]byte, error) {
 		return nil, errors.Wrap(ErrInvalidMessage, "version")
 	}
 
-	line := fmt.Sprintf("<%d>%d %s %s %s %s %s %s%s",
-		msg.Priority,
-		msg.Version,
-		msg.Timestamp.Format(SyslogTimeFormat),
-		stringOrNil(msg.Hostname),
-		stringOrNil(msg.Application),
-		stringOrNil(msg.Process),
-		stringOrNil(msg.ID),
-		sd,
-		msg.Message,
-	)
+	line := "<" + strconv.Itoa(int(msg.Priority)) + ">" + strconv.Itoa(int(msg.Version)) + " " +
+		msg.Timestamp.Format(SyslogTimeFormat) + " " +
+		stringOrNil(msg.Hostname) + " " +
+		stringOrNil(msg.Application) + " " +
+		stringOrNil(msg.Process) + " " +
+		stringOrNil(msg.ID) + " " +
+		sd +
+		msg.Message
 
 	return []byte(strconv.Itoa(len(line)) + " " + line), nil
 }
