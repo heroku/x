@@ -1,6 +1,6 @@
 # x
 
-[![CircleCI](https://circleci.com/gh/heroku/x.svg?style=svg)](https://circleci.com/gh/heroku/x)&nbsp;[![GoDoc](https://godoc.org/github.com/heroku/x?status.svg)](http://godoc.org/github.com/heroku/x)
+[![CircleCI](https://circleci.com/gh/heroku/x.svg?style=svg)](https://circleci.com/gh/heroku/x)&nbsp;[![GoDoc](https://godoc.org/github.com/heroku/x?status.svg)](http://godoc.org/github.com/heroku/x)&nbsp;![Security Code Scanning - action](https://github.com/heroku/x/workflows/Code%20scanning%20-%20action/badge.svg)
 
 A set of packages for reuse within Heroku Go applications.
 
