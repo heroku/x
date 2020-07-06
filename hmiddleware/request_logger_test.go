@@ -40,7 +40,7 @@ func TestLogEntryWrite(t *testing.T) {
 	bytes := 0
 	elapsed := time.Duration(100)
 
-	e.Write(status, bytes, elapsed)
+	e.Write(status, bytes, http.Header{}, elapsed, nil)
 
 	hook.CheckAllContained(t,
 		`level="info"`,
