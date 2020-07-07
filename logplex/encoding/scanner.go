@@ -158,8 +158,8 @@ func (s *syslogScanner) Scan() bool {
 }
 
 // NewDrainScanner returns a scanner for use with drain endpoints. The primary
-// difference is that it's lose and doesn't check for structured data.
-func NewDrainScanner(r io.ReadCloser) Scanner {
+// difference is that it's loose and doesn't check for structured data.
+func NewDrainScanner(r io.Reader) Scanner {
 	return newSyslogScanner(r, false)
 }
 
