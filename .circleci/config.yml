@@ -8,4 +8,4 @@ workflows:
       - golang/golangci-lint:
           version: "v1.18.0"
       - golang/test-nodb:
-          version: "1.13"
+          version: "1.14"
