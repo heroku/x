@@ -59,7 +59,7 @@ func (l *StructuredLogger) NewLogEntry(r *http.Request) middleware.LogEntry {
 }
 
 // Write creates a new LogEntry at the end of a request.
-func (l *StructuredLoggerEntry) Write(status, bytes int, elapsed time.Duration) {
+func (l *StructuredLoggerEntry) Write(status, bytes int, header http.Header, elapsed time.Duration, extra interface{}) {
 	fields := l.tags.Values()
 	if fields == nil {
 		fields = make(map[string]interface{})
