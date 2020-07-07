@@ -16,7 +16,6 @@ import (
 	"github.com/go-kit/kit/metrics/generic"
 	"gopkg.in/caio/go-tdigest.v2"
 
-	"github.com/heroku/x/go-kit/metrics"
 	xmetrics "github.com/heroku/x/go-kit/metrics"
 )
 
@@ -176,7 +175,7 @@ func defaultErrorHandler(err error) {}
 
 // New librato metrics provider that reports metrics to the URL every interval
 // with the provided options.
-func New(u *url.URL, interval time.Duration, opts ...OptionFunc) metrics.Provider {
+func New(u *url.URL, interval time.Duration, opts ...OptionFunc) xmetrics.Provider {
 	p := Provider{
 		errorHandler:     defaultErrorHandler,
 		done:             make(chan struct{}),
