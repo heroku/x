@@ -6,6 +6,6 @@ workflows:
   ci:
     jobs:
       - golang/golangci-lint:
-          version: "v1.18.0"
+          version: "v1.28.1"
       - golang/test-nodb:
           version: "1.14"
