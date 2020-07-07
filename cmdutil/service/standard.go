@@ -32,8 +32,10 @@ type Standard struct {
 }
 
 // New Standard Service with logging, rollbar, metrics, debugging, common signal
-// handling, and possibly more. envdecode.MustStrictDecode is called on the
-// provided appConfig to ensure that it is processed.
+// handling, and possibly more.
+//
+// If appConfig is non-nil, envdecode.MustStrictDecode will be called on it
+// to ensure that it is processed.
 func New(appConfig interface{}, ofs ...OptionFunc) *Standard {
 	// Initialize the pseudo-random number generator with a unique value so we
 	// get unique sequences across runs.
@@ -41,7 +43,10 @@ func New(appConfig interface{}, ofs ...OptionFunc) *Standard {
 
 	var sc standardConfig
 	envdecode.MustStrictDecode(&sc)
-	envdecode.MustStrictDecode(appConfig)
+
+	if appConfig != nil {
+		envdecode.MustStrictDecode(appConfig)
+	}
 
 	logger := svclog.NewLogger(sc.Logger)
 
