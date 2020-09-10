@@ -1,10 +1,15 @@
 package svclog
 
 import (
+	"bytes"
+	"io"
+	"os"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 )
@@ -154,4 +159,98 @@ func TestLossyLogger(t *testing.T) {
 		}
 	}
 
+}
+
+func TestNullLoggerSwallowsLogs(t *testing.T) {
+	out, err := captureOutput(func() {
+		l := NewNullLogger()
+		l.Info("testing...")
+	})
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if out != "" {
+		t.Fatalf("Expected no output but got %v", out)
+	}
+}
+
+func TestLoggerOrNull(t *testing.T) {
+	ts := map[string]struct {
+		logger func() log.FieldLogger
+		msg    string
+		want   []string
+	}{
+		"new": {
+			logger: func() log.FieldLogger { return log.New() },
+			msg:    "testing...",
+			want:   []string{"testing..."},
+		},
+		"nil": {
+			logger: func() log.FieldLogger { return nil },
+			msg:    "testing...",
+			want:   []string{""},
+		},
+	}
+
+	for name, tc := range ts {
+		t.Run(name, func(t *testing.T) {
+			out, err := captureOutput(func() {
+				log := tc.logger()
+				log = LoggerOrNull(log)
+				log.Info(tc.msg)
+			})
+
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if len(tc.want) == 0 && len(out) != 0 {
+				t.Fatalf("Didn't expect any output but got `%v`", out)
+			}
+
+			for _, w := range tc.want {
+				if !strings.Contains(out, w) {
+					t.Fatalf("Expected `%v` to contain `%v`", out, w)
+				}
+			}
+		})
+	}
+}
+
+func captureOutput(f func()) (string, error) {
+	r, w, err := os.Pipe()
+	if err != nil {
+		return "", errors.Wrap(err, "Error capturing output")
+	}
+
+	stdout := os.Stdout
+	stderr := os.Stderr
+	defer func() {
+		os.Stdout = stdout
+		os.Stderr = stderr
+	}()
+	os.Stdout = w
+	os.Stderr = w
+
+	errs := make(chan error)
+	out := make(chan string)
+	wg := new(sync.WaitGroup)
+	wg.Add(1)
+	go func() {
+		var buf bytes.Buffer
+		wg.Done()
+		if _, err := io.Copy(&buf, r); err != nil {
+			errs <- errors.Wrap(err, "Error copying output to buffer")
+		}
+		out <- buf.String()
+	}()
+
+	wg.Wait()
+	f()
+	w.Close()
+	close(errs)
+
+	return <-out, <-errs
 }
