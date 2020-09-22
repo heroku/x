@@ -44,7 +44,10 @@ func GRPCAuthFunc(checker *Checker) func(ctx context.Context) (context.Context, 
 			}
 
 			if !checker.roleValidator.Validate(user, method) {
-				return nil, grpc.Errorf(codes.PermissionDenied, fmt.Sprintf("permission denied. user \"%s\" does not have access to \"%s\"", user, method)) //nolint:staticcheck
+				return nil, grpc.Errorf( //nolint:staticcheck
+					codes.PermissionDenied,
+					fmt.Sprintf("permission denied. user \"%s\" does not have access to \"%s\"", user, method),
+				)
 			}
 		}
 
