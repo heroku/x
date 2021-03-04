@@ -1,5 +1,6 @@
 // Package tlsconfig provides a safe set of TLS configurations for the Mozilla
-// recommended ciphersuites.
+// recommended ciphersuites. It also contains the Salesforce recommended
+// TLS ciphersuites.
 //
 // See https://wiki.mozilla.org/Security/Server_Side_TLS
 //
@@ -10,10 +11,12 @@
 //   AES:      128 > 256
 //   Cert Sig: ECDSA > RSA
 //
-// Modern:  strongest ciphers (PFS-only) & latest TLS version(s)
-// Default: mix of various strength ciphers & recent TLS versions
-// Strict:  deprecated, Default plus ECDHE+RSA+AES{128,256}+CBC+SHA1 for IE 11
-// Legacy:  many ciphers & TLS versions for maximum compatibility, less secure
+// Modern:    strongest ciphers (PFS-only) & latest TLS version(s)
+// Default:   mix of various strength ciphers & recent TLS versions
+// Strict:    deprecated, Default plus ECDHE+RSA+AES{128,256}+CBC+SHA1 for IE 11
+// Legacy:    many ciphers & TLS versions for maximum compatibility, less secure
+// SFAllowed: provides only the ciphers allowed according to SFSS-151.
+//
 package tlsconfig
 
 import (
@@ -84,6 +87,22 @@ var (
 		tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,   // 0xc027
 	}
 
+	// SFCiphers provides the only ciphers are allowed according to SFSS-151.
+	// See https://help.salesforce.com/articleView?id=000351980
+	// We do not support these CBC Ciphers because of Golang choosing to not address CBC issues mitigated by newer clients:
+	//   - TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384
+	//   - TLS_RSA_WITH_AES_256_CBC_SHA256.
+	SFCiphers = []uint16{
+		tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384, // 0xc030
+		tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256, // 0xc02f
+		tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256, // 0xc027
+		tls.TLS_RSA_WITH_AES_256_GCM_SHA384,       // 0x009d
+		tls.TLS_RSA_WITH_AES_128_GCM_SHA256,       // 0x009c
+		tls.TLS_RSA_WITH_AES_128_CBC_SHA256,       // 0x003c
+		tls.TLS_RSA_WITH_AES_256_CBC_SHA,          // 0x0035
+		tls.TLS_RSA_WITH_AES_128_CBC_SHA,          // 0x002f
+	}
+
 	// StrictCiphers balences high level of security with backwards compatibility.
 	StrictCiphers = []uint16{
 		tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,  // 0xcca9
@@ -124,6 +143,13 @@ func Modern(config *tls.Config) {
 func Strict(config *tls.Config) {
 	config.CipherSuites = StrictCiphers
 	config.MinVersion = tls.VersionTLS13
+	config.PreferServerCipherSuites = true
+}
+
+// SFAllowed modifies config for compliance with the salesforce policy.
+func SFAllowed(config *tls.Config) {
+	config.CipherSuites = SFCiphers
+	config.MinVersion = tls.VersionTLS12
 	config.PreferServerCipherSuites = true
 }
 
