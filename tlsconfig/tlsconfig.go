@@ -87,20 +87,18 @@ var (
 		tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256,   // 0xc027
 	}
 
-	// SFCiphers provides the only ciphers are allowed according to SFSS-151.
+	// SFCiphers provides the ciphers allowed by and ordered according to SFSS-151.
 	// See https://help.salesforce.com/articleView?id=000351980
-	// We do not support these CBC Ciphers because of Golang choosing to not address CBC issues mitigated by newer clients:
-	//   - TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA384
-	//   - TLS_RSA_WITH_AES_256_CBC_SHA256.
+	// We do not support CBC ciphers because of Golang choosing to not address CBC issues mitigated by newer clients
 	SFCiphers = []uint16{
-		tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384, // 0xc030
-		tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256, // 0xc02f
-		tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA256, // 0xc027
-		tls.TLS_RSA_WITH_AES_256_GCM_SHA384,       // 0x009d
-		tls.TLS_RSA_WITH_AES_128_GCM_SHA256,       // 0x009c
-		tls.TLS_RSA_WITH_AES_128_CBC_SHA256,       // 0x003c
-		tls.TLS_RSA_WITH_AES_256_CBC_SHA,          // 0x0035
-		tls.TLS_RSA_WITH_AES_128_CBC_SHA,          // 0x002f
+		tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384, // 0xc02c
+		tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,   // 0xc030
+		tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,  // 0xcca9
+		tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,    // 0xcca8
+		tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256, // 0xc02b
+		tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,   // 0xc02f
+		tls.TLS_RSA_WITH_AES_256_GCM_SHA384,         // 0x009d
+		tls.TLS_RSA_WITH_AES_128_GCM_SHA256,         // 0x009c
 	}
 
 	// StrictCiphers balences high level of security with backwards compatibility.
@@ -289,7 +287,7 @@ func (c *CA) NewLeaf(config LeafConfig) (*tls.Certificate, error) {
 
 		privateKey, publicKey = priv, &priv.PublicKey
 	default:
-		return nil, errors.Errorf("unsupported x509 public key algorithm: %s", string(config.PublicKeyAlgorithm))
+		return nil, errors.Errorf("unsupported x509 public key algorithm: %s", config.PublicKeyAlgorithm.String())
 	}
 
 	if csr := config.CSR; csr != nil {
