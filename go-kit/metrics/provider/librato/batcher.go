@@ -3,7 +3,6 @@ package librato
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"math"
 	"net/http"
 	"net/url"
