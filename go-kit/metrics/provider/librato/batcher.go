@@ -3,6 +3,7 @@ package librato
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"math"
 	"net/http"
 	"net/url"
@@ -42,7 +43,9 @@ func (p *Provider) batchMetrics(u *url.URL, interval time.Duration) ([]*http.Req
 	var user *url.Userinfo
 	user, u.User = u.User, nil
 
+	orig := u
 	u = u.ResolveReference(&url.URL{Path: batchMetricsPath})
+	u.RawQuery = orig.RawQuery
 
 	nextEnd := func(e int) int {
 		e += p.batchSize
