@@ -42,7 +42,7 @@ func (p *Provider) batchMetrics(u *url.URL, interval time.Duration) ([]*http.Req
 	var user *url.Userinfo
 	user, u.User = u.User, nil
 
-	u = u.ResolveReference(&url.URL{Path: batchMetricsPath})
+	u = u.ResolveReference(&url.URL{Path: batchMetricsPath, RawQuery: u.RawQuery})
 
 	nextEnd := func(e int) int {
 		e += p.batchSize
