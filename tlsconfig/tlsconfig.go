@@ -132,6 +132,7 @@ func Default(config *tls.Config) {
 
 // DefaultCommonRuntime modifies config with safe defaults for standard compatibility.
 // This is different from Default because the common runtime supports TLS 1.0
+// until July 31, 2021
 func DefaultCommonRuntime(config *tls.Config) {
 	config.CipherSuites = DefaultCiphers
 	config.MinVersion = tls.VersionTLS10
