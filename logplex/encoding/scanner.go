@@ -11,22 +11,28 @@ import (
 	"github.com/pkg/errors"
 )
 
-// MaxFrameLength is the maximum message size to parse
-const MaxFrameLength = 10240
+const (
+	// MaxFrameLength is the maximum message size to parse
+	MaxFrameLength = 10240
 
-// OptimalFrameLength is the initial buffer size for scanning
-const OptimalFrameLength = 1024
+	// OptimalFrameLength is the initial buffer size for scanning
+	OptimalFrameLength = 1024
 
-// ErrBadFrame is returned when the scanner cannot parse syslog message boundaries
-var ErrBadFrame = errors.New("bad frame")
+	defaultRfcCompliance = true
+)
 
-// ErrInvalidStructuredData is returned when structure data has any value other than '-' (blank)
-var ErrInvalidStructuredData = errors.New("invalid structured data")
+var (
+	// ErrBadFrame is returned when the scanner cannot parse syslog message boundaries
+	ErrBadFrame = errors.New("bad frame")
 
-// ErrInvalidPriVal is returned when pri-val is not properly formatted
-var ErrInvalidPriVal = errors.New("invalid pri-val")
+	// ErrInvalidStructuredData is returned when structure data has any value other than '-' (blank)
+	ErrInvalidStructuredData = errors.New("invalid structured data")
 
-var privalVersionRe = regexp.MustCompile(`<(\d+)>(\d)`)
+	// ErrInvalidPriVal is returned when pri-val is not properly formatted
+	ErrInvalidPriVal = errors.New("invalid pri-val")
+
+	privalVersionRe = regexp.MustCompile(`<(\d+)>(\d)`)
+)
 
 // Decode converts a rfc5424 message to our model
 func Decode(raw []byte, hasStructuredData bool) (Message, error) {
@@ -115,21 +121,43 @@ type Scanner interface {
 	Message() Message
 }
 
-// NewScanner is a syslog octet frame stream parser
-func newSyslogScanner(r io.Reader, rfcCompliant bool) Scanner {
-	s := &syslogScanner{
-		parser:       bufio.NewScanner(r),
-		rfcCompliant: rfcCompliant,
-	}
-	s.parser.Buffer(make([]byte, OptimalFrameLength), MaxFrameLength)
-	s.parser.Split(syslogParser())
+type ScannerOption func(*syslogScanner)
 
-	return s
+func WithBuffer(optimalFrameLength, maxFrameLength int) ScannerOption {
+	return func(s *syslogScanner) {
+		s.parser.Buffer(make([]byte, optimalFrameLength), maxFrameLength)
+	}
+}
+
+func WithSplit(splitFunc bufio.SplitFunc) ScannerOption {
+	return func(s *syslogScanner) {
+		s.parser.Split(splitFunc)
+	}
+}
+
+func RFCCompliant(compliant bool) ScannerOption {
+	return func(s *syslogScanner) {
+		s.rfcCompliant = compliant
+	}
 }
 
 // NewScanner is a syslog octet frame stream parser
-func NewScanner(r io.Reader) Scanner {
-	return newSyslogScanner(r, true)
+func NewScanner(r io.Reader, opts ...ScannerOption) Scanner {
+	s := &syslogScanner{
+		parser: bufio.NewScanner(r),
+	}
+
+	// ensure some defaults are set
+	s.rfcCompliant = defaultRfcCompliance
+	s.parser.Buffer(make([]byte, OptimalFrameLength), MaxFrameLength)
+	s.parser.Split(SyslogSplitFunc)
+
+	// allow customization of Buffer and Split
+	for _, opt := range opts {
+		opt(s)
+	}
+
+	return s
 }
 
 // Message returns the current message
@@ -159,8 +187,9 @@ func (s *syslogScanner) Scan() bool {
 
 // NewDrainScanner returns a scanner for use with drain endpoints. The primary
 // difference is that it's loose and doesn't check for structured data.
-func NewDrainScanner(r io.Reader) Scanner {
-	return newSyslogScanner(r, false)
+func NewDrainScanner(r io.Reader, opts ...ScannerOption) Scanner {
+	opts = append(opts, RFCCompliant(false))
+	return NewScanner(r, opts...)
 }
 
 func syslogField(b *bytes.Buffer) ([]byte, error) {
