@@ -2,6 +2,8 @@ package encoding
 
 import (
 	"bufio"
+	"bytes"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -111,10 +113,6 @@ func TestScanner(t *testing.T) {
 		},
 	}
 
-	isCause := func(cause error, err error) bool {
-		return !(errors.Cause(err) == cause)
-	}
-
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			scanner := NewScanner(strings.NewReader(test.log))
@@ -140,5 +138,136 @@ func TestScanner(t *testing.T) {
 			}
 		})
 	}
+}
 
+func TestScannerCustomOpts(t *testing.T) {
+	tests := map[string]struct {
+		log      string
+		opts     []ScannerOption
+		err      error
+		wantMsgs []Message
+	}{
+		"single": {
+			log: "66 <190>1 2019-07-21T22:13:34.598992Z shuttle t.http shuttle - - 168\n",
+			opts: []ScannerOption{
+				WithBuffer(32, 64),
+			},
+			err: bufio.ErrTooLong,
+		},
+
+		"non-compliant": {
+			log: "64 <190>1 2019-07-21T22:13:34.598992Z shuttle t.http shuttle - 168\n",
+			opts: []ScannerOption{
+				RFCCompliant(false),
+			},
+			wantMsgs: []Message{
+				{
+					Version:  1,
+					Priority: 190,
+				},
+			},
+		},
+
+		"truncating splitFunc": {
+			log: "90 <190>1 2019-07-20T17:50:10.879238Z shuttle token shuttle - - whole message is rather long\n75 <190>1 2019-07-20T17:50:10.879238Z shuttle token shuttle - - whole message\n",
+			opts: []ScannerOption{
+				WithSplit(TruncatingSyslogSplitFunc(80)),
+			},
+			wantMsgs: []Message{
+				{
+					Version:  1,
+					Priority: 190,
+					Message:  "whole message is ra",
+				},
+				{
+					Version:  1,
+					Priority: 190,
+					Message:  "whole message\n",
+				},
+			},
+		},
+
+		"custom splitFunc": {
+			log: "66!<190>1 2019-07-21T22:13:34.598992Z shuttle t.http shuttle - - 168\n",
+			opts: []ScannerOption{
+				WithSplit(testSplitOnSplat()),
+			},
+			wantMsgs: []Message{
+				{
+					Version:  1,
+					Priority: 190,
+				},
+			},
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			scanner := NewScanner(strings.NewReader(test.log), test.opts...)
+			i := 0
+			for scanner.Scan() {
+				m := scanner.Message()
+				if test.wantMsgs != nil {
+					if want, got := test.wantMsgs[i].Version, m.Version; want != got {
+						t.Fatalf("wanted version: %d, got %d", want, got)
+					}
+
+					if want, got := test.wantMsgs[i].Priority, m.Priority; want != got {
+						t.Fatalf("wanted priority: %d, got %d", want, got)
+					}
+
+					if want, got := test.wantMsgs[i].Message, m.Message; want != "" && want != got {
+						t.Fatalf("wanted msg: %q, got %q", want, got)
+					}
+
+				}
+				i++
+			}
+			if got, want := i, len(test.wantMsgs); got != want {
+				t.Errorf("expected %v, got %v", want, got)
+			}
+
+			if got, want := scanner.Err(), test.err; isCause(test.err, scanner.Err()) {
+				t.Errorf("scanner: expected %v, got %v", want, got)
+			}
+		})
+	}
+}
+
+func isCause(cause error, err error) bool {
+	return !(errors.Cause(err) == cause)
+}
+
+func testSplitOnSplat() bufio.SplitFunc {
+	return func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+		// first splat(!) gives us the frame size
+		sp := bytes.IndexByte(data, '!')
+		if sp == -1 {
+			if atEOF && len(data) > 0 {
+				return 0, nil, errors.Wrap(ErrBadFrame, "missing frame length")
+			}
+			return 0, nil, nil
+		}
+
+		if sp == 0 {
+			return 0, nil, errors.Wrap(ErrBadFrame, "invalid frame length")
+		}
+
+		msgSize, err := strconv.ParseUint(string(data[0:sp]), 10, 64)
+		if err != nil {
+			return 0, nil, errors.Wrap(ErrBadFrame, "couldnt parse frame length")
+		}
+
+		// 1 here is the 'space' itself, used in the framing above
+		dataBoundary := sp + int(msgSize) + 1
+
+		if dataBoundary > len(data) {
+			if atEOF {
+				return 0, nil, errors.Wrap(ErrBadFrame, "message boundary not respected")
+			}
+			return 0, nil, nil
+		}
+
+		return dataBoundary, data[sp+1 : dataBoundary], nil
+	}
 }
