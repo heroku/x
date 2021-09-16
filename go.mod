@@ -13,12 +13,12 @@ require (
 	github.com/go-ini/ini v1.33.0 // indirect
 	github.com/go-kit/kit v0.9.0
 	github.com/gogo/protobuf v1.3.0 // indirect
-	github.com/golang/protobuf v1.3.2
+	github.com/golang/protobuf v1.5.2
 	github.com/gomodule/redigo v1.8.1
 	github.com/google/gops v0.3.8-0.20200229223415-3a98d6d24562
-	github.com/google/uuid v1.1.1
+	github.com/google/uuid v1.1.2
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.0
-	github.com/grpc-ecosystem/grpc-gateway v1.9.6
+	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/heroku/rollrus v0.2.0
 	github.com/hydrogen18/memlistener v0.0.0-20141126152155-54553eb933fb
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
@@ -38,13 +38,19 @@ require (
 	github.com/unrolled/secure v1.0.1
 	github.com/urfave/cli v1.21.0
 	go.opencensus.io v0.22.1
-	golang.org/x/crypto v0.0.0-20190829043050-9756ffdc2472
-	golang.org/x/net v0.0.0-20190827160401-ba9fcec4b297 // indirect
+	go.opentelemetry.io/otel v1.0.0-RC3 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlpmetric v0.23.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v0.23.0 // indirect
+	go.opentelemetry.io/otel/metric v0.23.0 // indirect
+	go.opentelemetry.io/otel/oteltest v0.20.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.0.0-RC3 // indirect
+	go.opentelemetry.io/otel/sdk/export/metric v0.23.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v0.23.0 // indirect
+	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58
-	golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae // indirect
 	golang.org/x/time v0.0.0-20181108054448-85acf8d2951c
 	gonum.org/v1/gonum v0.0.0-20190502212712-4a2eb0188cbc // indirect
-	google.golang.org/grpc v1.22.0
+	google.golang.org/grpc v1.40.0
 	gopkg.in/caio/go-tdigest.v2 v2.3.0
 	gopkg.in/ini.v1 v1.42.0 // indirect
 )
