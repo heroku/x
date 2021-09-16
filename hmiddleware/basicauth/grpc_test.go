@@ -8,7 +8,6 @@ import (
 	"time"
 
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
-	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/examples/route_guide/routeguide"
 
@@ -58,20 +57,9 @@ func TestGRPCPerRPCCredentialBasicAuth(t *testing.T) {
 }
 
 type fakeServer struct {
+	routeguide.UnimplementedRouteGuideServer
 }
 
 func (s *fakeServer) GetFeature(context.Context, *routeguide.Point) (*routeguide.Feature, error) {
 	return &routeguide.Feature{}, nil
-}
-
-func (s *fakeServer) ListFeatures(*routeguide.Rectangle, routeguide.RouteGuide_ListFeaturesServer) error {
-	return errors.New("unimplemented")
-}
-
-func (s *fakeServer) RecordRoute(routeguide.RouteGuide_RecordRouteServer) error {
-	return errors.New("unimplemented")
-}
-
-func (s *fakeServer) RouteChat(routeguide.RouteGuide_RouteChatServer) error {
-	return errors.New("unimplemented")
 }

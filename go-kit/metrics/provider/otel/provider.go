@@ -8,7 +8,6 @@ import (
 
 	"github.com/go-kit/kit/metrics"
 	"github.com/go-kit/kit/metrics/generic"
-	xmetrics "github.com/heroku/x/go-kit/metrics"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
 	"go.opentelemetry.io/otel/metric/global"
@@ -17,6 +16,8 @@ import (
 	metriccontroller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
 	processor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
 	"go.opentelemetry.io/otel/sdk/resource"
+
+	xmetrics "github.com/heroku/x/go-kit/metrics"
 )
 
 var _ metrics.Counter = (*Counter)(nil)

@@ -51,6 +51,7 @@ require (
 	golang.org/x/time v0.0.0-20181108054448-85acf8d2951c
 	gonum.org/v1/gonum v0.0.0-20190502212712-4a2eb0188cbc // indirect
 	google.golang.org/grpc v1.40.0
+	google.golang.org/grpc/examples v0.0.0-20210916203835-567da6b86340 // indirect
 	gopkg.in/caio/go-tdigest.v2 v2.3.0
 	gopkg.in/ini.v1 v1.42.0 // indirect
 )
