@@ -6,9 +6,8 @@ import (
 	"html/template"
 	"strings"
 
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/protoc-gen-go/generator"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/heroku/x/loggingtags"
 )
@@ -101,7 +100,7 @@ func Generate(req *plugin.CodeGeneratorRequest, pkgMap map[string]string) (*plug
 				if allow {
 					fields = append(fields, fieldData{
 						Name:      f.GetName(),
-						CamelName: generator.CamelCase(f.GetName()),
+						CamelName: toCamelCase(f.GetName()),
 						TypeName:  f.GetTypeName(),
 					})
 				}
@@ -145,4 +144,15 @@ func Generate(req *plugin.CodeGeneratorRequest, pkgMap map[string]string) (*plug
 		})
 	}
 	return &plugin.CodeGeneratorResponse{File: files}, nil
+}
+
+func toCamelCase(str string) string {
+	s := strings.Fields(str)
+	cc := make([]string, len(s))
+
+	for _, word := range s {
+		cc = append(cc, strings.Title(word))
+	}
+
+	return strings.Join(cc, "")
 }
