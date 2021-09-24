@@ -68,6 +68,13 @@ func (m *multiProvider) Stop() {
 	}
 }
 
+// Flush calls flush on all the underlying providers.
+func (m *multiProvider) Flush() {
+	for _, p := range m.providers {
+		p.Flush()
+	}
+}
+
 type multiCardinalityCounter []metrics.CardinalityCounter
 
 func (cc multiCardinalityCounter) With(labelValues ...string) metrics.CardinalityCounter {

@@ -113,6 +113,7 @@ type controller interface {
 	MeterProvider() metric.MeterProvider
 	Start(ctx context.Context) error
 	Stop(ctx context.Context) error
+	Collect(ctx context.Context) error
 }
 
 // Start starts the provider's controller and exporter.
@@ -131,6 +132,12 @@ func (p *Provider) Start() error {
 func (p *Provider) Stop() {
 	_ = p.controller.Stop(p.ctx)
 	_ = p.exporter.Shutdown(p.ctx)
+}
+
+// Flush calls Collect() on the provider's controller.
+// This is a no-op if Start() has been called on the provider.
+func (p *Provider) Flush() {
+	_ = p.controller.Collect(p.ctx)
 }
 
 // Meter returns an oltp meter used for the creation of metric instruments.

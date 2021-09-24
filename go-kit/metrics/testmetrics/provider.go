@@ -43,6 +43,9 @@ func (p *Provider) Stop() {
 	p.stopped = true
 }
 
+// Flush makes it Provider compliant.
+func (p *Provider) Flush() {}
+
 // NewCounter implements go-kit's Provider interface.
 func (p *Provider) NewCounter(name string) metrics.Counter {
 	return p.newCounter(name)

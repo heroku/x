@@ -59,6 +59,7 @@ type Provider struct {
 
 	once          sync.Once
 	done, stopped chan struct{}
+	flush         chan chan struct{}
 
 	mu                  sync.Mutex
 	counters            map[string]*Counter
@@ -214,6 +215,9 @@ func New(u *url.URL, interval time.Duration, opts ...OptionFunc) xmetrics.Provid
 			select {
 			case <-t.C:
 				p.reportWithRetry(u, interval)
+			case fl := <-p.flush:
+				p.reportWithRetry(u, interval)
+				close(fl)
 			case <-p.done:
 				p.reportWithRetry(u, interval)
 				close(p.stopped)
@@ -231,6 +235,15 @@ func (p *Provider) Stop() {
 		close(p.done)
 		<-p.stopped
 	})
+}
+
+// Flush flushes the buffer of locally recorded
+// metrics that have yet to be reported.
+// The func returns once reporting is complete.
+func (p *Provider) Flush() {
+	fl := make(chan struct{})
+	p.flush <- fl
+	<-fl
 }
 
 func prefixName(prefix, name string) string {
