@@ -6,6 +6,7 @@ require (
 	contrib.go.opencensus.io/exporter/ocagent v0.6.0
 	github.com/VividCortex/gohistogram v1.0.0 // indirect
 	github.com/armon/go-proxyproto v0.0.0-20190211145416-68259f75880e
+	github.com/aws/aws-lambda-go v1.26.0 // indirect
 	github.com/aws/aws-sdk-go v1.13.10
 	github.com/axiomhq/hyperloglog v0.0.0-20180317131949-fe9507de0228
 	github.com/dgryski/go-metro v0.0.0-20180109044635-280f6062b5bc // indirect
