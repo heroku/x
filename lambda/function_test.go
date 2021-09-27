@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestNew_Func(t *testing.T) {
+func TestNew_Function(t *testing.T) {
 	setupFuncConfig(t)
 
 	f := New(nil)
