@@ -5,8 +5,8 @@ import (
 	"testing"
 )
 
-func TestNew_Function(t *testing.T) {
-	setupStandardConfig(t)
+func TestNew_Func(t *testing.T) {
+	setupFuncConfig(t)
 
 	f := New(nil)
 
@@ -19,7 +19,7 @@ func TestNew_Function(t *testing.T) {
 	}
 }
 
-func setupStandardConfig(t *testing.T) {
+func setupFuncConfig(t *testing.T) {
 	os.Setenv("APP_NAME", "test-app")
 	os.Setenv("DEPLOY", "test")
 
