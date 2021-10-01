@@ -153,10 +153,11 @@ func (p *Provider) newCounter(name string, labelValues ...string) metrics.Counte
 	if _, ok := p.counters[k]; !ok {
 		c := metric.Must(m).NewFloat64Counter(name)
 
+		attributes := append(p.serviceNameResource.Attributes(), makeAttributes(labelValues)...)
 		p.counters[k] = &Counter{
 			Float64Counter: c,
 			labels:         labelValues,
-			attributes:     makeAttributes(labelValues),
+			attributes:     attributes,
 			p:              p,
 			name:           name,
 		}
@@ -187,7 +188,7 @@ func (p *Provider) newGauge(name string, labelValues ...string) metrics.Gauge {
 	k := keyName(name, labelValues...)
 	m := p.Meter(name)
 
-	attributes := makeAttributes(labelValues)
+	attributes := append(p.serviceNameResource.Attributes(), makeAttributes(labelValues)...)
 
 	if _, ok := p.gauges[k]; !ok {
 		gg := generic.NewGauge(name)
@@ -251,11 +252,12 @@ func (p *Provider) newHistogram(name string, labelValues ...string) metrics.Hist
 	if _, ok := p.histograms[k]; !ok {
 		h := metric.Must(m).NewFloat64Histogram(name)
 
+		attributes := append(p.serviceNameResource.Attributes(), makeAttributes(labelValues)...)
 		p.histograms[k] = &Histogram{
 			Float64Histogram: h,
 			name:             name,
 			labels:           labelValues,
-			attributes:       makeAttributes(labelValues),
+			attributes:       attributes,
 			p:                p,
 		}
 	}
