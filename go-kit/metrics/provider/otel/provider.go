@@ -24,7 +24,28 @@ var _ metrics.Counter = (*Counter)(nil)
 var _ metrics.Gauge = (*Gauge)(nil)
 var _ metrics.Histogram = (*Histogram)(nil)
 
-const serviceNameKey = "service.name"
+const (
+	// The values of these attributes should be the service name.
+	serviceKey     = "_service"
+	serviceNameKey = "service.name"
+	componentKey   = "component"
+
+	// The "service.namespace" attribute will be "heroku".
+	serviceNamespaceKey = "service.namespace" // always "heroku"
+
+	// The "service.instance.id" attribute will be an identifier for this specific instance of the service (e.g. "web.1").
+	serviceInstanceIdKey = "service.instance.id"
+
+	// The values of these attributes should be the stage (e.g. "production").
+	stageKey      = "stage"
+	subserviceKey = "_subservice"
+
+	// The value of the "deploy" attribute should be the cloud (e.g. "eu")
+	deployKey = "deploy"
+
+	// The value of the "cloud" attribute should be the cloud (e.g. "heroku.com")
+	cloudKey = "cloud"
+)
 
 // Provider initializes a global otlp meter provider that can collect metrics and
 // use a collector to push those metrics to various backends (e.g. Argus, Honeycomb).
@@ -57,7 +78,12 @@ func New(ctx context.Context, serviceName string, opts ...Option) (xmetrics.Prov
 	}
 
 	defaultOpts := []Option{
-		WithAttributes(attribute.String(serviceNameKey, serviceName)),
+		WithAttributes(
+			attribute.String(serviceKey, serviceName),
+			attribute.String(serviceNameKey, serviceName),
+			attribute.String(componentKey, serviceName),
+			attribute.String(serviceNamespaceKey, "heroku"),
+		),
 		WithDefaultAggregator(),
 		WithDefaultEndpointExporter(),
 	}
