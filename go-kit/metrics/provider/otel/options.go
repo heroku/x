@@ -87,10 +87,10 @@ func WithCloudAttribute(cloud string) Option {
 	return WithAttributes(attrs...)
 }
 
-// WithServiceInstanceIdAttribute adds the "service.instance.id" attribute.
-func WithServiceInstanceIdAttribute(serviceInstanceId string) Option {
+// WithServiceInstanceIDAttribute adds the "service.instance.id" attribute.
+func WithServiceInstanceIDAttribute(serviceInstanceID string) Option {
 	attrs := []attribute.KeyValue{
-		attribute.String(serviceInstanceIdKey, serviceInstanceId),
+		attribute.String(serviceInstanceIDKey, serviceInstanceID),
 	}
 	return WithAttributes(attrs...)
 }

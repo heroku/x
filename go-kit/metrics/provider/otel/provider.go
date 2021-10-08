@@ -34,7 +34,7 @@ const (
 	serviceNamespaceKey = "service.namespace" // always "heroku"
 
 	// The "service.instance.id" attribute will be an identifier for this specific instance of the service (e.g. "web.1").
-	serviceInstanceIdKey = "service.instance.id"
+	serviceInstanceIDKey = "service.instance.id"
 
 	// The values of these attributes should be the stage (e.g. "production").
 	stageKey      = "stage"
