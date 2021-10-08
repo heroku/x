@@ -62,6 +62,39 @@ func WithAttributes(attributes ...attribute.KeyValue) Option {
 	}
 }
 
+// WithStageAttribute adds the "stage" and "_subservice" attributes.
+func WithStageAttribute(stage string) Option {
+	attrs := []attribute.KeyValue{
+		attribute.String(stageKey, stage),
+		attribute.String(subserviceKey, stage),
+	}
+	return WithAttributes(attrs...)
+}
+
+// WithDeployAttribute adds the "deploy" attribute.
+func WithDeployAttribute(deploy string) Option {
+	attrs := []attribute.KeyValue{
+		attribute.String(deployKey, deploy),
+	}
+	return WithAttributes(attrs...)
+}
+
+// WithCloudAttribute adds the "cloud" attribute.
+func WithCloudAttribute(cloud string) Option {
+	attrs := []attribute.KeyValue{
+		attribute.String(cloudKey, cloud),
+	}
+	return WithAttributes(attrs...)
+}
+
+// WithServiceInstanceIDAttribute adds the "service.instance.id" attribute.
+func WithServiceInstanceIDAttribute(serviceInstanceID string) Option {
+	attrs := []attribute.KeyValue{
+		attribute.String(serviceInstanceIDKey, serviceInstanceID),
+	}
+	return WithAttributes(attrs...)
+}
+
 // WithDefaultEndpointExporter initializes the Provider with an exporter using a default endpoint.
 func WithDefaultEndpointExporter() Option {
 	return WithEndpointExporter(DefaultAgentEndpoint)
