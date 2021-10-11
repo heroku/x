@@ -10,6 +10,7 @@ import (
 	"github.com/heroku/x/tlsconfig"
 )
 
+// NewHTTPClient creates a new HTTP client for exporting otel metrics.
 func NewHTTPClient(url *url.URL, opts ...otlpmetrichttp.Option) otlpmetric.Client {
 	userInfo := url.User
 	authHeader := make(map[string]string)
