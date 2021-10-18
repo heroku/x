@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"go/format"
 	"html/template"
+	"log"
 	"strings"
 
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
@@ -88,6 +89,7 @@ func Generate(req *plugin.CodeGeneratorRequest, pkgMap map[string]string) (*plug
 		if err != nil {
 			return nil, err
 		}
+
 		var msgs []messageData
 		for _, dp := range fdp.GetMessageType() {
 			var fields []fieldData
@@ -119,10 +121,7 @@ func Generate(req *plugin.CodeGeneratorRequest, pkgMap map[string]string) (*plug
 			continue
 		}
 
-		pkg := fdp.Options.GetGoPackage()
-		if pkg == "" {
-			pkg = fdp.GetPackage()
-		}
+		pkg := fdp.GetPackage()
 
 		data := templateData{
 			PackageName: pkg,
@@ -136,13 +135,16 @@ func Generate(req *plugin.CodeGeneratorRequest, pkgMap map[string]string) (*plug
 		code := buf.String()
 		formatted, err := format.Source([]byte(code))
 		if err != nil {
+			log.Println("farts", err)
 			return nil, err
 		}
+
 		files = append(files, &plugin.CodeGeneratorResponse_File{
 			Name:    proto.String(filename),
 			Content: proto.String(string(formatted)),
 		})
 	}
+
 	return &plugin.CodeGeneratorResponse{File: files}, nil
 }
 

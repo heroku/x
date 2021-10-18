@@ -7,8 +7,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/golang/protobuf/proto"
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
-	"google.golang.org/protobuf/proto"
 
 	"github.com/heroku/x/cmd/protoc-gen-loggingtags/internal/gen"
 )

@@ -106,7 +106,7 @@ proto: $(TOOLS_BIN)/protoc $(TOOLS_BIN)/protoc-gen-go | $(TOOLS_BIN) ## Regenera
 	$(TOOLS_BIN)/protoc \
 		--plugin=$(TOOLS_BIN)/protoc-gen-go \
 		--plugin=$(TOOLS_BIN)/protoc-gen-loggingtags \
-		--go_out=:. \
+		--go_out=paths=source_relative:. \
 		--loggingtags_out=. \
 		./cmd/protoc-gen-loggingtags/internal/test/*.proto
 
