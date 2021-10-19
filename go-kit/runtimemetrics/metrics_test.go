@@ -22,6 +22,8 @@ func TestCollectMemStats(t *testing.T) {
 	p := testmetrics.NewProvider(t)
 	c := NewCollector(p)
 
+	runtime.GC()
+
 	c.Collect()
 
 	p.CheckGaugeNonZero("go.mem.alloc-bytes")
