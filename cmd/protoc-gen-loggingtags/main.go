@@ -7,10 +7,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/golang/protobuf/proto"
-	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
-
 	"github.com/heroku/x/cmd/protoc-gen-loggingtags/internal/gen"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/pluginpb"
 )
 
 var file = flag.String("file", "stdin", "where to load data from")
@@ -25,7 +24,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	req := new(plugin.CodeGeneratorRequest)
+	req := new(pluginpb.CodeGeneratorRequest)
 	if err = proto.Unmarshal(input, req); err != nil {
 		log.Fatal(err)
 	}
