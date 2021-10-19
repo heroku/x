@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"log"
 	"strings"
+	"unicode"
 
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 	"google.golang.org/protobuf/proto"
@@ -105,6 +106,7 @@ func Generate(req *plugin.CodeGeneratorRequest, pkgMap map[string]string) (*plug
 						CamelName: toCamelCase(f.GetName()),
 						TypeName:  f.GetTypeName(),
 					})
+					log.Println(fields)
 				}
 			}
 			if len(fields) == 0 {
@@ -149,7 +151,10 @@ func Generate(req *plugin.CodeGeneratorRequest, pkgMap map[string]string) (*plug
 }
 
 func toCamelCase(str string) string {
-	s := strings.Fields(str)
+	split := func(c rune) bool {
+		return unicode.IsSpace(c) || unicode.IsPunct(c)
+	}
+	s := strings.FieldsFunc(str, split)
 	cc := make([]string, len(s))
 
 	for _, word := range s {

@@ -19,6 +19,7 @@ func (r *Sample) LoggingTags() map[string]interface{} {
 		"safe":      r.Safe,
 		"timestamp": loggingTagsTimestamp(r.Timestamp),
 		"duration":  loggingTagsDuration(r.Duration),
+		"with_case": r.WithCase,
 	}
 }
 
