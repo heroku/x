@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"go/format"
 	"html/template"
-	"log"
 	"strings"
 	"unicode"
 
@@ -106,7 +105,6 @@ func Generate(req *plugin.CodeGeneratorRequest, pkgMap map[string]string) (*plug
 						CamelName: toCamelCase(f.GetName()),
 						TypeName:  f.GetTypeName(),
 					})
-					log.Println(fields)
 				}
 			}
 			if len(fields) == 0 {
@@ -137,7 +135,6 @@ func Generate(req *plugin.CodeGeneratorRequest, pkgMap map[string]string) (*plug
 		code := buf.String()
 		formatted, err := format.Source([]byte(code))
 		if err != nil {
-			log.Println("farts", err)
 			return nil, err
 		}
 
