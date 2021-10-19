@@ -7,9 +7,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/heroku/x/cmd/protoc-gen-loggingtags/internal/gen"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"
+
+	"github.com/heroku/x/cmd/protoc-gen-loggingtags/internal/gen"
 )
 
 var file = flag.String("file", "stdin", "where to load data from")
