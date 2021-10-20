@@ -5,11 +5,14 @@ import "loggingtags/safe.proto";
 
 package test;
 
+option go_package = "github.com/heroku/x/cmd/protoc-gen-loggingtags/internal/test";
+
 message Sample {
                      string safe      = 1 [(heroku.loggingtags.safe) = true];
-                     string unsafe    = 2; 
+                     string unsafe    = 2;
   google.protobuf.Timestamp timestamp = 3 [(heroku.loggingtags.safe) = true];
    google.protobuf.Duration duration  = 4 [(heroku.loggingtags.safe) = true];
+                     string with_case = 5 [(heroku.loggingtags.safe) = true]; 
 }
 
 message NestedSample {

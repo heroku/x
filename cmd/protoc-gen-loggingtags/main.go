@@ -7,8 +7,8 @@ import (
 	"os"
 	"strings"
 
-	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/pluginpb"
 
 	"github.com/heroku/x/cmd/protoc-gen-loggingtags/internal/gen"
 )
@@ -25,7 +25,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	req := new(plugin.CodeGeneratorRequest)
+	req := new(pluginpb.CodeGeneratorRequest)
 	if err = proto.Unmarshal(input, req); err != nil {
 		log.Fatal(err)
 	}

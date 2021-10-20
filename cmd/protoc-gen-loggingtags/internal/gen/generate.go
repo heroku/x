@@ -5,6 +5,7 @@ import (
 	"go/format"
 	"html/template"
 	"strings"
+	"unicode"
 
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 	"google.golang.org/protobuf/proto"
@@ -88,6 +89,7 @@ func Generate(req *plugin.CodeGeneratorRequest, pkgMap map[string]string) (*plug
 		if err != nil {
 			return nil, err
 		}
+
 		var msgs []messageData
 		for _, dp := range fdp.GetMessageType() {
 			var fields []fieldData
@@ -119,10 +121,7 @@ func Generate(req *plugin.CodeGeneratorRequest, pkgMap map[string]string) (*plug
 			continue
 		}
 
-		pkg := fdp.Options.GetGoPackage()
-		if pkg == "" {
-			pkg = fdp.GetPackage()
-		}
+		pkg := fdp.GetPackage()
 
 		data := templateData{
 			PackageName: pkg,
@@ -138,16 +137,21 @@ func Generate(req *plugin.CodeGeneratorRequest, pkgMap map[string]string) (*plug
 		if err != nil {
 			return nil, err
 		}
+
 		files = append(files, &plugin.CodeGeneratorResponse_File{
 			Name:    proto.String(filename),
 			Content: proto.String(string(formatted)),
 		})
 	}
+
 	return &plugin.CodeGeneratorResponse{File: files}, nil
 }
 
 func toCamelCase(str string) string {
-	s := strings.Fields(str)
+	split := func(c rune) bool {
+		return unicode.IsSpace(c) || unicode.IsPunct(c)
+	}
+	s := strings.FieldsFunc(str, split)
 	cc := make([]string, len(s))
 
 	for _, word := range s {
