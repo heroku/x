@@ -19,7 +19,7 @@ GOTEST_COVERAGE_OPT := -coverprofile=$(COVER_PROFILE) -covermode=atomic
 
 # protoc config
 ARCH = $(shell uname -m)
-PROTOC_VERSION = 3.11.2
+PROTOC_VERSION = 3.18.1
 PROTOC_OS = $(shell uname -s | sed 's/Darwin/osx/' | sed 's/Linux/linux/')
 PROTOC_ASSET = protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(ARCH).zip
 PROTOC_DOWNLOAD_URL = https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOC_VERSION)/$(PROTOC_ASSET)

@@ -9,6 +9,7 @@ import (
 
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/pluginpb"
 
 	"github.com/heroku/x/loggingtags"
 )
@@ -144,7 +145,12 @@ func Generate(req *plugin.CodeGeneratorRequest, pkgMap map[string]string) (*plug
 		})
 	}
 
-	return &plugin.CodeGeneratorResponse{File: files}, nil
+	features := uint64(pluginpb.CodeGeneratorResponse_FEATURE_PROTO3_OPTIONAL)
+	resp := &plugin.CodeGeneratorResponse{
+		File:              files,
+		SupportedFeatures: &features,
+	}
+	return resp, nil
 }
 
 func toCamelCase(str string) string {
