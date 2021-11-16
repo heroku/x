@@ -30,8 +30,8 @@ const (
 	serviceNameKey = "service.name"
 	componentKey   = "component"
 
-	// The "service.namespace" attribute will be "heroku".
-	serviceNamespaceKey = "service.namespace" // always "heroku"
+	// The "service.namespace" attribute should be the cloud/deploy (e.g. "va01").
+	serviceNamespaceKey = "service.namespace"
 
 	// The "service.instance.id" attribute will be an identifier for this specific instance of the service (e.g. "web.1").
 	serviceInstanceIDKey = "service.instance.id"
@@ -39,9 +39,6 @@ const (
 	// The values of these attributes should be the stage (e.g. "production").
 	stageKey      = "stage"
 	subserviceKey = "_subservice"
-
-	// The value of the "deploy" attribute should be the cloud (e.g. "eu")
-	deployKey = "deploy"
 
 	// The value of the "cloud" attribute should be the cloud (e.g. "heroku.com")
 	cloudKey = "cloud"
@@ -82,7 +79,6 @@ func New(ctx context.Context, serviceName string, opts ...Option) (xmetrics.Prov
 			attribute.String(serviceKey, serviceName),
 			attribute.String(serviceNameKey, serviceName),
 			attribute.String(componentKey, serviceName),
-			attribute.String(serviceNamespaceKey, "heroku"),
 		),
 		WithDefaultAggregator(),
 		WithDefaultEndpointExporter(),
