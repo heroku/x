@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/heroku/x/cmdutil/metrics/otel"
 	"github.com/heroku/x/go-kit/metrics"
 	"github.com/heroku/x/go-kit/metrics/provider/librato"
 	"github.com/heroku/x/go-kit/runtimemetrics"
@@ -55,6 +56,7 @@ type Config struct {
 	Prefix         string        `env:"METRICS_PREFIX"`
 	DefaultTags    []string      `env:"METRICS_DEFAULT_TAGS"`
 	Librato        Librato
+	OTEL           otel.Config
 }
 
 // Librato stores all related librato config to be able to connect to its API.
