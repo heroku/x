@@ -1,8 +1,7 @@
-package metrics
+package otel
 
 import (
 	"context"
-	"net/url"
 	"strings"
 
 	"github.com/sirupsen/logrus"
@@ -10,19 +9,9 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric"
 	"go.opentelemetry.io/otel/sdk/export/metric"
 
-	"github.com/heroku/x/cmdutil/metrics/honeycomb"
 	"github.com/heroku/x/go-kit/metrics"
 	otelprovider "github.com/heroku/x/go-kit/metrics/provider/otel"
 )
-
-// Config is a reusable configuration struct that contains the necessary
-// environment variables to setup an metrics.Provider
-type Config struct {
-	Enabled             bool     `env:"ENABLE_OTEL_COLLECTION"`
-	CollectorURL        *url.URL `env:"OTEL_COLLECTOR_URL"`
-	MetricsDestinations []string `env:"OTEL_METRICS_DESTINATIONS,default=honeycomb,argus"`
-	Honeycomb           honeycomb.Config
-}
 
 // MustProvider ensures setting up and starting a otel.Provider succeeds.
 // nolint: lll
