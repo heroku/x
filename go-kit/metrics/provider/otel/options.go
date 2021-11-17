@@ -71,10 +71,10 @@ func WithStageAttribute(stage string) Option {
 	return WithAttributes(attrs...)
 }
 
-// WithDeployAttribute adds the "deploy" attribute.
-func WithDeployAttribute(deploy string) Option {
+// WithServiceNamespaceAttribute adds the "service.namespace" attribute.
+func WithServiceNamespaceAttribute(serviceNamespace string) Option {
 	attrs := []attribute.KeyValue{
-		attribute.String(deployKey, deploy),
+		attribute.String(serviceNamespaceKey, serviceNamespace),
 	}
 	return WithAttributes(attrs...)
 }
