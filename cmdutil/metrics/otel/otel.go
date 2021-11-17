@@ -25,6 +25,7 @@ type Config struct {
 }
 
 // MustProvider ensures setting up and starting a otel.Provider succeeds.
+// nolint: lll
 func MustProvider(ctx context.Context, logger logrus.FieldLogger, cfg Config, service, serviceNamespace, stage, serviceInstanceID string) metrics.Provider {
 	// This provider is used for metrics reporting to the  collector.
 	logger.WithField("metrics_destinations", strings.Join(cfg.MetricsDestinations, ",")).Info("setting up  provider")
