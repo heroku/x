@@ -1,6 +1,8 @@
 package lambda
 
 import (
+	"context"
+
 	awslambda "github.com/aws/aws-lambda-go/lambda"
 	"github.com/joeshaw/envdecode"
 	"github.com/oklog/run"
@@ -8,10 +10,12 @@ import (
 
 	"github.com/heroku/x/cmdutil"
 	"github.com/heroku/x/cmdutil/metrics"
+	"github.com/heroku/x/cmdutil/metrics/otel"
 	"github.com/heroku/x/cmdutil/rollbar"
 	"github.com/heroku/x/cmdutil/svclog"
-	xmetrics "github.com/heroku/x/go-kit/metrics"
+	kitmetrics "github.com/heroku/x/go-kit/metrics"
 	"github.com/heroku/x/go-kit/metrics/l2met"
+	"github.com/heroku/x/go-kit/metrics/multiprovider"
 )
 
 // Function defines configuration of a Lambda function.
@@ -20,10 +24,12 @@ type Function struct {
 	Name string
 	// Deploy is a cloud identifier.
 	Deploy string
+	// Stage is an env identifier (e.g. "staging" or "production").
+	Stage string
 	// Logger is a field logger.
 	Logger logrus.FieldLogger
 	// Metrics provider defines interactions for recording metrics.
-	MetricsProvider xmetrics.Provider
+	MetricsProvider kitmetrics.Provider
 
 	g run.Group
 }
@@ -44,16 +50,37 @@ func New(config interface{}) *Function {
 	f := &Function{
 		Name:   fc.Logger.AppName,
 		Deploy: fc.Logger.Deploy,
+		Stage:  fc.Stage,
 		Logger: logger,
 	}
 
+	metricsProviders := []kitmetrics.Provider{}
+
 	if fc.Metrics.Librato.User != "" {
-		f.MetricsProvider = metrics.StartLibrato(logger, fc.Metrics)
-	} else {
+		libratoProvider := metrics.StartLibrato(logger, fc.Metrics)
+		metricsProviders = append(metricsProviders, libratoProvider)
+	}
+
+	if fc.Metrics.OTEL.CollectorURL != nil && fc.Metrics.OTEL.Enabled {
+		otelProvider := otel.MustProvider(
+			context.Background(),
+			logger,
+			fc.Metrics.OTEL,
+			f.Name,
+			f.Deploy,
+			f.Stage,
+			"lambda")
+		metricsProviders = append(metricsProviders, otelProvider)
+	}
+
+	if len(metricsProviders) == 0 {
+		// Fallback to l2met when none configured.
 		l2met := l2met.New(logger)
-		f.MetricsProvider = l2met
+		metricsProviders = append(metricsProviders, l2met)
 		f.Add(cmdutil.NewContextServer(l2met.Run))
 	}
+
+	f.MetricsProvider = multiprovider.New(metricsProviders...)
 
 	return f
 }
@@ -101,6 +128,7 @@ func (f *Function) Start(handler interface{}) {
 }
 
 type funcConfig struct {
+	Stage   string `env:"STAGE"`
 	Logger  svclog.Config
 	Metrics metrics.Config
 	Rollbar rollbar.Config
