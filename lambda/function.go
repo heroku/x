@@ -127,6 +127,12 @@ func (f *Function) Start(handler interface{}) {
 	awslambda.Start(handler)
 }
 
+// FlushMetrics is a hook for flushing metrics,
+// to ensure they are sent before the invocation context is torn down.
+func (f *Function) FlushMetrics() error {
+	return f.MetricsProvider.Flush()
+}
+
 type funcConfig struct {
 	Stage   string `env:"STAGE"`
 	Logger  svclog.Config
