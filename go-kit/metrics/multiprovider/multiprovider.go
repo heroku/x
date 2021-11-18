@@ -75,8 +75,7 @@ func (m *multiProvider) Stop() {
 func (m *multiProvider) Flush() error {
 	errMsgs := []string{}
 	for _, p := range m.providers {
-		err := p.Flush()
-		if err != nil {
+		if err := p.Flush(); err != nil {
 			// Don't immediately return the error.
 			// Record error msg and continue trying to
 			// flush to other providers.
