@@ -113,7 +113,6 @@ type controller interface {
 	MeterProvider() metric.MeterProvider
 	Start(ctx context.Context) error
 	Stop(ctx context.Context) error
-	Collect(ctx context.Context) error
 }
 
 // Start starts the provider's controller and exporter.
