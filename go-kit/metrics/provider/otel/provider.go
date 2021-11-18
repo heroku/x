@@ -134,10 +134,13 @@ func (p *Provider) Stop() {
 	_ = p.exporter.Shutdown(p.ctx)
 }
 
-// Flush calls Collect() on the provider's controller.
-// This is a no-op if Start() has been called on the provider.
-func (p *Provider) Flush() {
-	_ = p.controller.Collect(p.ctx)
+// Flush stops and starts the provider in order to flush metrics
+// immediately, without having to wait until the next collection occurs.
+// The flush is synchronous and returns an error if the provider cannot
+// restart after stopping.
+func (p *Provider) Flush() error {
+	p.Stop()
+	return p.Start()
 }
 
 // Meter returns an oltp meter used for the creation of metric instruments.

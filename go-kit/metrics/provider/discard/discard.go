@@ -43,7 +43,7 @@ func (discardProvider) NewCardinalityCounter(string) xmetrics.CardinalityCounter
 func (discardProvider) Stop() {}
 
 // Flush implements Provider.
-func (discardProvider) Flush() {}
+func (discardProvider) Flush() error { return nil }
 
 type discardCardinalityCounter struct{}
 

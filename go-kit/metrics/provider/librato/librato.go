@@ -240,10 +240,11 @@ func (p *Provider) Stop() {
 // Flush flushes the buffer of locally recorded
 // metrics that have yet to be reported.
 // The func returns once reporting is complete.
-func (p *Provider) Flush() {
+func (p *Provider) Flush() error {
 	fl := make(chan struct{})
 	p.flush <- fl
 	<-fl
+	return nil
 }
 
 func prefixName(prefix, name string) string {

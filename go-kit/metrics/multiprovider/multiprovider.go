@@ -2,8 +2,11 @@
 package multiprovider
 
 import (
+	"strings"
+
 	kitmetrics "github.com/go-kit/kit/metrics"
 	"github.com/go-kit/kit/metrics/multi"
+	"github.com/pkg/errors"
 
 	"github.com/heroku/x/go-kit/metrics"
 )
@@ -69,10 +72,22 @@ func (m *multiProvider) Stop() {
 }
 
 // Flush calls flush on all the underlying providers.
-func (m *multiProvider) Flush() {
+func (m *multiProvider) Flush() error {
+	errMsgs := []string{}
 	for _, p := range m.providers {
-		p.Flush()
+		err := p.Flush()
+		if err != nil {
+			// Don't immediately return the error.
+			// Record error msg and continue trying to
+			// flush to other providers.
+			errMsgs = append(errMsgs, err.Error())
+		}
 	}
+	if len(errMsgs) == 0 {
+		return nil
+	}
+
+	return errors.Errorf("flush failed for at least one provider: %s", strings.Join(errMsgs, ";"))
 }
 
 type multiCardinalityCounter []metrics.CardinalityCounter
