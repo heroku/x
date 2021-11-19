@@ -20,7 +20,9 @@ import (
 
 // Function defines configuration of a Lambda function.
 type Function struct {
-	// Name of the function. This will be equivalent to the APP_NAME env var.
+	// App to which this function belongs. This will be equivalent to the APP_NAME env var.
+	App string
+	// Name of the function. This will be equivalent to the FUNCTION_NAME env var.
 	Name string
 	// Deploy is a cloud identifier.
 	Deploy string
