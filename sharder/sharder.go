@@ -6,35 +6,94 @@ import (
 	"sync"
 )
 
-// New returns a new Sharder with the specified number of shards.
-func New(total int) *Sharder {
-	if total < 1 {
-		panic("trying to create Sharder where total < 1")
-	}
-	return &Sharder{
-		total:  total,
-		hasher: fnv.New32a(),
+// Hasher is the common interface to hash a given key.
+type Hasher interface {
+	Hash(key string) uint32
+}
+
+// Opt is used to customer the Sharder's Hasher.
+type Opt func(*Sharder)
+
+// WithHasher allows for custom Hasher implementations.
+func WithHasher(f Hasher) Opt {
+	return func(s *Sharder) {
+		s.factory = f
 	}
 }
 
-// Sharder determines the shard number for a key.
-type Sharder struct {
-	total  int
+// WithLockingHasher is the default Hasher, implemented using a locking fnv32 algorithm.
+func WithLockingHasher() Opt {
+	return WithHasher(&lockingHasher{
+		mu:     sync.Mutex{},
+		hasher: fnv.New32(),
+	})
+}
+
+// WithLockFreeHasher implements the Hasher interface using lock-free fnv32.
+func WithLockFreeHasher() Opt {
+	return WithHasher(&lockFreeHasher{})
+}
+
+type lockFreeHasher struct {
+}
+
+func (f *lockFreeHasher) Hash(key string) uint32 {
+	hasher := fnv.New32()
+
+	if _, err := hasher.Write([]byte(key)); err != nil {
+		panic(err)
+	}
+
+	return hasher.Sum32()
+}
+
+type lockingHasher struct {
 	mu     sync.Mutex
 	hasher hash.Hash32
 }
 
-// Index returns a shard index for the given key. The index is in the range 0..total exclusive.
-func (s *Sharder) Index(key string) int {
-	s.mu.Lock()
-	defer s.mu.Unlock()
+func (f *lockingHasher) Hash(key string) uint32 {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 
-	s.hasher.Reset()
-	if _, err := s.hasher.Write([]byte(key)); err != nil {
+	f.hasher.Reset()
+	if _, err := f.hasher.Write([]byte(key)); err != nil {
 		panic(err)
 	}
 
-	i := int(s.hasher.Sum32()) % s.total
+	return f.hasher.Sum32()
+}
+
+// New returns a new Sharder with the specified number of shards.
+func New(total int, opts ...Opt) *Sharder {
+	if total < 1 {
+		panic("trying to create Sharder where total < 1")
+	}
+
+	if len(opts) == 0 {
+		opts = append(opts, WithLockingHasher())
+	}
+
+	s := &Sharder{
+		total: total,
+	}
+
+	for _, opt := range opts {
+		opt(s)
+	}
+
+	return s
+}
+
+// Sharder determines the shard number for a key.
+type Sharder struct {
+	total   int
+	factory Hasher
+}
+
+// Index returns a shard index for the given key. The index is in the range 0..total exclusive.
+func (s *Sharder) Index(key string) int {
+	i := int(s.factory.Hash(key)) % s.total
 	if i < 0 {
 		i = -i
 	}
