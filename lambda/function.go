@@ -7,6 +7,7 @@ import (
 	"github.com/joeshaw/envdecode"
 	"github.com/oklog/run"
 	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/heroku/x/cmdutil"
 	"github.com/heroku/x/cmdutil/metrics"
@@ -16,6 +17,12 @@ import (
 	kitmetrics "github.com/heroku/x/go-kit/metrics"
 	"github.com/heroku/x/go-kit/metrics/l2met"
 	"github.com/heroku/x/go-kit/metrics/multiprovider"
+	xotel "github.com/heroku/x/go-kit/metrics/provider/otel"
+)
+
+const (
+	// This is the key for the "function" OTEL attribute. The value should be the function name.
+	functionKey = "function"
 )
 
 // Function defines configuration of a Lambda function.
@@ -68,10 +75,12 @@ func New(config interface{}) *Function {
 			context.Background(),
 			logger,
 			fc.Metrics.OTEL,
-			f.Name,
+			f.App,
 			f.Deploy,
 			f.Stage,
-			"lambda")
+			"lambda",
+			xotel.WithAttributes(attribute.String(functionKey, f.Name)),
+		)
 		metricsProviders = append(metricsProviders, otelProvider)
 	}
 
