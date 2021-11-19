@@ -123,3 +123,6 @@ func (p *Provider) log() {
 
 // Stop implements Provider.
 func (p *Provider) Stop() {}
+
+// Flush implements Provider.
+func (p *Provider) Flush() error { return nil }

@@ -29,4 +29,5 @@ type Provider interface {
 	NewHistogram(name string, buckets int) metrics.Histogram
 	NewCardinalityCounter(name string) CardinalityCounter
 	Stop()
+	Flush() error
 }
