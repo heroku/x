@@ -3,8 +3,9 @@ package sharder_test
 import (
 	"testing"
 
-	"github.com/google/uuid"
 	"github.com/heroku/x/sharder"
+
+	"github.com/google/uuid"
 )
 
 type TestHasher struct {
