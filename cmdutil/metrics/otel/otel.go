@@ -38,9 +38,7 @@ func MustProvider(ctx context.Context, logger logrus.FieldLogger, cfg Config, se
 		otel.WithServiceInstanceIDAttribute(serviceInstanceID),
 		otel.WithStageAttribute(stage),
 	}
-	for _, opt := range opts {
-		allOpts = append(allOpts, opt)
-	}
+	allOpts = append(allOpts, opts...)
 
 	otelProvider, err := otel.New(ctx, service, allOpts...)
 	if err != nil {
