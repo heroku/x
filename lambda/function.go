@@ -23,6 +23,9 @@ import (
 const (
 	// This is the key for the "function" OTEL attribute. The value should be the function name.
 	functionKey = "function"
+
+	// This is the key for the "stage" log field. The value should be "staging" or "production".
+	stageKey = "stage"
 )
 
 // Function defines configuration of a Lambda function.
@@ -53,11 +56,16 @@ func New(config interface{}) *Function {
 	}
 
 	logger := svclog.NewLogger(fc.Logger)
+	logger = logger.WithFields(logrus.Fields{
+		functionKey: fc.Name,
+		stageKey:    fc.Stage,
+	})
 
 	rollbar.Setup(logger, fc.Rollbar)
 
 	f := &Function{
-		Name:   fc.Logger.AppName,
+		App:    fc.Logger.AppName,
+		Name:   fc.Name,
 		Deploy: fc.Logger.Deploy,
 		Stage:  fc.Stage,
 		Logger: logger,
@@ -145,6 +153,7 @@ func (f *Function) FlushMetrics() error {
 }
 
 type funcConfig struct {
+	Name    string `env:"FUNCTION_NAME"`
 	Stage   string `env:"STAGE"`
 	Logger  svclog.Config
 	Metrics metrics.Config
