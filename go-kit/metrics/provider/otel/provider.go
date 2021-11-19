@@ -133,13 +133,18 @@ func (p *Provider) Stop() {
 	_ = p.exporter.Shutdown(p.ctx)
 }
 
-// Flush stops and starts the provider in order to flush metrics
+// Flush stops and starts the controller in order to flush metrics
 // immediately, without having to wait until the next collection occurs.
-// The flush is synchronous and returns an error if the provider cannot
-// restart after stopping.
+// The flush is synchronous and returns an error if the controller fails to
+// flush or cannot restart after flushing.
 func (p *Provider) Flush() error {
-	p.Stop()
-	return p.Start()
+	if err := p.controller.Stop(p.ctx); err != nil {
+		return err
+	}
+	if err := p.controller.Start(p.ctx); err != nil {
+		return err
+	}
+	return nil
 }
 
 // Meter returns an oltp meter used for the creation of metric instruments.
