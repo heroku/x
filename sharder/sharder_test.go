@@ -15,6 +15,7 @@ func (f *TestHasher) Hash(key string) uint32 {
 	return f.expected
 }
 
+//nolint:gocyclo // This is a test, there are going to be lots of if statements
 func TestSharder(t *testing.T) {
 	t.Run("constructing with bad count panics", func(t *testing.T) {
 		defer func() {
