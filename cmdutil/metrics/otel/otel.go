@@ -10,16 +10,16 @@ import (
 	"go.opentelemetry.io/otel/sdk/export/metric"
 
 	"github.com/heroku/x/go-kit/metrics"
-	otelprovider "github.com/heroku/x/go-kit/metrics/provider/otel"
+	"github.com/heroku/x/go-kit/metrics/provider/otel"
 )
 
 // MustProvider ensures setting up and starting a otel.Provider succeeds.
 // nolint: lll
-func MustProvider(ctx context.Context, logger logrus.FieldLogger, cfg Config, service, serviceNamespace, stage, serviceInstanceID string) metrics.Provider {
+func MustProvider(ctx context.Context, logger logrus.FieldLogger, cfg Config, service, serviceNamespace, stage, serviceInstanceID string, opts ...otel.Option) metrics.Provider {
 	// This provider is used for metrics reporting to the  collector.
 	logger.WithField("metrics_destinations", strings.Join(cfg.MetricsDestinations, ",")).Info("setting up  provider")
 
-	client := otelprovider.NewHTTPClient(cfg.CollectorURL)
+	client := otel.NewHTTPClient(cfg.CollectorURL)
 	expOpts := otlpmetric.WithMetricExportKindSelector(metric.DeltaExportKindSelector())
 	exporter := otlpmetric.NewUnstarted(client, expOpts)
 
@@ -31,18 +31,23 @@ func MustProvider(ctx context.Context, logger logrus.FieldLogger, cfg Config, se
 		attrs = append(attrs, attribute.String(md, "true"))
 	}
 
-	otelProvider, err := otelprovider.New(ctx, service,
-		otelprovider.WithExporter(exporter),
-		otelprovider.WithAttributes(attrs...),
-		otelprovider.WithServiceNamespaceAttribute(serviceNamespace),
-		otelprovider.WithServiceInstanceIDAttribute(serviceInstanceID),
-		otelprovider.WithStageAttribute(stage),
-	)
+	allOpts := []otel.Option{
+		otel.WithExporter(exporter),
+		otel.WithAttributes(attrs...),
+		otel.WithServiceNamespaceAttribute(serviceNamespace),
+		otel.WithServiceInstanceIDAttribute(serviceInstanceID),
+		otel.WithStageAttribute(stage),
+	}
+	for _, opt := range opts {
+		allOpts = append(allOpts, opt)
+	}
+
+	otelProvider, err := otel.New(ctx, service, allOpts...)
 	if err != nil {
 		logger.Fatal(err)
 	}
 
-	if err := otelProvider.(*otelprovider.Provider).Start(); err != nil {
+	if err := otelProvider.(*otel.Provider).Start(); err != nil {
 		logger.WithError(err).Fatal("failed to start  metrics provider")
 	}
 
