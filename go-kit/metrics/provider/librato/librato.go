@@ -181,6 +181,7 @@ func New(u *url.URL, interval time.Duration, opts ...OptionFunc) xmetrics.Provid
 		errorHandler:     defaultErrorHandler,
 		done:             make(chan struct{}),
 		stopped:          make(chan struct{}),
+		flush:            make(chan chan struct{}),
 		percentilePrefix: DefaultPercentilePrefix,
 		numRetries:       DefaultNumRetries,
 		batchSize:        DefaultBatchSize,
