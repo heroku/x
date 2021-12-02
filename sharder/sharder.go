@@ -25,7 +25,7 @@ func WithHasher(f Hasher) Opt {
 func WithLockingHasher() Opt {
 	return WithHasher(&lockingHasher{
 		mu:     sync.Mutex{},
-		hasher: fnv.New32(),
+		hasher: fnv.New32a(),
 	})
 }
 
@@ -38,7 +38,7 @@ type lockFreeHasher struct {
 }
 
 func (f *lockFreeHasher) Hash(key string) uint32 {
-	hasher := fnv.New32()
+	hasher := fnv.New32a()
 
 	if _, err := hasher.Write([]byte(key)); err != nil {
 		panic(err)
