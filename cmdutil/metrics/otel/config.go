@@ -11,6 +11,6 @@ import (
 type Config struct {
 	Enabled             bool     `env:"ENABLE_OTEL_COLLECTION"`
 	CollectorURL        *url.URL `env:"OTEL_COLLECTOR_URL"`
-	MetricsDestinations []string `env:"OTEL_METRICS_DESTINATIONS,default=honeycomb,argus"`
+	MetricsDestinations []string `env:"OTEL_METRICS_DESTINATIONS,default=honeycomb;argus"`
 	Honeycomb           honeycomb.Config
 }
