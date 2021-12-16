@@ -74,7 +74,7 @@ func logRequest(l logrus.FieldLogger, r *http.Request, status int, bytes int, se
 		log = log.WithField("service", fmt.Sprintf("%dms", service/time.Millisecond))
 	}
 
-	if robot := r.Header.Get("X-Heroku-Robot"); robot != "" {
+	if robot := r.Header.Get("X-Heroku-Robot"); robot == "true" || robot == "false" {
 		log = log.WithField("robot", robot)
 	}
 

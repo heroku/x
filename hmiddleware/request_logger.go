@@ -46,7 +46,7 @@ func (l *StructuredLogger) NewLogEntry(r *http.Request) middleware.LogEntry {
 		"at":          "start",
 	}
 
-	if robot := r.Header.Get("X-Heroku-Robot"); robot != "" {
+	if robot := r.Header.Get("X-Heroku-Robot"); robot == "true" || robot == "false" {
 		logFields["robot"] = robot
 	}
 

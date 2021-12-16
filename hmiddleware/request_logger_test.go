@@ -17,7 +17,7 @@ import (
 
 func TestNewLogEntry(t *testing.T) {
 	req, _ := http.NewRequest(http.MethodGet, "/", nil)
-	req.Header.Set("X-Heroku-Robot", "I am a robot")
+	req.Header.Set("X-Heroku-Robot", "true")
 	logger := logrus.New()
 	l := &StructuredLogger{
 		Logger: logger,
