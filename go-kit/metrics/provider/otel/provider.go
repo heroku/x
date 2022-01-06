@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/go-kit/kit/metrics"
 	"github.com/go-kit/kit/metrics/generic"
@@ -42,6 +43,9 @@ const (
 
 	// The value of the "cloud" attribute should be the cloud (e.g. "heroku.com")
 	cloudKey = "cloud"
+
+	// The default collection interval.
+	defaultCollectPeriod = time.Minute
 )
 
 // Provider initializes a global otlp meter provider that can collect metrics and
@@ -96,6 +100,7 @@ func New(ctx context.Context, serviceName string, opts ...Option) (xmetrics.Prov
 		processor.New(p.aggregator, p.exporter),
 		metriccontroller.WithExporter(p.exporter),
 		metriccontroller.WithResource(p.serviceNameResource),
+		metriccontroller.WithCollectPeriod(defaultCollectPeriod),
 	)
 	global.SetMeterProvider(p.controller.MeterProvider())
 
