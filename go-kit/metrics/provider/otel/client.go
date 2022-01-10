@@ -11,12 +11,13 @@ import (
 )
 
 // NewHTTPClient creates a new HTTP client for exporting otel metrics.
-func NewHTTPClient(url *url.URL, opts ...otlpmetrichttp.Option) otlpmetric.Client {
+func NewHTTPClient(url url.URL, opts ...otlpmetrichttp.Option) otlpmetric.Client {
 	userInfo := url.User
 	authHeader := make(map[string]string)
 	authHeader["Authorization"] = "Basic " + base64.StdEncoding.EncodeToString([]byte(userInfo.String()))
 
 	// Ensure there's no cred in the URL.
+	// Can only do this because the URL is specified by value.
 	url.User = nil
 
 	defaultOpts := []otlpmetrichttp.Option{
