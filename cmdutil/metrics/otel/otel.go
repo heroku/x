@@ -19,7 +19,11 @@ func MustProvider(ctx context.Context, logger logrus.FieldLogger, cfg Config, se
 	// This provider is used for metrics reporting to the  collector.
 	logger.WithField("metrics_destinations", strings.Join(cfg.MetricsDestinations, ",")).Info("setting up  provider")
 
-	client := otel.NewHTTPClient(cfg.CollectorURL)
+	if cfg.CollectorURL == nil {
+		logger.Fatal("provider collectorURL cannot be nil")
+	}
+
+	client := otel.NewHTTPClient(*cfg.CollectorURL)
 	expOpts := otlpmetric.WithMetricExportKindSelector(metric.DeltaExportKindSelector())
 	exporter := otlpmetric.NewUnstarted(client, expOpts)
 
