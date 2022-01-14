@@ -3,6 +3,7 @@ package otel
 import (
 	"errors"
 	"fmt"
+	"time"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric"
@@ -118,6 +119,14 @@ func WithExporter(exp exporter) Option {
 			return ErrExporterNil
 		}
 		p.exporter = exp
+		return nil
+	}
+}
+
+// WithCollectPeriod initializes the controller with the collectPeriod.
+func WithCollectPeriod(collectPeriod time.Duration) Option {
+	return func(p *Provider) error {
+		p.collectPeriod = collectPeriod
 		return nil
 	}
 }
