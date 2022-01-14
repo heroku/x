@@ -43,9 +43,6 @@ const (
 
 	// The value of the "cloud" attribute should be the cloud (e.g. "heroku.com")
 	cloudKey = "cloud"
-
-	// The default collection interval.
-	defaultCollectPeriod = time.Minute
 )
 
 // Provider initializes a global otlp meter provider that can collect metrics and
@@ -59,8 +56,9 @@ type Provider struct {
 	exporter            exporter
 	controller          controller
 
-	defaultTags []string
-	prefix      string
+	defaultTags   []string
+	prefix        string
+	collectPeriod time.Duration
 
 	mu         sync.Mutex
 	counters   map[string]*Counter
@@ -95,12 +93,17 @@ func New(ctx context.Context, serviceName string, opts ...Option) (xmetrics.Prov
 		}
 	}
 
+	// If not set, use default collect period.
+	if p.collectPeriod == 0 {
+		p.collectPeriod = metriccontroller.DefaultPeriod
+	}
+
 	// initialize the controller
 	p.controller = metriccontroller.New(
 		processor.New(p.aggregator, p.exporter),
 		metriccontroller.WithExporter(p.exporter),
 		metriccontroller.WithResource(p.serviceNameResource),
-		metriccontroller.WithCollectPeriod(defaultCollectPeriod),
+		metriccontroller.WithCollectPeriod(p.collectPeriod),
 	)
 	global.SetMeterProvider(p.controller.MeterProvider())
 
