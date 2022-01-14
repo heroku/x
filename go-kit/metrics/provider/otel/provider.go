@@ -317,7 +317,7 @@ func (h *Histogram) Observe(value float64) {
 
 // NewCardinalityCounter implements metrics.Provider.
 func (p *Provider) NewCardinalityCounter(name string) xmetrics.CardinalityCounter {
-	return &xmetrics.HLLCounter{}
+	return xmetrics.NewHLLCounter(name)
 }
 
 func prefixName(prefix, name string) string {
