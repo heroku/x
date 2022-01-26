@@ -30,6 +30,13 @@ type Option func(*Provider) error
 
 // WithDefaultAggregator initializes the Provider with a default aggregator.
 func WithDefaultAggregator() Option {
+	return WithAggregator(simple.NewWithHistogramDistribution())
+}
+
+// WithExactAggregator initializes the Provider with the ExactDistribution aggregator.
+//
+// Note: simple.NewWithExactDistribution is removed in go.opentelemetry.io/otel/sdk/metric@v0.26.0.
+func WithExactAggregator() Option {
 	return WithAggregator(simple.NewWithExactDistribution())
 }
 

@@ -35,7 +35,13 @@ func MustProvider(ctx context.Context, logger logrus.FieldLogger, cfg Config, se
 		attrs = append(attrs, attribute.String(md, "true"))
 	}
 
+	aggrOpt := otel.WithDefaultAggregator()
+	if cfg.UseExactAggregator {
+		aggrOpt = otel.WithExactAggregator()
+	}
+
 	allOpts := []otel.Option{
+		aggrOpt,
 		otel.WithExporter(exporter),
 		otel.WithAttributes(attrs...),
 		otel.WithServiceNamespaceAttribute(serviceNamespace),
