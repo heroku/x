@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/otel/metric/global"
 	metricexport "go.opentelemetry.io/otel/sdk/export/metric"
 	"go.opentelemetry.io/otel/sdk/export/metric/aggregation"
+	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
 	metriccontroller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
 	processor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -52,7 +53,7 @@ const (
 type Provider struct {
 	ctx                 context.Context // used for init and shutdown of the otlp exporter and other bits of this Provider
 	serviceNameResource *resource.Resource
-	aggregator          metricexport.AggregatorSelector
+	selector            metricexport.AggregatorSelector
 	exporter            exporter
 	controller          controller
 
@@ -100,7 +101,7 @@ func New(ctx context.Context, serviceName string, opts ...Option) (xmetrics.Prov
 
 	// initialize the controller
 	p.controller = metriccontroller.New(
-		processor.New(p.aggregator, p.exporter),
+		processor.New(p.selector, p.exporter),
 		metriccontroller.WithExporter(p.exporter),
 		metriccontroller.WithResource(p.serviceNameResource),
 		metriccontroller.WithCollectPeriod(p.collectPeriod),
@@ -278,6 +279,19 @@ type Histogram struct {
 	labels     []string
 	attributes []attribute.KeyValue
 	p          *Provider
+}
+
+func (p *Provider) NewExplicitHistogram(name string, boundaries []float64) metrics.Histogram {
+	switch p.selector.(type) {
+	case selectorHistogram:
+		prefixedName := prefixName(p.prefix, name)
+
+		s := p.selector.(selectorHistogram)
+		s.StoreOptions(prefixedName, histogram.WithExplicitBoundaries(boundaries))
+		return p.newHistogram(prefixedName, p.defaultTags...)
+	default:
+		return p.NewHistogram(name, len(boundaries)-1)
+	}
 }
 
 // NewHistogram implements metrics.Provider.

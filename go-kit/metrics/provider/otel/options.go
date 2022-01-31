@@ -40,7 +40,7 @@ func WithAggregator(agg metric.AggregatorSelector) Option {
 			return ErrAggregatorNil
 		}
 
-		p.aggregator = agg
+		p.selector = agg
 		return nil
 	}
 }

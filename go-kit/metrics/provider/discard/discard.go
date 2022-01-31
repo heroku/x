@@ -34,6 +34,11 @@ func (discardProvider) NewGauge(string) metrics.Gauge { return discard.NewGauge(
 // NewHistogram implements Provider.
 func (discardProvider) NewHistogram(string, int) metrics.Histogram { return discard.NewHistogram() }
 
+// NewExplicitHistogram implements Provider.
+func (discardProvider) NewExplicitHistogram(string, []float64) metrics.Histogram {
+	return discard.NewHistogram()
+}
+
 // NewCardinalityCounter implements Provider.
 func (discardProvider) NewCardinalityCounter(string) xmetrics.CardinalityCounter {
 	return discardCardinalityCounter{}

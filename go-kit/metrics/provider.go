@@ -27,6 +27,7 @@ type Provider interface {
 	NewCounter(name string) metrics.Counter
 	NewGauge(name string) metrics.Gauge
 	NewHistogram(name string, buckets int) metrics.Histogram
+	NewExplicitHistogram(name string, boundaries []float64) metrics.Histogram
 	NewCardinalityCounter(name string) CardinalityCounter
 	Stop()
 	Flush() error
