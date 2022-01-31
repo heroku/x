@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/resource"
 
 	xmetrics "github.com/heroku/x/go-kit/metrics"
+	"github.com/heroku/x/go-kit/metrics/provider/otel/selector/explicit"
 )
 
 var _ metrics.Counter = (*Counter)(nil)
@@ -53,6 +54,7 @@ const (
 type Provider struct {
 	ctx                 context.Context // used for init and shutdown of the otlp exporter and other bits of this Provider
 	serviceNameResource *resource.Resource
+	optionCache         explicit.OptionCache
 	selector            metricexport.AggregatorSelector
 	exporter            exporter
 	controller          controller
@@ -282,16 +284,14 @@ type Histogram struct {
 }
 
 func (p *Provider) NewExplicitHistogram(name string, boundaries []float64) metrics.Histogram {
-	switch p.selector.(type) {
-	case selectorHistogram:
+	if p.optionCache != nil {
 		prefixedName := prefixName(p.prefix, name)
 
-		s := p.selector.(selectorHistogram)
-		s.StoreOptions(prefixedName, histogram.WithExplicitBoundaries(boundaries))
+		p.optionCache.Store(prefixedName, histogram.WithExplicitBoundaries(boundaries))
 		return p.newHistogram(prefixedName, p.defaultTags...)
-	default:
-		return p.NewHistogram(name, len(boundaries)-1)
 	}
+
+	return p.NewHistogram(name, len(boundaries)-1)
 }
 
 // NewHistogram implements metrics.Provider.

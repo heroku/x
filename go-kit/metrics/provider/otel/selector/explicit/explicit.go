@@ -1,4 +1,4 @@
-package otel
+package explicit
 
 import (
 	"sync"
@@ -13,28 +13,43 @@ import (
 )
 
 type (
-	config struct {
+	OptionCache interface {
+		Store(name string, opts ...histogram.Option)
+		Fetch(name string) []histogram.Option
+	}
+
+	selectorCache struct {
 		lock sync.RWMutex
 		opts map[string][]histogram.Option
 	}
 
 	selectorHistogram struct {
-		cfg *config
+		cache OptionCache
 	}
 )
 
-func (s selectorHistogram) StoreOptions(name string, opts ...histogram.Option) {
-	s.cfg.lock.Lock()
-	defer s.cfg.lock.Unlock()
+func NewExplicitHistogramDistribution() (export.AggregatorSelector, OptionCache) {
+	cache := &selectorCache{
+		opts: make(map[string][]histogram.Option),
+	}
 
-	s.cfg.opts[name] = opts
+	return selectorHistogram{
+		cache: cache,
+	}, cache
 }
 
-func (s selectorHistogram) FetchOptions(name string) []histogram.Option {
-	s.cfg.lock.RLock()
-	defer s.cfg.lock.RUnlock()
+func (c *selectorCache) Store(name string, opts ...histogram.Option) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
 
-	return s.cfg.opts[name]
+	c.opts[name] = opts
+}
+
+func (c *selectorCache) Fetch(name string) []histogram.Option {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+
+	return c.opts[name]
 }
 
 func (s selectorHistogram) AggregatorFor(desc *metric.Descriptor, aggPtrs ...*export.Aggregator) {
@@ -42,7 +57,7 @@ func (s selectorHistogram) AggregatorFor(desc *metric.Descriptor, aggPtrs ...*ex
 	case sdkapi.GaugeObserverInstrumentKind:
 		lastValueAggs(aggPtrs)
 	case sdkapi.HistogramInstrumentKind:
-		opts := s.FetchOptions(desc.Name())
+		opts := s.cache.Fetch(desc.Name())
 
 		aggs := histogram.New(len(aggPtrs), desc, opts...)
 		for i := range aggPtrs {
