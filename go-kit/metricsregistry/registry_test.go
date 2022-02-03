@@ -48,6 +48,20 @@ func TestGetOrRegisterHistogram(t *testing.T) {
 	})
 }
 
+func TestGetOrRegisterExplicitHistogram(t *testing.T) {
+	t.Run("basic registry", func(t *testing.T) {
+		p := testmetrics.NewProvider(t)
+		r := New(p)
+		runHistogramTests(t, r, p, "")
+	})
+
+	t.Run("with prefix", func(t *testing.T) {
+		p := testmetrics.NewProvider(t)
+		r := New(p)
+		runHistogramTests(t, NewPrefixed(r, "prefix"), p, "prefix.")
+	})
+}
+
 func runCounterTests(t *testing.T, r Registry, p *testmetrics.Provider, prefix string) {
 	t.Helper()
 	r.GetOrRegisterCounter("foo").Add(1)
@@ -65,6 +79,18 @@ func runHistogramTests(t *testing.T, r Registry, p *testmetrics.Provider, prefix
 	p.CheckObservationCount(prefix+"foo", 2)
 
 	r.GetOrRegisterHistogram("bar", 1).Observe(1)
+	p.CheckObservationCount(prefix+"bar", 1)
+}
+
+func runExplicitHistogramTests(t *testing.T, r Registry, p *testmetrics.Provider, prefix string) {
+	t.Helper()
+	boundaries := []float64{.005, .01, .025, .05, .1, .25, .5, 1, 2.5, 5, 10}
+
+	r.GetOrRegisterExplicitHistogram("foo", boundaries).Observe(1)
+	r.GetOrRegisterExplicitHistogram("foo", boundaries).Observe(1)
+	p.CheckObservationCount(prefix+"foo", 1)
+
+	r.GetOrRegisterExplicitHistogram("bar", boundaries).Observe(1)
 	p.CheckObservationCount(prefix+"bar", 1)
 }
 
