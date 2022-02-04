@@ -72,7 +72,8 @@ func (p *Provider) NewHistogram(name string, buckets int) metrics.Histogram {
 	return p.histograms[name]
 }
 
-func (p *Provider) NewExplicitHistogram(name string, boundaries []float64) metrics.Histogram {
+func (p *Provider) NewExplicitHistogram(name string, fn xmetrics.DistributionFunc) metrics.Histogram {
+	boundaries := fn()
 	p.mu.Lock()
 	defer p.mu.Unlock()
 

@@ -3,6 +3,7 @@ package metricsregistry
 import (
 	"testing"
 
+	"github.com/heroku/x/go-kit/metrics"
 	"github.com/heroku/x/go-kit/metrics/testmetrics"
 )
 
@@ -52,13 +53,13 @@ func TestGetOrRegisterExplicitHistogram(t *testing.T) {
 	t.Run("basic registry", func(t *testing.T) {
 		p := testmetrics.NewProvider(t)
 		r := New(p)
-		runHistogramTests(t, r, p, "")
+		runExplicitHistogramTests(t, r, p, "")
 	})
 
 	t.Run("with prefix", func(t *testing.T) {
 		p := testmetrics.NewProvider(t)
 		r := New(p)
-		runHistogramTests(t, NewPrefixed(r, "prefix"), p, "prefix.")
+		runExplicitHistogramTests(t, NewPrefixed(r, "prefix"), p, "prefix.")
 	})
 }
 
@@ -84,13 +85,12 @@ func runHistogramTests(t *testing.T, r Registry, p *testmetrics.Provider, prefix
 
 func runExplicitHistogramTests(t *testing.T, r Registry, p *testmetrics.Provider, prefix string) {
 	t.Helper()
-	boundaries := []float64{.005, .01, .025, .05, .1, .25, .5, 1, 2.5, 5, 10}
 
-	r.GetOrRegisterExplicitHistogram("foo", boundaries).Observe(1)
-	r.GetOrRegisterExplicitHistogram("foo", boundaries).Observe(1)
-	p.CheckObservationCount(prefix+"foo", 1)
+	r.GetOrRegisterExplicitHistogram("foo", metrics.FiveSecondDistribution).Observe(1)
+	r.GetOrRegisterExplicitHistogram("foo", metrics.FiveSecondDistribution).Observe(1)
+	p.CheckObservationCount(prefix+"foo", 2)
 
-	r.GetOrRegisterExplicitHistogram("bar", boundaries).Observe(1)
+	r.GetOrRegisterExplicitHistogram("bar", metrics.ThirtySecondDistribution).Observe(1)
 	p.CheckObservationCount(prefix+"bar", 1)
 }
 

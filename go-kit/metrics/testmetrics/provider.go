@@ -84,7 +84,7 @@ func (p *Provider) NewHistogram(name string, _ int) metrics.Histogram {
 }
 
 // NewExplicitHistogram implements go-kit's Provider interface.
-func (p *Provider) NewExplicitHistogram(name string, _ []float64) metrics.Histogram {
+func (p *Provider) NewExplicitHistogram(name string, _ xmetrics.DistributionFunc) metrics.Histogram {
 	return p.newHistogram(name)
 }
 

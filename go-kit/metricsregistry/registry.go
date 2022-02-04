@@ -16,7 +16,7 @@ type Registry interface {
 	GetOrRegisterCounter(name string) kitmetrics.Counter
 	GetOrRegisterGauge(name string) kitmetrics.Gauge
 	GetOrRegisterHistogram(name string, buckets int) kitmetrics.Histogram
-	GetOrRegisterExplicitHistogram(name string, boundaries []float64) kitmetrics.Histogram
+	GetOrRegisterExplicitHistogram(name string, fn metrics.DistributionFunc) kitmetrics.Histogram
 }
 
 // simple compile time checks for interface compliance.
@@ -78,12 +78,12 @@ func (r *basicRegistry) GetOrRegisterHistogram(name string, buckets int) kitmetr
 }
 
 // GetOrRegisterExplicitHistogram creates or finds the ExplicitHistogram given a name.
-func (r *basicRegistry) GetOrRegisterExplicitHistogram(name string, boundaries []float64) kitmetrics.Histogram {
+func (r *basicRegistry) GetOrRegisterExplicitHistogram(name string, fn metrics.DistributionFunc) kitmetrics.Histogram {
 	r.Lock()
 	defer r.Unlock()
 
 	if r.histograms[name] == nil {
-		r.histograms[name] = r.p.NewExplicitHistogram(name, boundaries)
+		r.histograms[name] = r.p.NewExplicitHistogram(name, fn)
 	}
 	return r.histograms[name]
 }
@@ -120,8 +120,8 @@ func (r *prefixedRegistry) GetOrRegisterHistogram(name string, buckets int) kitm
 }
 
 // GetOrRegisterExplicitHistogram creates or finds the ExplicitHistogram given a name.
-func (r *prefixedRegistry) GetOrRegisterExplicitHistogram(name string, boundaries []float64) kitmetrics.Histogram {
-	return r.r.GetOrRegisterExplicitHistogram(r.prefixedName(name), boundaries)
+func (r *prefixedRegistry) GetOrRegisterExplicitHistogram(name string, fn metrics.DistributionFunc) kitmetrics.Histogram {
+	return r.r.GetOrRegisterExplicitHistogram(r.prefixedName(name), fn)
 }
 
 func (r *prefixedRegistry) prefixedName(name string) string {

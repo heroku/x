@@ -35,7 +35,7 @@ func (discardProvider) NewGauge(string) metrics.Gauge { return discard.NewGauge(
 func (discardProvider) NewHistogram(string, int) metrics.Histogram { return discard.NewHistogram() }
 
 // NewExplicitHistogram implements Provider.
-func (discardProvider) NewExplicitHistogram(string, []float64) metrics.Histogram {
+func (discardProvider) NewExplicitHistogram(string, xmetrics.DistributionFunc) metrics.Histogram {
 	return discard.NewHistogram()
 }
 

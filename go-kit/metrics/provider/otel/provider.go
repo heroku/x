@@ -283,19 +283,19 @@ type Histogram struct {
 	p          *Provider
 }
 
-func (p *Provider) NewExplicitHistogram(name string, boundaries []float64) metrics.Histogram {
-	if p.optionCache != nil {
-		prefixedName := prefixName(p.prefix, name)
+func (p *Provider) NewExplicitHistogram(name string, fn xmetrics.DistributionFunc) metrics.Histogram {
+	boundaries := fn()
+	prefixedName := prefixName(p.prefix, name)
 
+	if p.optionCache != nil {
 		p.optionCache.Store(prefixedName, histogram.WithExplicitBoundaries(boundaries))
-		return p.newHistogram(prefixedName, p.defaultTags...)
 	}
 
-	return p.NewHistogram(name, len(boundaries)-1)
+	return p.newHistogram(prefixedName, p.defaultTags...)
 }
 
 // NewHistogram implements metrics.Provider.
-func (p *Provider) NewHistogram(name string, buckets int) metrics.Histogram {
+func (p *Provider) NewHistogram(name string, _ int) metrics.Histogram {
 	return p.newHistogram(prefixName(p.prefix, name), p.defaultTags...)
 }
 

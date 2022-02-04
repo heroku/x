@@ -55,11 +55,11 @@ func (m *multiProvider) NewHistogram(name string, buckets int) kitmetrics.Histog
 }
 
 // NewExplicitHistogram returns a multi.Histogram composed from all the given providers.
-func (m *multiProvider) NewExplicitHistogram(name string, boundaries []float64) kitmetrics.Histogram {
+func (m *multiProvider) NewExplicitHistogram(name string, fn metrics.DistributionFunc) kitmetrics.Histogram {
 	histograms := make([]kitmetrics.Histogram, 0, len(m.providers))
 
 	for _, p := range m.providers {
-		histograms = append(histograms, p.NewExplicitHistogram(name, boundaries))
+		histograms = append(histograms, p.NewExplicitHistogram(name, fn))
 	}
 	return multi.NewHistogram(histograms...)
 }
