@@ -54,6 +54,16 @@ func (m *multiProvider) NewHistogram(name string, buckets int) kitmetrics.Histog
 	return multi.NewHistogram(histograms...)
 }
 
+// NewExplicitHistogram returns a multi.Histogram composed from all the given providers.
+func (m *multiProvider) NewExplicitHistogram(name string, fn metrics.DistributionFunc) kitmetrics.Histogram {
+	histograms := make([]kitmetrics.Histogram, 0, len(m.providers))
+
+	for _, p := range m.providers {
+		histograms = append(histograms, p.NewExplicitHistogram(name, fn))
+	}
+	return multi.NewHistogram(histograms...)
+}
+
 // NewCardinalityCounter implements metrics.CardinalityCounter.
 func (m *multiProvider) NewCardinalityCounter(name string) metrics.CardinalityCounter {
 	cardCounters := make([]metrics.CardinalityCounter, 0, len(m.providers))

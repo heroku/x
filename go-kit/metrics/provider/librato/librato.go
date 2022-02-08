@@ -339,6 +339,11 @@ func (p *Provider) NewHistogram(name string, buckets int) kmetrics.Histogram {
 	return p.newHistogram(prefixName(p.prefix, name), buckets, p.percentilePrefix, p.defaultTags...)
 }
 
+func (p *Provider) NewExplicitHistogram(prefixName string, fn xmetrics.DistributionFunc) kmetrics.Histogram {
+	boundaries := fn()
+	return p.NewHistogram(prefixName, len(boundaries)-1)
+}
+
 func (p *Provider) newHistogram(name string, buckets int, percentilePrefix string, labelValues ...string) kmetrics.Histogram {
 	p.mu.Lock()
 	defer p.mu.Unlock()

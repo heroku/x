@@ -72,6 +72,19 @@ func (p *Provider) NewHistogram(name string, buckets int) metrics.Histogram {
 	return p.histograms[name]
 }
 
+func (p *Provider) NewExplicitHistogram(name string, fn xmetrics.DistributionFunc) metrics.Histogram {
+	boundaries := fn()
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if h, ok := p.histograms[name]; ok {
+		return h
+	}
+
+	p.histograms[name] = generic.NewHistogram(name, len(boundaries)-1)
+	return p.histograms[name]
+}
+
 // NewCardinalityCounter implements the heroku/x metrics Provider interface. It
 // is not implemented for the log-based provider.
 func (*Provider) NewCardinalityCounter(string) xmetrics.CardinalityCounter {

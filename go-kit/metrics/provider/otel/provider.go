@@ -14,11 +14,13 @@ import (
 	"go.opentelemetry.io/otel/metric/global"
 	metricexport "go.opentelemetry.io/otel/sdk/export/metric"
 	"go.opentelemetry.io/otel/sdk/export/metric/aggregation"
+	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
 	metriccontroller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
 	processor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
 	"go.opentelemetry.io/otel/sdk/resource"
 
 	xmetrics "github.com/heroku/x/go-kit/metrics"
+	"github.com/heroku/x/go-kit/metrics/provider/otel/selector/explicit"
 )
 
 var _ metrics.Counter = (*Counter)(nil)
@@ -52,7 +54,8 @@ const (
 type Provider struct {
 	ctx                 context.Context // used for init and shutdown of the otlp exporter and other bits of this Provider
 	serviceNameResource *resource.Resource
-	aggregator          metricexport.AggregatorSelector
+	optionCache         explicit.OptionCache
+	selector            metricexport.AggregatorSelector
 	exporter            exporter
 	controller          controller
 
@@ -100,7 +103,7 @@ func New(ctx context.Context, serviceName string, opts ...Option) (xmetrics.Prov
 
 	// initialize the controller
 	p.controller = metriccontroller.New(
-		processor.New(p.aggregator, p.exporter),
+		processor.New(p.selector, p.exporter),
 		metriccontroller.WithExporter(p.exporter),
 		metriccontroller.WithResource(p.serviceNameResource),
 		metriccontroller.WithCollectPeriod(p.collectPeriod),
@@ -280,8 +283,19 @@ type Histogram struct {
 	p          *Provider
 }
 
+func (p *Provider) NewExplicitHistogram(name string, fn xmetrics.DistributionFunc) metrics.Histogram {
+	boundaries := fn()
+	prefixedName := prefixName(p.prefix, name)
+
+	if p.optionCache != nil {
+		p.optionCache.Store(prefixedName, histogram.WithExplicitBoundaries(boundaries))
+	}
+
+	return p.newHistogram(prefixedName, p.defaultTags...)
+}
+
 // NewHistogram implements metrics.Provider.
-func (p *Provider) NewHistogram(name string, buckets int) metrics.Histogram {
+func (p *Provider) NewHistogram(name string, _ int) metrics.Histogram {
 	return p.newHistogram(prefixName(p.prefix, name), p.defaultTags...)
 }
 

@@ -11,6 +11,8 @@ import (
 	"go.opentelemetry.io/otel/sdk/export/metric"
 	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
 	"go.opentelemetry.io/otel/sdk/resource"
+
+	"github.com/heroku/x/go-kit/metrics/provider/otel/selector/explicit"
 )
 
 var (
@@ -29,8 +31,26 @@ const DefaultAgentEndpoint = "0.0.0.0:55680"
 type Option func(*Provider) error
 
 // WithDefaultAggregator initializes the Provider with a default aggregator.
-func WithDefaultAggregator() Option {
+var WithDefaultAggregator = WithExactAggregator
+
+// WithExactAggregator initializes the Provider with the simple.NewWithExactDistribution.
+//
+// NOTE: simple.NewWithExactDistribution is removed in go.opentelemetry.io/otel/sdk/metric@v0.26.0.
+func WithExactAggregator() Option {
 	return WithAggregator(simple.NewWithExactDistribution())
+}
+
+// WithExplicitHistogramAggregator initializes the Provider with with our custom explicit.NewExplicitHistogramSelector.
+//
+// This AggregatorSelector hooks the Provider interface to allow customization of a histogram's bucket definition.
+func WithExplicitHistogramAggregator() Option {
+	return func(p *Provider) error {
+		selector, cache := explicit.NewExplicitHistogramDistribution()
+		p.optionCache = cache
+		p.selector = selector
+
+		return nil
+	}
 }
 
 // WithAggregator initializes the Provider with an aggregator used by its controller.
@@ -40,7 +60,7 @@ func WithAggregator(agg metric.AggregatorSelector) Option {
 			return ErrAggregatorNil
 		}
 
-		p.aggregator = agg
+		p.selector = agg
 		return nil
 	}
 }
