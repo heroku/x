@@ -31,17 +31,7 @@ const DefaultAgentEndpoint = "0.0.0.0:55680"
 type Option func(*Provider) error
 
 // WithDefaultAggregator initializes the Provider with a default aggregator.
-var WithDefaultAggregator = WithExplicitHistogramAggregator
-
-// WithInexpensiveAggregator initializes the Provider with the simple.NewWithInexpensiveDistribution.
-func WithInexpensiveAggregator() Option {
-	return WithAggregator(simple.NewWithInexpensiveDistribution())
-}
-
-// WithHistogramAggregator initializes the Provider with the simple.NewWithHistogramDistribution.
-func WithHistogramAggregator() Option {
-	return WithAggregator(simple.NewWithHistogramDistribution())
-}
+var WithDefaultAggregator = WithExactAggregator
 
 // WithExactAggregator initializes the Provider with the simple.NewWithExactDistribution.
 //
