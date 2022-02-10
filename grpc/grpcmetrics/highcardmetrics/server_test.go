@@ -12,7 +12,7 @@ import (
 
 func TestUnaryServerInterceptor(t *testing.T) {
 	p := testmetrics.NewProvider(t)
-	usi := NewUnaryServerInterceptor(p)
+	usi := NewUnaryServerInterceptor(p, false)
 	handler := func(resp interface{}, err error) grpc.UnaryHandler {
 		return func(ctx context.Context, req interface{}) (interface{}, error) {
 			return resp, err
@@ -51,7 +51,7 @@ func TestUnaryServerInterceptor(t *testing.T) {
 
 func TestStreamServerInterceptor(t *testing.T) {
 	p := testmetrics.NewProvider(t)
-	ssi := NewStreamServerInterceptor(p)
+	ssi := NewStreamServerInterceptor(p, false)
 	handler := func(err error) grpc.StreamHandler {
 		return func(srv interface{}, stream grpc.ServerStream) error {
 			if err == nil {

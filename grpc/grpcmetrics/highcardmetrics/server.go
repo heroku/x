@@ -23,7 +23,7 @@ const (
 
 // NewUnaryServerInterceptor returns an interceptor for unary server calls
 // which will report metrics to the given provider.
-func NewUnaryServerInterceptor(p metrics.Provider) grpc.UnaryServerInterceptor {
+func NewUnaryServerInterceptor(p metrics.Provider, explicit bool) grpc.UnaryServerInterceptor {
 	r0 := metricsregistry.New(p)
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (_ interface{}, err error) {
 		r1 := metricsregistry.NewPrefixed(r0, "grpc.server")
@@ -32,7 +32,7 @@ func NewUnaryServerInterceptor(p metrics.Provider) grpc.UnaryServerInterceptor {
 			service, method := parseFullMethod(info.FullMethod)
 			labels := []string{serviceKey, service, methodKey, method, responseStatusKey, code(err)}
 
-			instrumentMethod(r1, labels, time.Since(begin))
+			instrumentMethod(r1, explicit, labels, time.Since(begin))
 		}(time.Now())
 
 		return handler(ctx, req)
@@ -41,7 +41,7 @@ func NewUnaryServerInterceptor(p metrics.Provider) grpc.UnaryServerInterceptor {
 
 // NewStreamServerInterceptor returns an interceptor for stream server calls
 // which will report metrics to the given provider.
-func NewStreamServerInterceptor(p metrics.Provider) grpc.StreamServerInterceptor {
+func NewStreamServerInterceptor(p metrics.Provider, explicit bool) grpc.StreamServerInterceptor {
 	r0 := metricsregistry.New(p)
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) (err error) {
 		r1 := metricsregistry.NewPrefixed(r0, "grpc.server")
@@ -58,10 +58,10 @@ func NewStreamServerInterceptor(p metrics.Provider) grpc.StreamServerInterceptor
 
 			labels = append(labels, responseStatusKey, code(err))
 
-			instrumentMethod(r1, labels, time.Since(begin))
+			instrumentMethod(r1, explicit, labels, time.Since(begin))
 		}(time.Now())
 
-		wrapped := &serverStream{r1, ss, labels}
+		wrapped := &serverStream{r1, ss, labels, explicit}
 		return handler(srv, wrapped)
 	}
 }
@@ -71,13 +71,14 @@ func NewStreamServerInterceptor(p metrics.Provider) grpc.StreamServerInterceptor
 type serverStream struct {
 	reg metricsregistry.Registry
 	grpc.ServerStream
-	labels []string
+	labels             []string
+	explicitHistograms bool
 }
 
 //// RecvMsg implements the grpc.Stream interface.
 func (ss *serverStream) SendMsg(m interface{}) (err error) {
 	defer func(begin time.Time) {
-		instrumentStreamSend(ss.reg, ss.labels, time.Since(begin), err)
+		instrumentStreamSend(ss.reg, ss.explicitHistograms, ss.labels, time.Since(begin), err)
 	}(time.Now())
 
 	return ss.ServerStream.SendMsg(m)
@@ -86,19 +87,28 @@ func (ss *serverStream) SendMsg(m interface{}) (err error) {
 //// RecvMsg implements the grpc.Stream interface.
 func (ss *serverStream) RecvMsg(m interface{}) (err error) {
 	defer func(begin time.Time) {
-		instrumentStreamRecv(ss.reg, ss.labels, time.Since(begin), err)
+		instrumentStreamRecv(ss.reg, ss.explicitHistograms, ss.labels, time.Since(begin), err)
 	}(time.Now())
 
 	return ss.ServerStream.RecvMsg(m)
 }
 
-func instrumentMethod(r metricsregistry.Registry, labels []string, duration time.Duration) {
-	r.GetOrRegisterHistogram("request-duration.ms", 50).With(labels...).Observe(ms(duration))
+func instrumentMethod(r metricsregistry.Registry, explicit bool, labels []string, duration time.Duration) {
+	if explicit {
+		r.GetOrRegisterExplicitHistogram("request-duration.ms", metrics.FiveSecondDistribution).With(labels...).Observe(ms(duration))
+	} else {
+		r.GetOrRegisterHistogram("request-duration.ms", 50).With(labels...).Observe(ms(duration))
+	}
+
 	r.GetOrRegisterCounter("requests").With(labels...).Add(1)
 }
 
-func instrumentStreamSend(r metricsregistry.Registry, labels []string, duration time.Duration, err error) {
-	r.GetOrRegisterHistogram("stream.send-duration.ms", 50).With(labels...).Observe(ms(duration))
+func instrumentStreamSend(r metricsregistry.Registry, explicit bool, labels []string, duration time.Duration, err error) {
+	if explicit {
+		r.GetOrRegisterExplicitHistogram("stream.send-duration.ms", metrics.FiveSecondDistribution).With(labels...).Observe(ms(duration))
+	} else {
+		r.GetOrRegisterHistogram("stream.send-duration.ms", 50).With(labels...).Observe(ms(duration))
+	}
 	r.GetOrRegisterCounter("stream.sends").With(labels...).Add(1)
 
 	if err != nil && !isCanceled(err) {
@@ -106,8 +116,13 @@ func instrumentStreamSend(r metricsregistry.Registry, labels []string, duration 
 	}
 }
 
-func instrumentStreamRecv(r metricsregistry.Registry, labels []string, duration time.Duration, err error) {
-	r.GetOrRegisterHistogram("stream.recv-duration.ms", 50).With(labels...).Observe(ms(duration))
+func instrumentStreamRecv(r metricsregistry.Registry, explicit bool, labels []string, duration time.Duration, err error) {
+	if explicit {
+		r.GetOrRegisterExplicitHistogram("stream.recv-duration.ms", metrics.FiveSecondDistribution).With(labels...).Observe(ms(duration))
+	} else {
+		r.GetOrRegisterHistogram("stream.recv-duration.ms", 50).With(labels...).Observe(ms(duration))
+
+	}
 	r.GetOrRegisterCounter("stream.recvs").With(labels...).Add(1)
 
 	if err != nil && !isCanceled(err) {

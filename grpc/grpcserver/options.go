@@ -17,7 +17,6 @@ import (
 
 	"github.com/heroku/x/go-kit/metrics"
 	"github.com/heroku/x/grpc/grpcmetrics"
-	"github.com/heroku/x/grpc/grpcmetrics/highcardmetrics"
 	"github.com/heroku/x/grpc/panichandler"
 	"github.com/heroku/x/tlsconfig"
 )
@@ -27,12 +26,14 @@ var defaultLogOpts = []grpc_logrus.Option{
 }
 
 type options struct {
-	logEntry                   *logrus.Entry
-	metricsProvider            metrics.Provider
-	authUnaryInterceptor       grpc.UnaryServerInterceptor
-	authStreamInterceptor      grpc.StreamServerInterceptor
-	useValidateInterceptor     bool
-	highCardinalityInterceptor bool
+	logEntry                  *logrus.Entry
+	metricsProvider           metrics.Provider
+	authUnaryInterceptor      grpc.UnaryServerInterceptor
+	authStreamInterceptor     grpc.StreamServerInterceptor
+	highCardUnaryInterceptor  grpc.UnaryServerInterceptor
+	highCardStreamInterceptor grpc.StreamServerInterceptor
+
+	useValidateInterceptor bool
 
 	grpcOptions []grpc.ServerOption
 }
@@ -70,6 +71,15 @@ func AuthInterceptors(unary grpc.UnaryServerInterceptor, stream grpc.StreamServe
 	}
 }
 
+// HighCardInterceptors sets interceptors that use
+// Attributes/Labels on the instrumentation.
+func HighCardInterceptors(unary grpc.UnaryServerInterceptor, stream grpc.StreamServerInterceptor) ServerOption {
+	return func(o *options) {
+		o.highCardUnaryInterceptor = unary
+		o.highCardStreamInterceptor = stream
+	}
+}
+
 // WithOCGRPCServerHandler sets the grpc server up with provided ServerHandler
 // as its StatsHandler
 func WithOCGRPCServerHandler(h *ocgrpc.ServerHandler) ServerOption {
@@ -88,14 +98,6 @@ func ValidateInterceptor() ServerOption {
 	}
 }
 
-// HighCardinalityInterceptor sets interceptors that use
-// Attributes/Labels on the instrumentation.
-func HighCardinalityInterceptor() ServerOption {
-	return func(o *options) {
-		o.highCardinalityInterceptor = true
-	}
-}
-
 func (o *options) unaryInterceptors() []grpc.UnaryServerInterceptor {
 	l := o.logEntry
 	if l == nil {
@@ -109,13 +111,13 @@ func (o *options) unaryInterceptors() []grpc.UnaryServerInterceptor {
 		unaryRequestIDTagger,
 		unaryPeerNameTagger,
 	}
-	if o.metricsProvider != nil {
-		if o.highCardinalityInterceptor {
-			i = append(i, highcardmetrics.NewUnaryServerInterceptor(o.metricsProvider))
-		} else {
-			i = append(i, grpcmetrics.NewUnaryServerInterceptor(o.metricsProvider)) // report metrics on unwrapped errors
-		}
+
+	if o.highCardUnaryInterceptor != nil {
+		i = append(i, o.highCardUnaryInterceptor)
+	} else if o.metricsProvider != nil {
+		i = append(i, grpcmetrics.NewUnaryServerInterceptor(o.metricsProvider)) // report metrics on unwrapped errors
 	}
+
 	i = append(i,
 		unaryServerErrorUnwrapper, // unwrap after we've logged
 		grpc_logrus.UnaryServerInterceptor(l, defaultLogOpts...),
@@ -142,13 +144,13 @@ func (o *options) streamInterceptors() []grpc.StreamServerInterceptor {
 		streamRequestIDTagger,
 		streamPeerNameTagger,
 	}
-	if o.metricsProvider != nil {
-		if o.highCardinalityInterceptor {
-			i = append(i, highcardmetrics.NewStreamServerInterceptor(o.metricsProvider))
-		} else {
-			i = append(i, grpcmetrics.NewStreamServerInterceptor(o.metricsProvider)) // report metrics on unwrapped errors
-		}
+
+	if o.highCardStreamInterceptor != nil {
+		i = append(i, o.highCardStreamInterceptor)
+	} else if o.metricsProvider != nil {
+		i = append(i, grpcmetrics.NewStreamServerInterceptor(o.metricsProvider)) // report metrics on unwrapped errors
 	}
+
 	i = append(i,
 		streamServerErrorUnwrapper, // unwrap after we've logged
 		grpc_logrus.StreamServerInterceptor(l, defaultLogOpts...),
