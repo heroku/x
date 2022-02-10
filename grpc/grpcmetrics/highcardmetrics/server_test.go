@@ -40,13 +40,13 @@ func TestUnaryServerInterceptor(t *testing.T) {
 		t.Fatal("expected an error")
 	}
 
-	p.CheckCounter("grpc.server.requests", 1, "service", "hello", "method", "ping", "response-status", "ok")
-	p.CheckCounter("grpc.server.requests", 1, "service", "hello", "method", "ping", "response-status", "canceled")
-	p.CheckCounter("grpc.server.requests", 1, "service", "hello", "method", "ping", "response-status", "unknown")
+	p.CheckCounter("grpc.server.requests", 1, serviceKey, "hello", methodKey, "ping", responseStatusKey, "ok")
+	p.CheckCounter("grpc.server.requests", 1, serviceKey, "hello", methodKey, "ping", responseStatusKey, "canceled")
+	p.CheckCounter("grpc.server.requests", 1, serviceKey, "hello", methodKey, "ping", responseStatusKey, "unknown")
 
-	p.CheckObservationCount("grpc.server.request-duration.ms", 1, "service", "hello", "method", "ping", "response-status", "ok")
-	p.CheckObservationCount("grpc.server.request-duration.ms", 1, "service", "hello", "method", "ping", "response-status", "canceled")
-	p.CheckObservationCount("grpc.server.request-duration.ms", 1, "service", "hello", "method", "ping", "response-status", "unknown")
+	p.CheckObservationCount("grpc.server.request-duration.ms", 1, serviceKey, "hello", methodKey, "ping", responseStatusKey, "ok")
+	p.CheckObservationCount("grpc.server.request-duration.ms", 1, serviceKey, "hello", methodKey, "ping", responseStatusKey, "canceled")
+	p.CheckObservationCount("grpc.server.request-duration.ms", 1, serviceKey, "hello", methodKey, "ping", responseStatusKey, "unknown")
 }
 
 func TestStreamServerInterceptor(t *testing.T) {
@@ -78,7 +78,7 @@ func TestStreamServerInterceptor(t *testing.T) {
 	}
 
 	err = ssi(nil, &testServerStream{}, info, func(srv interface{}, stream grpc.ServerStream) error {
-		p.CheckGauge("grpc.server.stream.clients", 1, "service", "hello", "method", "stream-updates")
+		p.CheckGauge("grpc.server.stream.clients", 1, serviceKey, "hello", methodKey, "stream-updates")
 		return nil
 	})
 	if err != nil {
@@ -90,18 +90,18 @@ func TestStreamServerInterceptor(t *testing.T) {
 		t.Fatal("expected an error")
 	}
 
-	p.CheckCounter("grpc.server.requests", 2, "service", "hello", "method", "stream-updates", "response-status", "ok")
-	p.CheckCounter("grpc.server.requests", 1, "service", "hello", "method", "stream-updates", "response-status", "unknown")
-	p.CheckObservationCount("grpc.server.request-duration.ms", 2, "service", "hello", "method", "stream-updates", "response-status", "ok")
-	p.CheckObservationCount("grpc.server.request-duration.ms", 1, "service", "hello", "method", "stream-updates", "response-status", "unknown")
+	p.CheckCounter("grpc.server.requests", 2, serviceKey, "hello", methodKey, "stream-updates", responseStatusKey, "ok")
+	p.CheckCounter("grpc.server.requests", 1, serviceKey, "hello", methodKey, "stream-updates", responseStatusKey, "unknown")
+	p.CheckObservationCount("grpc.server.request-duration.ms", 2, serviceKey, "hello", methodKey, "stream-updates", responseStatusKey, "ok")
+	p.CheckObservationCount("grpc.server.request-duration.ms", 1, serviceKey, "hello", methodKey, "stream-updates", responseStatusKey, "unknown")
 
-	p.CheckGauge("grpc.server.stream.clients", 0, "service", "hello", "method", "stream-updates")
+	p.CheckGauge("grpc.server.stream.clients", 0, serviceKey, "hello", methodKey, "stream-updates")
 
-	p.CheckCounter("grpc.server.stream.sends", 2, "service", "hello", "method", "stream-updates")
-	p.CheckObservationCount("grpc.server.stream.send-duration.ms", 2, "service", "hello", "method", "stream-updates")
+	p.CheckCounter("grpc.server.stream.sends", 2, serviceKey, "hello", methodKey, "stream-updates")
+	p.CheckObservationCount("grpc.server.stream.send-duration.ms", 2, serviceKey, "hello", methodKey, "stream-updates")
 
-	p.CheckCounter("grpc.server.stream.recvs", 1, "service", "hello", "method", "stream-updates")
-	p.CheckObservationCount("grpc.server.stream.recv-duration.ms", 1, "service", "hello", "method", "stream-updates")
+	p.CheckCounter("grpc.server.stream.recvs", 1, serviceKey, "hello", methodKey, "stream-updates")
+	p.CheckObservationCount("grpc.server.stream.recv-duration.ms", 1, serviceKey, "hello", methodKey, "stream-updates")
 }
 
 type testServerStream struct {

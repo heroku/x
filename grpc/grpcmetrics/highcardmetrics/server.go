@@ -15,6 +15,12 @@ import (
 	"github.com/heroku/x/grpc/grpcmetrics"
 )
 
+const (
+	methodKey         = "grpc.method"
+	serviceKey        = "grpc.service"
+	responseStatusKey = "grpc.response-status"
+)
+
 // NewUnaryServerInterceptor returns an interceptor for unary server calls
 // which will report metrics to the given provider.
 func NewUnaryServerInterceptor(p metrics.Provider) grpc.UnaryServerInterceptor {
@@ -24,7 +30,7 @@ func NewUnaryServerInterceptor(p metrics.Provider) grpc.UnaryServerInterceptor {
 
 		defer func(begin time.Time) {
 			service, method := parseFullMethod(info.FullMethod)
-			labels := []string{"service", service, "method", method, "response-status", code(err)}
+			labels := []string{serviceKey, service, methodKey, method, responseStatusKey, code(err)}
 
 			instrumentMethod(r1, labels, time.Since(begin))
 		}(time.Now())
@@ -42,7 +48,7 @@ func NewStreamServerInterceptor(p metrics.Provider) grpc.StreamServerInterceptor
 
 		service, method := parseFullMethod(info.FullMethod)
 
-		labels := []string{"service", service, "method", method}
+		labels := []string{serviceKey, service, methodKey, method}
 
 		clients := r1.GetOrRegisterGauge("stream.clients").With(labels...)
 		clients.Add(1)
@@ -50,7 +56,7 @@ func NewStreamServerInterceptor(p metrics.Provider) grpc.StreamServerInterceptor
 		defer func(begin time.Time) {
 			clients.Add(-1)
 
-			labels = append(labels, "response-status", code(err))
+			labels = append(labels, responseStatusKey, code(err))
 
 			instrumentMethod(r1, labels, time.Since(begin))
 		}(time.Now())
