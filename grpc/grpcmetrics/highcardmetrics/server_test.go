@@ -5,8 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/heroku/x/go-kit/metrics/testmetrics"
 	"google.golang.org/grpc"
+
+	"github.com/heroku/x/go-kit/metrics/testmetrics"
 )
 
 func TestUnaryServerInterceptor(t *testing.T) {
