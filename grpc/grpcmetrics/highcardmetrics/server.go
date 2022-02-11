@@ -75,7 +75,7 @@ type serverStream struct {
 	explicitHistograms bool
 }
 
-//// RecvMsg implements the grpc.Stream interface.
+// RecvMsg implements the grpc.Stream interface.
 func (ss *serverStream) SendMsg(m interface{}) (err error) {
 	defer func(begin time.Time) {
 		instrumentStreamSend(ss.reg, ss.explicitHistograms, ss.labels, time.Since(begin), err)
@@ -84,7 +84,7 @@ func (ss *serverStream) SendMsg(m interface{}) (err error) {
 	return ss.ServerStream.SendMsg(m)
 }
 
-//// RecvMsg implements the grpc.Stream interface.
+// RecvMsg implements the grpc.Stream interface.
 func (ss *serverStream) RecvMsg(m interface{}) (err error) {
 	defer func(begin time.Time) {
 		instrumentStreamRecv(ss.reg, ss.explicitHistograms, ss.labels, time.Since(begin), err)
