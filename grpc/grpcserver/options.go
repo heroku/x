@@ -26,10 +26,13 @@ var defaultLogOpts = []grpc_logrus.Option{
 }
 
 type options struct {
-	logEntry               *logrus.Entry
-	metricsProvider        metrics.Provider
-	authUnaryInterceptor   grpc.UnaryServerInterceptor
-	authStreamInterceptor  grpc.StreamServerInterceptor
+	logEntry                  *logrus.Entry
+	metricsProvider           metrics.Provider
+	authUnaryInterceptor      grpc.UnaryServerInterceptor
+	authStreamInterceptor     grpc.StreamServerInterceptor
+	highCardUnaryInterceptor  grpc.UnaryServerInterceptor
+	highCardStreamInterceptor grpc.StreamServerInterceptor
+
 	useValidateInterceptor bool
 
 	grpcOptions []grpc.ServerOption
@@ -68,6 +71,15 @@ func AuthInterceptors(unary grpc.UnaryServerInterceptor, stream grpc.StreamServe
 	}
 }
 
+// HighCardInterceptors sets interceptors that use
+// Attributes/Labels on the instrumentation.
+func HighCardInterceptors(unary grpc.UnaryServerInterceptor, stream grpc.StreamServerInterceptor) ServerOption {
+	return func(o *options) {
+		o.highCardUnaryInterceptor = unary
+		o.highCardStreamInterceptor = stream
+	}
+}
+
 // WithOCGRPCServerHandler sets the grpc server up with provided ServerHandler
 // as its StatsHandler
 func WithOCGRPCServerHandler(h *ocgrpc.ServerHandler) ServerOption {
@@ -99,9 +111,13 @@ func (o *options) unaryInterceptors() []grpc.UnaryServerInterceptor {
 		unaryRequestIDTagger,
 		unaryPeerNameTagger,
 	}
-	if o.metricsProvider != nil {
+
+	if o.highCardUnaryInterceptor != nil {
+		i = append(i, o.highCardUnaryInterceptor)
+	} else if o.metricsProvider != nil {
 		i = append(i, grpcmetrics.NewUnaryServerInterceptor(o.metricsProvider)) // report metrics on unwrapped errors
 	}
+
 	i = append(i,
 		unaryServerErrorUnwrapper, // unwrap after we've logged
 		grpc_logrus.UnaryServerInterceptor(l, defaultLogOpts...),
@@ -128,9 +144,13 @@ func (o *options) streamInterceptors() []grpc.StreamServerInterceptor {
 		streamRequestIDTagger,
 		streamPeerNameTagger,
 	}
-	if o.metricsProvider != nil {
+
+	if o.highCardStreamInterceptor != nil {
+		i = append(i, o.highCardStreamInterceptor)
+	} else if o.metricsProvider != nil {
 		i = append(i, grpcmetrics.NewStreamServerInterceptor(o.metricsProvider)) // report metrics on unwrapped errors
 	}
+
 	i = append(i,
 		streamServerErrorUnwrapper, // unwrap after we've logged
 		grpc_logrus.StreamServerInterceptor(l, defaultLogOpts...),
