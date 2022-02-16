@@ -271,7 +271,7 @@ func (g *Gauge) Set(value float64) {
 
 // Add implements metrics.Gauge.
 func (g *Gauge) Add(delta float64) {
-	g.Gauge.Set(delta)
+	g.Gauge.Add(delta)
 }
 
 // Histogram is a histogram.
@@ -283,6 +283,7 @@ type Histogram struct {
 	p          *Provider
 }
 
+// NewExplicitHistogram creates a histogram with explicit boundaries.
 func (p *Provider) NewExplicitHistogram(name string, fn xmetrics.DistributionFunc) metrics.Histogram {
 	boundaries := fn()
 	prefixedName := prefixName(p.prefix, name)
