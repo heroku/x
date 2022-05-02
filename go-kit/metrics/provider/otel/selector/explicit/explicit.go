@@ -3,9 +3,8 @@ package explicit
 import (
 	"sync"
 
-	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/sdkapi"
 	export "go.opentelemetry.io/otel/sdk/export/metric"
+	"go.opentelemetry.io/otel/sdk/metric/sdkapi"
 
 	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
 	"go.opentelemetry.io/otel/sdk/metric/aggregator/lastvalue"
@@ -52,7 +51,7 @@ func (c *selectorCache) Fetch(name string) []histogram.Option {
 	return c.opts[name]
 }
 
-func (s selectorHistogram) AggregatorFor(desc *metric.Descriptor, aggPtrs ...*export.Aggregator) {
+func (s selectorHistogram) AggregatorFor(desc *sdkapi.Descriptor, aggPtrs ...*export.Aggregator) {
 	switch desc.InstrumentKind() {
 	case sdkapi.GaugeObserverInstrumentKind:
 		lastValueAggs(aggPtrs)

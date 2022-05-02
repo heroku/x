@@ -7,7 +7,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric"
-	"go.opentelemetry.io/otel/sdk/export/metric"
+
+	"go.opentelemetry.io/otel/sdk/metric/export/aggregation"
 
 	"github.com/heroku/x/go-kit/metrics"
 	"github.com/heroku/x/go-kit/metrics/provider/otel"
@@ -24,7 +25,7 @@ func MustProvider(ctx context.Context, logger logrus.FieldLogger, cfg Config, se
 	}
 
 	client := otel.NewHTTPClient(*cfg.CollectorURL)
-	expOpts := otlpmetric.WithMetricExportKindSelector(metric.DeltaExportKindSelector())
+	expOpts := otlpmetric.WithMetricAggregationTemporalitySelector(aggregation.DeltaTemporalitySelector())
 	exporter := otlpmetric.NewUnstarted(client, expOpts)
 
 	attrs := []attribute.KeyValue{}
