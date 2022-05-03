@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/status"
 )
 
 // scheme is the Authorization prefix in the header, e.g. `Basic <base 64 blob>`.
@@ -25,13 +25,11 @@ func GRPCAuthFunc(checker *Checker) func(ctx context.Context) (context.Context, 
 
 		user, pass, ok := parseBasicAuth(blob)
 		if !ok {
-			//TODO: SA1019: grpc.Errorf is deprecated: use status.Errorf instead.  (staticcheck)
-			return nil, grpc.Errorf(codes.Unauthenticated, "unauthenticated") //nolint:staticcheck
+			return nil, status.Errorf(codes.Unauthenticated, "unauthenticated")
 		}
 
 		if !checker.Valid(user, pass) {
-			//TODO: SA1019: grpc.Errorf is deprecated: use status.Errorf instead.  (staticcheck)
-			return nil, grpc.Errorf(codes.PermissionDenied, "permission denied") //nolint:staticcheck
+			return nil, status.Errorf(codes.PermissionDenied, "permission denied for user: %s", user)
 		}
 
 		return ctx, nil
