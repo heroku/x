@@ -25,7 +25,7 @@ func GRPCAuthFunc(checker *Checker) func(ctx context.Context) (context.Context, 
 
 		user, pass, ok := parseBasicAuth(blob)
 		if !ok {
-			return nil, status.Errorf(codes.Unauthenticated, "unauthenticated")
+			return nil, status.Error(codes.Unauthenticated, "unauthenticated")
 		}
 
 		if !checker.Valid(user, pass) {
