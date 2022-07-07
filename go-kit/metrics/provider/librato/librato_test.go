@@ -4,6 +4,7 @@
  * For full license text, see LICENSE.txt file in the repo root  or https://opensource.org/licenses/BSD-3-Clause
  */
 
+//nolint:gosec,G404 // we use numeric values for testing
 package librato
 
 import (
