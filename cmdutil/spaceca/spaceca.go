@@ -32,6 +32,7 @@ func NewServerTLSConfig(domain string, secData map[string][]byte) (*tls.Config, 
 		return nil, errors.Wrap(err, "error generating TLS cert")
 	}
 
+	//nolint:gosec,G40 // we define a minimum version via `tlsconfig.Modern`
 	config := &tls.Config{
 		Certificates: []tls.Certificate{*cert},
 	}
