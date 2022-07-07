@@ -1,6 +1,6 @@
 version: 2.1
 orbs:
-  golang: heroku/golang@0.1.2
+  golang: heroku/golang@0.4.0
 
 workflows:
   ci:
