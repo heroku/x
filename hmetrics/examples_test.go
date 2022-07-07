@@ -63,6 +63,6 @@ func ExampleReport_advanced() {
 		port = "8080"
 	}
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
-		log.Fatal(err)
+		log.Panic(err)
 	}
 }
