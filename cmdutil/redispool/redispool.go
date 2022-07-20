@@ -3,6 +3,7 @@
 package redispool
 
 import (
+	"context"
 	"os"
 	"time"
 
@@ -69,11 +70,11 @@ func (c Config) Pools() ([]*redis.Pool, error) {
 
 func newPool(cfg Config) *redis.Pool {
 	return &redis.Pool{
-		Dial: func() (redis.Conn, error) {
+		DialContext: func(ctx context.Context) (redis.Conn, error) {
 			// For Heroku Redis we need to skip the TLS verification, see
 			// https://devcenter.heroku.com/articles/heroku-redis#connecting-in-go
 			// redis.DialTLSSkipVerify will have no effect for non-TLS connections.
-			conn, err := redis.DialURL(cfg.URL, redis.DialTLSSkipVerify(true))
+			conn, err := redis.DialURLContext(ctx, cfg.URL, redis.DialTLSSkipVerify(true))
 			if err != nil {
 				return nil, err
 			}
