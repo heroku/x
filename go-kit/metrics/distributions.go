@@ -8,6 +8,13 @@ var (
 	//     []float64{10, 55, 255, 505, 1255, 2505, 3755, 4505, 4755, 4955, 5000}
 	FiveSecondDistribution = WithStandardPercentiles(0, 5000)
 
+	// TenSecondDistribution is a percentile distribution between 0 and 10,000 milliseconds.
+	//
+	// Generated Distribution
+	//
+	//     []float64{20, 110, 510, 1010, 2510, 5010, 7510, 9010, 9510, 9910, 10000}
+	TenSecondDistribution = WithStandardPercentiles(0, 10000)
+
 	// ThirtySecondDistribution is a percentile distribution between 0 and 30,000 milliseconds.
 	//
 	// Generated Distribution
