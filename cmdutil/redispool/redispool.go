@@ -4,6 +4,7 @@ package redispool
 
 import (
 	"context"
+	"net/url"
 	"os"
 	"time"
 
@@ -71,10 +72,29 @@ func (c Config) Pools() ([]*redis.Pool, error) {
 func newPool(cfg Config) *redis.Pool {
 	return &redis.Pool{
 		DialContext: func(ctx context.Context) (redis.Conn, error) {
+			connURL, err := url.Parse(cfg.URL)
+			if err != nil {
+				return nil, err
+			}
+
+			if connURL.User != nil {
+				password, ok := connURL.User.Password()
+
+				// For Heroku Redis we need to strip the username from the URL. After
+				// the release of Redis 6, clients began to support the new AUTH
+				// command that uses 2 arguments. Heroku Redis removed the `h` username
+				// from connection urls, but only on new addons. Existing addons do not
+				// have the `h` removed so we must check for and remove it here.
+				// See https://devcenter.heroku.com/changelog-items/1932
+				if connURL.User.Username() == "h" && ok {
+					connURL.User = url.UserPassword("", password)
+				}
+			}
+
 			// For Heroku Redis we need to skip the TLS verification, see
 			// https://devcenter.heroku.com/articles/heroku-redis#connecting-in-go
 			// redis.DialTLSSkipVerify will have no effect for non-TLS connections.
-			conn, err := redis.DialURLContext(ctx, cfg.URL, redis.DialTLSSkipVerify(true))
+			conn, err := redis.DialURLContext(ctx, connURL.String(), redis.DialTLSSkipVerify(true))
 			if err != nil {
 				return nil, err
 			}
