@@ -10,13 +10,18 @@ import (
 	"github.com/go-kit/kit/metrics"
 	"github.com/go-kit/kit/metrics/generic"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric"
 	"go.opentelemetry.io/otel/metric"
+
 	"go.opentelemetry.io/otel/metric/global"
+	"go.opentelemetry.io/otel/metric/instrument"
+	"go.opentelemetry.io/otel/metric/instrument/asyncfloat64"
+	"go.opentelemetry.io/otel/metric/instrument/syncfloat64"
 	metricexport "go.opentelemetry.io/otel/sdk/export/metric"
-	"go.opentelemetry.io/otel/sdk/export/metric/aggregation"
 	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
 	metriccontroller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
 	processor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
+	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
 	"go.opentelemetry.io/otel/sdk/resource"
 
 	xmetrics "github.com/heroku/x/go-kit/metrics"
@@ -56,8 +61,8 @@ type Provider struct {
 	serviceNameResource *resource.Resource
 	optionCache         explicit.OptionCache
 	selector            metricexport.AggregatorSelector
-	exporter            exporter
-	controller          controller
+	exporter            *otlpmetric.Exporter
+	controller          *metriccontroller.Controller
 
 	defaultTags   []string
 	prefix        string
@@ -103,27 +108,15 @@ func New(ctx context.Context, serviceName string, opts ...Option) (xmetrics.Prov
 
 	// initialize the controller
 	p.controller = metriccontroller.New(
-		processor.New(p.selector, p.exporter),
+		processor.NewFactory(simple.NewWithHistogramDistribution(), p.exporter),
 		metriccontroller.WithExporter(p.exporter),
 		metriccontroller.WithResource(p.serviceNameResource),
 		metriccontroller.WithCollectPeriod(p.collectPeriod),
 	)
-	global.SetMeterProvider(p.controller.MeterProvider())
+
+	global.SetMeterProvider(p.controller)
 
 	return &p, nil
-}
-
-type exporter interface {
-	Start(ctx context.Context) error
-	Shutdown(ctx context.Context) error
-	Export(parent context.Context, resource *resource.Resource, cps metricexport.CheckpointSet) error
-	ExportKindFor(desc *metric.Descriptor, kind aggregation.Kind) metricexport.ExportKind
-}
-
-type controller interface {
-	MeterProvider() metric.MeterProvider
-	Start(ctx context.Context) error
-	Stop(ctx context.Context) error
 }
 
 // Start starts the provider's controller and exporter.
@@ -167,7 +160,7 @@ func (p *Provider) Meter(name string) metric.Meter {
 
 // Counter is a counter.
 type Counter struct {
-	metric.Float64Counter
+	syncfloat64.UpDownCounter
 	name       string
 	labels     []string
 	attributes []attribute.KeyValue
@@ -176,7 +169,7 @@ type Counter struct {
 
 // Add implements metrics.Counter.
 func (c *Counter) Add(delta float64) {
-	c.Float64Counter.Add(c.p.ctx, delta, c.attributes...)
+	c.UpDownCounter.Add(c.p.ctx, delta, c.attributes...)
 }
 
 // With implements metrics.Counter.
@@ -198,14 +191,17 @@ func (p *Provider) newCounter(name string, labelValues ...string) metrics.Counte
 	m := p.Meter(name)
 
 	if _, ok := p.counters[k]; !ok {
-		c := metric.Must(m).NewFloat64Counter(name)
+		c, err := m.SyncFloat64().UpDownCounter(name)
+		if err != nil {
+			// TODO: handle error
+		}
 
 		p.counters[k] = &Counter{
-			Float64Counter: c,
-			labels:         labelValues,
-			attributes:     makeAttributes(labelValues),
-			p:              p,
-			name:           name,
+			UpDownCounter: c,
+			labels:        labelValues,
+			attributes:    makeAttributes(labelValues),
+			p:             p,
+			name:          name,
 		}
 	}
 
@@ -214,8 +210,8 @@ func (p *Provider) newCounter(name string, labelValues ...string) metrics.Counte
 
 // Gauge is a gauge.
 type Gauge struct {
-	*generic.Gauge
-	observer   *metric.Float64GaugeObserver
+	Gauge      *generic.Gauge
+	observer   asyncfloat64.Gauge
 	name       string
 	labels     []string
 	attributes []attribute.KeyValue
@@ -239,15 +235,18 @@ func (p *Provider) newGauge(name string, labelValues ...string) metrics.Gauge {
 	if _, ok := p.gauges[k]; !ok {
 		gg := generic.NewGauge(name)
 
-		callback := func(ctx context.Context, result metric.Float64ObserverResult) {
-			result.Observe(gg.Value(), attributes...)
+		g, err := m.AsyncFloat64().Gauge(name)
+		if err != nil {
+			// TODO: handle error
 		}
 
-		g := metric.Must(m).NewFloat64GaugeObserver(name, callback)
+		m.RegisterCallback([]instrument.Asynchronous{g}, func(ctx context.Context) {
+			g.Observe(ctx, gg.Value())
+		})
 
 		p.gauges[k] = &Gauge{
 			Gauge:      gg,
-			observer:   &g,
+			observer:   g,
 			labels:     labelValues,
 			attributes: attributes,
 			name:       name,
@@ -276,7 +275,7 @@ func (g *Gauge) Add(delta float64) {
 
 // Histogram is a histogram.
 type Histogram struct {
-	metric.Float64Histogram
+	syncfloat64.Histogram
 	name       string
 	labels     []string
 	attributes []attribute.KeyValue
@@ -307,14 +306,17 @@ func (p *Provider) newHistogram(name string, labelValues ...string) metrics.Hist
 	m := p.Meter(name)
 
 	if _, ok := p.histograms[k]; !ok {
-		h := metric.Must(m).NewFloat64Histogram(name)
+		h, err := m.SyncFloat64().Histogram(name)
+		if err != nil {
+			// TODO: handle error
+		}
 
 		p.histograms[k] = &Histogram{
-			Float64Histogram: h,
-			name:             name,
-			labels:           labelValues,
-			attributes:       makeAttributes(labelValues),
-			p:                p,
+			Histogram:  h,
+			name:       name,
+			labels:     labelValues,
+			attributes: makeAttributes(labelValues),
+			p:          p,
 		}
 	}
 
@@ -329,7 +331,7 @@ func (h *Histogram) With(labelValues ...string) metrics.Histogram {
 
 // Observe implements metrics.Histogram.
 func (h *Histogram) Observe(value float64) {
-	h.Float64Histogram.Record(h.p.ctx, value, h.attributes...)
+	h.Histogram.Record(h.p.ctx, value, h.attributes...)
 }
 
 // NewCardinalityCounter implements metrics.Provider.

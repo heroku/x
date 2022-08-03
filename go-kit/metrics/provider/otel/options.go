@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/sdk/export/metric"
+	"go.opentelemetry.io/otel/sdk/export/metric/aggregation"
 	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
 	"go.opentelemetry.io/otel/sdk/resource"
 
@@ -37,7 +38,7 @@ var WithDefaultAggregator = WithExactAggregator
 //
 // NOTE: simple.NewWithExactDistribution is removed in go.opentelemetry.io/otel/sdk/metric@v0.26.0.
 func WithExactAggregator() Option {
-	return WithAggregator(simple.NewWithExactDistribution())
+	return WithAggregator(simple.NewWithHistogramDistribution())
 }
 
 // WithExplicitHistogramAggregator initializes the Provider with with our custom explicit.NewExplicitHistogramSelector.
@@ -133,7 +134,7 @@ func WithEndpointExporter(endpoint string) Option {
 }
 
 // WithExporter initializes the Provider with an exporter.
-func WithExporter(exp exporter) Option {
+func WithExporter(exp *otlpmetric.Exporter) Option {
 	return func(p *Provider) error {
 		if exp == nil {
 			return ErrExporterNil
@@ -153,11 +154,11 @@ func WithCollectPeriod(collectPeriod time.Duration) Option {
 
 // defaultExporter returns a new otlp exporter that uses a gRPC driver.
 // A collector agent endpoint (host:port) is required as the addr.
-func defaultExporter(addr string) exporter {
+func defaultExporter(addr string) *otlpmetric.Exporter {
 	c := otlpmetricgrpc.NewClient(
 		otlpmetricgrpc.WithEndpoint(addr),
 		otlpmetricgrpc.WithInsecure(),
 	)
-	eo := otlpmetric.WithMetricExportKindSelector(metric.DeltaExportKindSelector())
+	eo := otlpmetric.WithMetricAggregationTemporalitySelector(aggregation.DeltaTemporalitySelector())
 	return otlpmetric.NewUnstarted(c, eo)
 }

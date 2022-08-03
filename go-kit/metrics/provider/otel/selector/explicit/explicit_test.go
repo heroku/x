@@ -4,12 +4,12 @@ import (
 	"reflect"
 	"testing"
 
-	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/number"
-	"go.opentelemetry.io/otel/metric/sdkapi"
+	"go.opentelemetry.io/otel/metric/unit"
 	export "go.opentelemetry.io/otel/sdk/export/metric"
 	"go.opentelemetry.io/otel/sdk/export/metric/aggregation"
 	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
+	"go.opentelemetry.io/otel/sdk/metric/number"
+	"go.opentelemetry.io/otel/sdk/metric/sdkapi"
 )
 
 var (
@@ -122,7 +122,7 @@ func TestSelector_HistogramConfig(t *testing.T) {
 
 func TestSelector_Histogram(t *testing.T) {
 	var aggregator export.Aggregator
-	desc := metric.NewDescriptor("test", sdkapi.HistogramInstrumentKind, number.Float64Kind)
+	desc := sdkapi.NewDescriptor("test", sdkapi.HistogramInstrumentKind, number.Float64Kind, "testing", unit.Milliseconds)
 
 	t.Run("no options", func(t *testing.T) {
 		selector, _ := NewExplicitHistogramDistribution()
