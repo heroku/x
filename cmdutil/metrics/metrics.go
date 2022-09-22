@@ -15,7 +15,3 @@ type Config struct {
 	DefaultTags    []string      `env:"METRICS_DEFAULT_TAGS"`
 	OTEL           otel.Config
 }
-
-type requester interface {
-	Request() string
-}
