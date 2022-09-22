@@ -6,11 +6,9 @@ TOOLS_DIR = $(TOP_LEVEL)/.tools
 TOOLS_BIN = $(TOOLS_DIR)/bin
 CIRCLECI_DIR = $(TOP_LEVEL)/.circleci
 # Make sure this is in-sync with the version in the circle ci config
-GOLANGCI_LINT_VERSION := 1.18.0
+GOLANGCI_LINT_VERSION := v1.38.0
 CIRCLECI_CONFIG := $(CIRCLECI_DIR)/config.yml
 PROCESSED_CIRCLECI_CONFIG := $(CIRCLECI_DIR)/.processed.yml
-GOLANGCI_LINT_URL := https://github.com/golangci/golangci-lint/releases/download/v$(GOLANGCI_LINT_VERSION)/golangci-lint-$(GOLANGCI_LINT_VERSION)-$(GOOS)-$(GOARCH).tar.gz
-GOLANGCI_LINT := $(TOOLS_DIR)/golangci-lint-v$(GOLANGCI_LINT_VERSION)
 PKG_SPEC := ./...
 MOD := -mod=readonly
 GOTEST := go test $(MOD)
@@ -52,13 +50,6 @@ $(PROCESSED_CIRCLECI_CONFIG): $(CIRCLECI_CONFIG)
 .PHONY: precommit
 precommit: lint test coverage 
 
-# Ensures the correct version of golangci-lint is present
-$(GOLANGCI_LINT):
-	rm -f $(TOOLS_DIR)/golangci-lint*
-	mkdir -p $(TOOLS_DIR)
-	curl -L $(GOLANGCI_LINT_URL) | tar -zxf - -C $(TOOLS_DIR) --strip=1 golangci-lint-$(GOLANGCI_LINT_VERSION)-$(GOOS)-$(GOARCH)/golangci-lint
-	mv $(TOOLS_DIR)/golangci-lint $(GOLANGCI_LINT)
-
 .PHONY: help
 help: # Prints out help
 	@IFS=$$'\n' ; \
@@ -79,8 +70,8 @@ help: # Prints out help
 	@echo "'ci-' targets require the CircleCI cli tool: https://circleci.com/docs/2.0/local-cli/"
 
 .PHONY: lint
-lint: $(GOLANGCI_LINT) ## Runs golangci-lint. Override defaults with LINT_RUN_OPTS
-	$(GOLANGCI_LINT) run $(LINT_RUN_OPTS) $(PKG_SPEC)
+lint: ## Runs golangci-lint.
+	docker run --rm -v $$(pwd):/app -w /app golangci/golangci-lint:$(GOLANGCI_LINT_VERSION) golangci-lint run -v
 
 .PHONY: test
 test: ## Runs go test. Override defaults with GOTEST_OPT
