@@ -73,11 +73,6 @@ func New(config interface{}) *Function {
 
 	metricsProviders := []kitmetrics.Provider{}
 
-	if fc.Metrics.Librato.User != "" {
-		libratoProvider := metrics.StartLibrato(logger, fc.Metrics)
-		metricsProviders = append(metricsProviders, libratoProvider)
-	}
-
 	if fc.Metrics.OTEL.CollectorURL != nil && fc.Metrics.OTEL.Enabled {
 		otelProvider := otel.MustProvider(
 			context.Background(),

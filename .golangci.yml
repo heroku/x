@@ -42,15 +42,9 @@ issues:
     - path: cmd/s3env/main.go
       linters:
         - gochecknoinits # TODO: FixMe
-    - path: go-kit/metrics/provider/librato/librato_test.go
-      linters:
-        - gocyclo # TODO: Refactor TestLibratoHistogramJSONMarshalers
     - path: grpc/
       linters:
         - lll # GRPC code has notoriously long function signatures.
-    - path: go-kit/metrics/provider/librato/librato.go
-      linters:
-        - maligned # TODO: evaluate if this makes sense
     - path: testing/mustcert/example_test.go
       linters:
         - gosec # Don't run gosec, it's insecure because it's a test
