@@ -9,11 +9,13 @@ require (
 	github.com/aws/aws-lambda-go v1.27.0
 	github.com/aws/aws-sdk-go v1.13.10
 	github.com/axiomhq/hyperloglog v0.0.0-20180317131949-fe9507de0228
+	github.com/coreos/go-oidc/v3 v3.2.0
 	github.com/dgryski/go-metro v0.0.0-20180109044635-280f6062b5bc // indirect
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-ini/ini v1.33.0 // indirect
 	github.com/go-kit/kit v0.9.0
 	github.com/gogo/protobuf v1.3.0 // indirect
+	github.com/golang-jwt/jwt/v4 v4.4.2
 	github.com/golang/protobuf v1.5.2
 	github.com/gomodule/redigo v1.8.9
 	github.com/google/gops v0.3.22
@@ -57,4 +59,5 @@ require (
 	google.golang.org/protobuf v1.27.1
 	gopkg.in/caio/go-tdigest.v2 v2.3.0
 	gopkg.in/ini.v1 v1.42.0 // indirect
+	gopkg.in/square/go-jose.v2 v2.5.1
 )
