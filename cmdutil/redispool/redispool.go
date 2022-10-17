@@ -41,6 +41,10 @@ type Config struct {
 	// When set to zero, aliveness is not checked.
 	IdleProbeInterval time.Duration `env:"REDIS_IDLE_PROBE_INTERVAL,default=0s"`
 
+	// Wait when true and the pool is at the MaxActiveConns limit, calls to Get()
+	// wait for a connection to be returned to the pool before returning.
+	Wait bool `env:"REDIS_WAIT,default=false"`
+
 	// AttachmentNames is an optional configuration which allows to set up
 	// connection pools to each redis attachment using the Pools() function. The
 	// same configuration parameters apply for each pool, except the URL which is
@@ -104,6 +108,7 @@ func newPool(cfg Config) *redis.Pool {
 		MaxActive:       cfg.MaxActiveConns,
 		MaxConnLifetime: cfg.MaxConnLifetime,
 		IdleTimeout:     cfg.IdleTimeout,
+		Wait:            cfg.Wait,
 		TestOnBorrow: func(conn redis.Conn, t time.Time) error {
 			var err error
 			if cfg.IdleProbeInterval > 0 && time.Since(t) > cfg.IdleProbeInterval {
