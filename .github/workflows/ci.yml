@@ -5,13 +5,33 @@ on: [ push ]
 jobs:
   ci:
     runs-on: [ ubuntu-latest ]
-    strategy:
-      matrix:
-        target: [ test, lint ]
+    name: GoLang lint and test
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-go@v3
-      with:
-        go-version-file: go.mod
-    - name: run ${{ matrix.target }}
-      run: make ${{ matrix.target }}
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v3
+        with:
+          go-version-file: go.mod
+          cache: true
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: v1.50.1
+      - name: go-mod-verify
+        run: go mod verify
+      - name: go-mod-tidy
+        run: go mod tidy
+      - name: go-test
+        run: >-
+          go test -v
+          -timeout 30s
+          -race
+          -coverprofile=coverage.out
+          -covermode=atomic
+          ./...
+      - name: go-tool-cover
+        run: go tool cover -html=coverage.out -o coverage.html
+      - name: save-coverage-report
+        uses: actions/upload-artifact@v3
+        with:
+          name: code-coverage-report
+          path: coverage.html
