@@ -6,12 +6,12 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
       - name: Setup Go
         uses: actions/setup-go@v3
         with:
           go-version-file: go.mod
-      - name: Checkout repo
-        uses: actions/checkout@v3
       - name: Run Lint
         uses: golangci/golangci-lint-action@v3
       - name: Run Test
