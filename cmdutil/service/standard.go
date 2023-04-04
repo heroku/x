@@ -12,7 +12,6 @@ import (
 
 	"github.com/heroku/x/cmdutil"
 	"github.com/heroku/x/cmdutil/debug"
-	"github.com/heroku/x/cmdutil/metrics"
 	"github.com/heroku/x/cmdutil/oc"
 	"github.com/heroku/x/cmdutil/rollbar"
 	"github.com/heroku/x/cmdutil/signals"
@@ -73,13 +72,9 @@ func New(appConfig interface{}, ofs ...OptionFunc) *Standard {
 		Logger: logger,
 	}
 
-	if sc.Metrics.Librato.User != "" {
-		s.MetricsProvider = metrics.StartLibrato(logger, sc.Metrics)
-	} else {
-		l2met := l2met.New(logger)
-		s.MetricsProvider = l2met
-		s.Add(cmdutil.NewContextServer(l2met.Run))
-	}
+	l2met := l2met.New(logger)
+	s.MetricsProvider = l2met
+	s.Add(cmdutil.NewContextServer(l2met.Run))
 
 	s.Add(debug.New(logger, sc.Debug.Port))
 	s.Add(signals.NewServer(logger, syscall.SIGINT, syscall.SIGTERM))

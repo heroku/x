@@ -4,13 +4,8 @@ GOARCH = $(shell go env GOARCH)
 GOPATH = $(shell go env GOPATH)
 TOOLS_DIR = $(TOP_LEVEL)/.tools
 TOOLS_BIN = $(TOOLS_DIR)/bin
-CIRCLECI_DIR = $(TOP_LEVEL)/.circleci
 # Make sure this is in-sync with the version in the circle ci config
-GOLANGCI_LINT_VERSION := 1.18.0
-CIRCLECI_CONFIG := $(CIRCLECI_DIR)/config.yml
-PROCESSED_CIRCLECI_CONFIG := $(CIRCLECI_DIR)/.processed.yml
-GOLANGCI_LINT_URL := https://github.com/golangci/golangci-lint/releases/download/v$(GOLANGCI_LINT_VERSION)/golangci-lint-$(GOLANGCI_LINT_VERSION)-$(GOOS)-$(GOARCH).tar.gz
-GOLANGCI_LINT := $(TOOLS_DIR)/golangci-lint-v$(GOLANGCI_LINT_VERSION)
+GOLANGCI_LINT_VERSION := v1.38.0
 PKG_SPEC := ./...
 MOD := -mod=readonly
 GOTEST := go test $(MOD)
@@ -52,35 +47,9 @@ $(PROCESSED_CIRCLECI_CONFIG): $(CIRCLECI_CONFIG)
 .PHONY: precommit
 precommit: lint test coverage 
 
-# Ensures the correct version of golangci-lint is present
-$(GOLANGCI_LINT):
-	rm -f $(TOOLS_DIR)/golangci-lint*
-	mkdir -p $(TOOLS_DIR)
-	curl -L $(GOLANGCI_LINT_URL) | tar -zxf - -C $(TOOLS_DIR) --strip=1 golangci-lint-$(GOLANGCI_LINT_VERSION)-$(GOOS)-$(GOARCH)/golangci-lint
-	mv $(TOOLS_DIR)/golangci-lint $(GOLANGCI_LINT)
-
-.PHONY: help
-help: # Prints out help
-	@IFS=$$'\n' ; \
-	help_lines=(`fgrep -h "##" $(MAKEFILE_LIST) | fgrep -v fgrep | sed -e 's/\\$$//' | sed -e 's/##/:/'`); \
-	printf "%-30s %s\n" "target" "help" ; \
-	printf "%-30s %s\n" "------" "----" ; \
-	for help_line in $${help_lines[@]}; do \
-			IFS=$$':' ; \
-			help_split=($$help_line) ; \
-			help_command=`echo $${help_split[0]} | sed -e 's/^ *//' -e 's/ *$$//'` ; \
-			help_info=`echo $${help_split[2]} | sed -e 's/^ *//' -e 's/ *$$//'` ; \
-			printf '\033[36m'; \
-			printf "%-30s %s" $$help_command ; \
-			printf '\033[0m'; \
-			printf "%s\n" $$help_info; \
-	done
-	@echo
-	@echo "'ci-' targets require the CircleCI cli tool: https://circleci.com/docs/2.0/local-cli/"
-
 .PHONY: lint
-lint: $(GOLANGCI_LINT) ## Runs golangci-lint. Override defaults with LINT_RUN_OPTS
-	$(GOLANGCI_LINT) run $(LINT_RUN_OPTS) $(PKG_SPEC)
+lint: ## Runs golangci-lint.
+	docker run --rm -v $$(pwd):/app -w /app golangci/golangci-lint:$(GOLANGCI_LINT_VERSION) golangci-lint run -v
 
 .PHONY: test
 test: ## Runs go test. Override defaults with GOTEST_OPT
@@ -109,19 +78,3 @@ proto: $(TOOLS_BIN)/protoc $(TOOLS_BIN)/protoc-gen-go | $(TOOLS_BIN) ## Regenera
 		--go_out=paths=source_relative:. \
 		--loggingtags_out=. \
 		./cmd/protoc-gen-loggingtags/internal/test/*.proto
-
-
-.PHONY: ci-lint
-ci-lint: ## Runs the ci based lint job locally.
-ci-lint: $(PROCESSED_CIRCLECI_CONFIG)
-	circleci local execute --job golang/golangci-lint -c $(PROCESSED_CIRCLECI_CONFIG) -v "$(GOPATH)/pkg":/go/pkg
-
-.PHONY: ci-test
-ci-test: ## Runs the ci based test job locally
-ci-test: $(PROCESSED_CIRCLECI_CONFIG)
-	circleci local execute --job golang/test -c $(PROCESSED_CIRCLECI_CONFIG) -v "$(GOPATH)/pkg":/go/pkg
-
-.PHONY: ci-coverage
-ci-coverage: ## Runs the ci based coverage job locally
-ci-coverage: $(PROCESSED_CIRCLECI_CONFIG)
-	circleci local execute --job golang/cover -c $(PROCESSED_CIRCLECI_CONFIG) -v "$(GOPATH)/pkg":/go/pkg
