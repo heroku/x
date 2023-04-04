@@ -17,7 +17,7 @@ on:
       - 'components-info/*.json'
 jobs:
   action:
-    runs-on: ubuntu-latest
+    runs-on: pub-hk-ubuntu-22.04-small
     steps:
       - uses : actions/checkout@v3
       - name: Workflow
