@@ -50,7 +50,7 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v0.23.0
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58
-	golang.org/x/sys v0.0.0-20211102061401-a2f17f7b995c // indirect
+	golang.org/x/sys v0.1.0 // indirect
 	golang.org/x/time v0.0.0-20181108054448-85acf8d2951c
 	google.golang.org/grpc v1.40.0
 	google.golang.org/grpc/examples v0.0.0-20210916203835-567da6b86340
