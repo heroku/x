@@ -71,7 +71,7 @@ func (m *multiProvider) NewCardinalityCounter(name string) metrics.CardinalityCo
 	for _, p := range m.providers {
 		cardCounters = append(cardCounters, p.NewCardinalityCounter(name))
 	}
-	return multiCardinalityCounter(cardCounters)
+	return MultiCardinalityCounter(cardCounters)
 }
 
 // Stop calls stop on all the underlying providers.
@@ -99,17 +99,17 @@ func (m *multiProvider) Flush() error {
 	return errors.Errorf("flush failed for at least one provider: %s", strings.Join(errMsgs, ";"))
 }
 
-type multiCardinalityCounter []metrics.CardinalityCounter
+type MultiCardinalityCounter []metrics.CardinalityCounter
 
-func (cc multiCardinalityCounter) With(labelValues ...string) metrics.CardinalityCounter {
+func (cc MultiCardinalityCounter) With(labelValues ...string) metrics.CardinalityCounter {
 	cardCounters := make([]metrics.CardinalityCounter, 0, len(cc))
 	for _, cardCounter := range cc {
 		cardCounters = append(cardCounters, cardCounter.With(labelValues...))
 	}
-	return multiCardinalityCounter(cardCounters)
+	return MultiCardinalityCounter(cardCounters)
 }
 
-func (cc multiCardinalityCounter) Insert(b []byte) {
+func (cc MultiCardinalityCounter) Insert(b []byte) {
 	for _, cardCounter := range cc {
 		cardCounter.Insert(b)
 	}
