@@ -15,6 +15,6 @@ type Config struct {
 	DefaultTags    []string      `env:"METRICS_DEFAULT_TAGS"`
 	// If OTEL is enabled, l2met is disabled, by default.
 	// Setting this value to `true` overrides that default.
-	L2MetEnabled bool `env:"METRICS_ENABLE_L2MET_COLLECTION"`
-	OTEL         otel.Config
+	L2MetOverrideEnabled bool `env:"METRICS_ENABLE_L2MET_OVERRIDE"`
+	OTEL                 otel.Config
 }
