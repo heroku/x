@@ -22,6 +22,7 @@ func ExampleReport_basic() {
 	if port == "" {
 		port = "8080"
 	}
+	// nolint: gosec
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatal(err)
 	}
@@ -62,6 +63,7 @@ func ExampleReport_advanced() {
 	if port == "" {
 		port = "8080"
 	}
+	// nolint: gosec
 	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Panic(err)
 	}

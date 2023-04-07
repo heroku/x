@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -189,7 +188,7 @@ func input() (io.ReadCloser, error) {
 			buf := new(bytes.Buffer)
 			buf.Write([]byte("{}"))
 
-			return ioutil.NopCloser(buf), nil
+			return io.NopCloser(buf), nil
 		}
 		return nil, err
 	}

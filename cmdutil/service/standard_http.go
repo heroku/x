@@ -44,6 +44,8 @@ func HTTP(l logrus.FieldLogger, m metrics.Provider, h http.Handler, opts ...func
 	var srvs []cmdutil.Server
 
 	if cfg.Platform.Port != 0 {
+		// TODO: Address security concern: G114: Use of net/http serve function that has no support for setting timeouts.
+		// nolint: gosec
 		s := &http.Server{
 			Handler: h,
 			Addr:    fmt.Sprintf(":%d", cfg.Platform.Port),
@@ -53,6 +55,8 @@ func HTTP(l logrus.FieldLogger, m metrics.Provider, h http.Handler, opts ...func
 	}
 
 	if cfg.Platform.AdditionalPort != 0 {
+		// TODO: Address security concern: G114: Use of net/http serve function that has no support for setting timeouts.
+		// nolint: gosec
 		s := &http.Server{
 			Handler: h,
 			Addr:    fmt.Sprintf(":%d", cfg.Platform.AdditionalPort),
@@ -62,6 +66,8 @@ func HTTP(l logrus.FieldLogger, m metrics.Provider, h http.Handler, opts ...func
 	}
 
 	if cfg.Bypass.InsecurePort != 0 {
+		// TODO: Address security concern: G114: Use of net/http serve function that has no support for setting timeouts.
+		// nolint: gosec
 		s := &http.Server{
 			Handler: h,
 			Addr:    fmt.Sprintf(":%d", cfg.Bypass.InsecurePort),
@@ -76,6 +82,8 @@ func HTTP(l logrus.FieldLogger, m metrics.Provider, h http.Handler, opts ...func
 			tlsConfig = newTLSConfig(cfg.Bypass.TLS)
 		}
 
+		// TODO: Address security concern: G114: Use of net/http serve function that has no support for setting timeouts.
+		// nolint: gosec
 		s := &http.Server{
 			Handler:   h,
 			Addr:      fmt.Sprintf(":%d", cfg.Bypass.SecurePort),

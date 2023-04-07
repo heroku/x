@@ -3,7 +3,7 @@ package mustcert
 import (
 	"crypto/tls"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 )
@@ -43,6 +43,7 @@ func Example() {
 		RootCAs:            caCertPool,
 		InsecureSkipVerify: true,
 	}
+	// nolint: staticcheck
 	config.BuildNameToCertificate()
 
 	// Create the HTTP Client
@@ -59,7 +60,7 @@ func Example() {
 	}
 	defer resp.Body.Close()
 
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
+	bodyBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		fmt.Println(err)
 	}

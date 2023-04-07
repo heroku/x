@@ -8,6 +8,8 @@ import (
 	"unicode"
 
 	plugin "github.com/golang/protobuf/protoc-gen-go/plugin"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/pluginpb"
 
@@ -160,8 +162,9 @@ func toCamelCase(str string) string {
 	s := strings.FieldsFunc(str, split)
 	cc := make([]string, len(s))
 
+	caser := cases.Title(language.English)
 	for _, word := range s {
-		cc = append(cc, strings.Title(word))
+		cc = append(cc, caser.String(word))
 	}
 
 	return strings.Join(cc, "")

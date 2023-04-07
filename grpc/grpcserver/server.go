@@ -98,6 +98,9 @@ func NewStandardH2C(http11 http.Handler, opts ...ServerOption) (*grpc.Server, *h
 		NonUpgradeHandler: http11,
 	}
 
+	// TODO: Address this security concern:
+	// "G112: Potential Slowloris Attack because ReadHeaderTimeout is not configured in the http.Server."
+	// nolint: gosec
 	hSrv := &http.Server{Handler: h2cSrv}
 
 	return gSrv, hSrv

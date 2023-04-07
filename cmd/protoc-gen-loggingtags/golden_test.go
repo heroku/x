@@ -105,6 +105,7 @@ func TestSample(t *testing.T) {
 		"--proto_path=" + filepath.Join("internal", "test"),
 		"--proto_path=.",
 		"--loggingtags_out=" + workdir,
+		// nolint: gocritic
 		filepath.Join("sample.proto"),
 	})
 

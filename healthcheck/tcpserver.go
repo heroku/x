@@ -67,6 +67,11 @@ func (s *TCPServer) serve() error {
 	for {
 		conn, err := s.ln.Accept()
 		if err != nil {
+			// TODO: Address this concern:
+			// "SA1019: e.Temporary has been deprecated since Go 1.18 because it shouldn't be used:
+			// Temporary errors are not well-defined.
+			// Most "temporary" errors are timeouts, and the few exceptions are surprising. Do not use this method."
+			// nolint: staticcheck
 			if e, ok := err.(net.Error); ok && e.Temporary() {
 				s.logger.
 					WithField("at", "accept").

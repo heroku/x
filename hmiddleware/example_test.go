@@ -25,6 +25,7 @@ func ExampleCORS() {
 
 	var h http.Handler
 
+	// nolint: gosec
 	if err := http.ListenAndServe(":"+os.Getenv("PORT"), CORS(h)); err != nil {
 		log.Fatal(err)
 	}
@@ -38,6 +39,7 @@ func ExampleDisableKeepalive() {
 
 	var h http.Handler
 
+	// nolint: gosec
 	if err := http.ListenAndServe(":"+os.Getenv("PORT"), DisableKeepalive(h)); err != nil {
 		log.Fatal(err)
 	}
@@ -51,6 +53,7 @@ func ExampleEnsureTLS() {
 
 	var h http.Handler
 
+	// nolint: gosec
 	if err := http.ListenAndServe(":"+os.Getenv("PORT"), EnsureTLS(h)); err != nil {
 		log.Fatal(err)
 	}
