@@ -72,9 +72,11 @@ func New(appConfig interface{}, ofs ...OptionFunc) *Standard {
 		Logger: logger,
 	}
 
-	l2met := l2met.New(logger)
-	s.MetricsProvider = l2met
-	s.Add(cmdutil.NewContextServer(l2met.Run))
+	if !sc.Metrics.OTEL.Enabled || sc.Metrics.L2MetOverrideEnabled {
+		l2met := l2met.New(logger)
+		s.MetricsProvider = l2met
+		s.Add(cmdutil.NewContextServer(l2met.Run))
+	}
 
 	s.Add(debug.New(logger, sc.Debug.Port))
 	s.Add(signals.NewServer(logger, syscall.SIGINT, syscall.SIGTERM))
