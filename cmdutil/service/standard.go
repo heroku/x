@@ -118,7 +118,9 @@ func (s *Standard) Run() {
 
 	// Not using defer here since it will have no effect if Fatal below
 	// is called.
-	s.MetricsProvider.Stop()
+	if s.MetricsProvider != nil {
+		s.MetricsProvider.Stop()
+	}
 
 	if err != nil {
 		s.Logger.WithError(err).Fatal()
