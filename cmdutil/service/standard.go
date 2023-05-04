@@ -113,10 +113,8 @@ func (s *Standard) Add(svs ...cmdutil.Server) {
 // If the error returned by oklog/run.Run is non-nil, it is logged
 // with s.Logger.Fatal.
 func (s *Standard) Run() {
-	defer func() {
-		metrics.ReportPanic(s.MetricsProvider)
-		svclog.ReportPanic(s.Logger)
-	}()
+	defer metrics.ReportPanic(s.MetricsProvider)
+	defer svclog.ReportPanic(s.Logger)
 
 	err := s.g.Run()
 
