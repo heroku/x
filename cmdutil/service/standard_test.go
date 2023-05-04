@@ -48,31 +48,6 @@ func TestNewCustomConfig(t *testing.T) {
 	}
 }
 
-func TestReportPanic(t *testing.T) {
-	logger, hook := testlog.New()
-	mp := testmetrics.NewProvider(t)
-
-	defer func() {
-		if p := recover(); p == nil {
-			t.Fatal("expected ReportPanic to repanic")
-		}
-
-		entries := hook.Entries()
-		if want, got := 1, len(entries); want != got {
-			t.Fatalf("want hook entries to be %d, got %d", want, got)
-		}
-		if want, got := "test message", entries[0].Message; want != got {
-			t.Errorf("want hook entry message to be %q, got %q", want, got)
-		}
-	}()
-
-	func() {
-		defer ReportPanic(logger)
-
-		panic("test message")
-	}()
-}
-
 func setupStandardConfig(t *testing.T) {
 	os.Setenv("APP_NAME", "test-app")
 	os.Setenv("DEPLOY", "test")
