@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/heroku/x/cmdutil/metrics/otel"
+
+	xmetrics "github.com/heroku/x/go-kit/metrics"
 )
 
 // Config stores all the env related config to bootstrap metrics.

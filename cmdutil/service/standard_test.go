@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"github.com/heroku/x/cmdutil/service"
-	"github.com/heroku/x/go-kit/metrics/testmetrics"
-	"github.com/heroku/x/testing/testlog"
 )
 
 func TestNewNoConfig(t *testing.T) {

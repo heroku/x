@@ -13,7 +13,7 @@ func TestReportPanic(t *testing.T) {
 		if p := recover(); p == nil {
 			t.Fatal("expected ReportPanic to repanic")
 		}
-		mp.CheckObservationCount("panic", 1)
+		mp.CheckCounter("panic", 1)
 	}()
 
 	func() {
