@@ -39,6 +39,13 @@ func NewLogger(cfg Config) logrus.FieldLogger {
 	return logger
 }
 
+// ReportPanic attempts to report the panic to rollbar via the logrus.
+func ReportPanic(logger logrus.FieldLogger, metricsProvider xmetrics.Provider) {
+	if p := recover(); p != nil {
+		logger.Panic(p)
+	}
+}
+
 // NewSampleLogger creates a rate limited logger that samples logs. The parameter
 // logsBurstLimit defines how many logs are allowed per logBurstWindow duration.
 // The returned logger derives from the parentLogger, but without inheriting any Hooks.

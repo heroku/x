@@ -12,6 +12,7 @@ import (
 
 	"github.com/heroku/x/cmdutil"
 	"github.com/heroku/x/cmdutil/debug"
+	"github.com/heroku/x/cmdutil/metrics"
 	"github.com/heroku/x/cmdutil/oc"
 	"github.com/heroku/x/cmdutil/rollbar"
 	"github.com/heroku/x/cmdutil/signals"
@@ -112,7 +113,10 @@ func (s *Standard) Add(svs ...cmdutil.Server) {
 // If the error returned by oklog/run.Run is non-nil, it is logged
 // with s.Logger.Fatal.
 func (s *Standard) Run() {
-	defer ReportPanic(s.Logger, s.MetricsProvider)
+	defer func() {
+		metrics.ReportPanic(s.MetricsProvider)
+		svclog.ReportPanic(s.Logger)
+	}()
 
 	err := s.g.Run()
 
@@ -125,16 +129,6 @@ func (s *Standard) Run() {
 			s.Logger.WithError(err).Fatal()
 		}
 	}(err)
-}
-
-// ReportPanic attempts to report the panic to rollbar via the logrus.
-func ReportPanic(logger logrus.FieldLogger, metricsProvider xmetrics.Provider) {
-	if p := recover(); p != nil {
-		if metricsProvider != nil {
-			metricsProvider.NewCounter("panic").Add(1)
-		}
-		logger.Panic(p)
-	}
 }
 
 type options struct {

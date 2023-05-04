@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/heroku/x/cmdutil/service"
+	"github.com/heroku/x/go-kit/metrics/testmetrics"
 	"github.com/heroku/x/testing/testlog"
 )
 
@@ -49,6 +50,7 @@ func TestNewCustomConfig(t *testing.T) {
 
 func TestReportPanic(t *testing.T) {
 	logger, hook := testlog.New()
+	mp := testmetrics.NewProvider(t)
 
 	defer func() {
 		if p := recover(); p == nil {

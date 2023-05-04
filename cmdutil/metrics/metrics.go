@@ -18,3 +18,13 @@ type Config struct {
 	L2MetOverrideEnabled bool `env:"METRICS_ENABLE_L2MET_OVERRIDE"`
 	OTEL                 otel.Config
 }
+
+// ReportPanic attempts to report the panic to rollbar via the logrus.
+func ReportPanic(metricsProvider xmetrics.Provider) {
+	if p := recover(); p != nil {
+		if metricsProvider != nil {
+			metricsProvider.NewCounter("panic").Add(1)
+		}
+		panic(p)
+	}
+}
