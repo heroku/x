@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/heroku/x/cmdutil/service"
+	"github.com/heroku/x/testing/testlog"
 )
 
 func TestNewNoConfig(t *testing.T) {
@@ -44,6 +45,30 @@ func TestNewCustomConfig(t *testing.T) {
 	if cfg.Val != time.Minute {
 		t.Fatalf("cfg.Val = %v want %v", cfg.Val, time.Minute)
 	}
+}
+
+func TestReportPanic(t *testing.T) {
+	logger, hook := testlog.New()
+
+	defer func() {
+		if p := recover(); p == nil {
+			t.Fatal("expected ReportPanic to repanic")
+		}
+
+		entries := hook.Entries()
+		if want, got := 1, len(entries); want != got {
+			t.Fatalf("want hook entries to be %d, got %d", want, got)
+		}
+		if want, got := "test message", entries[0].Message; want != got {
+			t.Errorf("want hook entry message to be %q, got %q", want, got)
+		}
+	}()
+
+	func() {
+		defer ReportPanic(logger)
+
+		panic("test message")
+	}()
 }
 
 func setupStandardConfig(t *testing.T) {

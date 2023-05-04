@@ -112,18 +112,28 @@ func (s *Standard) Add(svs ...cmdutil.Server) {
 // If the error returned by oklog/run.Run is non-nil, it is logged
 // with s.Logger.Fatal.
 func (s *Standard) Run() {
-	defer rollbar.ReportPanic(s.Logger)
+	defer ReportPanic(s.Logger, s.MetricsProvider)
 
 	err := s.g.Run()
 
-	// Not using defer here since it will have no effect if Fatal below
-	// is called.
-	if s.MetricsProvider != nil {
-		s.MetricsProvider.Stop()
-	}
+	defer func(err error) {
+		if s.MetricsProvider != nil {
+			s.MetricsProvider.Stop()
+		}
 
-	if err != nil {
-		s.Logger.WithError(err).Fatal()
+		if err != nil {
+			s.Logger.WithError(err).Fatal()
+		}
+	}(err)
+}
+
+// ReportPanic attempts to report the panic to rollbar via the logrus.
+func ReportPanic(logger logrus.FieldLogger, metricsProvider xmetrics.Provider) {
+	if p := recover(); p != nil {
+		if metricsProvider != nil {
+			metricsProvider.NewCounter("panic").Add(1)
+		}
+		logger.Panic(p)
 	}
 }
 
