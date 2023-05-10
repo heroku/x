@@ -26,6 +26,7 @@ func ReportPanic(metricsProvider xmetrics.Provider) {
 	if p := recover(); p != nil {
 		if metricsProvider != nil {
 			metricsProvider.NewCounter("panic").Add(1)
+			metricsProvider.Flush()
 		}
 		panic(p)
 	}
