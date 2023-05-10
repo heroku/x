@@ -9,10 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/heroku/x/testing/testlog"
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
+
+	"github.com/heroku/x/testing/testlog"
 )
 
 func TestLoggerEmitsAppAndDeployData(t *testing.T) {
