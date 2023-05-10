@@ -102,7 +102,12 @@ func New(appConfig interface{}, ofs ...OptionFunc) *Standard {
 // Add adds cmdutil.Servers to be managed.
 func (s *Standard) Add(svs ...cmdutil.Server) {
 	for _, sv := range svs {
-		s.g.Add(sv.Run, sv.Stop)
+		runWithPanicReport := func() error {
+			defer metrics.ReportPanic(s.MetricsProvider)
+			defer svclog.ReportPanic(s.Logger)
+			return sv.Run()
+		}
+		s.g.Add(runWithPanicReport, sv.Stop)
 	}
 }
 
@@ -113,20 +118,15 @@ func (s *Standard) Add(svs ...cmdutil.Server) {
 // If the error returned by oklog/run.Run is non-nil, it is logged
 // with s.Logger.Fatal.
 func (s *Standard) Run() {
-	defer metrics.ReportPanic(s.MetricsProvider)
-	defer svclog.ReportPanic(s.Logger)
-
 	err := s.g.Run()
 
-	defer func(err error) {
-		if s.MetricsProvider != nil {
-			s.MetricsProvider.Stop()
-		}
+	if s.MetricsProvider != nil {
+		s.MetricsProvider.Stop()
+	}
 
-		if err != nil {
-			s.Logger.WithError(err).Fatal()
-		}
-	}(err)
+	if err != nil {
+		s.Logger.WithError(err).Fatal()
+	}
 }
 
 type options struct {
