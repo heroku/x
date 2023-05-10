@@ -18,7 +18,6 @@ func TestReportPanic(t *testing.T) {
 
 	func() {
 		defer ReportPanic(mp)
-
 		panic("test message")
 	}()
 }
