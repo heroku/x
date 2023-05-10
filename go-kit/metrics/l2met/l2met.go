@@ -138,4 +138,7 @@ func (p *Provider) log() {
 func (p *Provider) Stop() {}
 
 // Flush implements Provider.
-func (p *Provider) Flush() error { return nil }
+func (p *Provider) Flush() error {
+	p.log()
+	return nil
+}
