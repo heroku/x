@@ -21,7 +21,7 @@ type Config struct {
 	OTEL                 otel.Config
 }
 
-// ReportPanic attempts to report the panic to rollbar via the metrics provider.
+// ReportPanic attempts to report a panic via the metrics provider.
 func ReportPanic(metricsProvider xmetrics.Provider) {
 	if p := recover(); p != nil {
 		if metricsProvider != nil {
