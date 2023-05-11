@@ -12,6 +12,8 @@ import (
 	"github.com/pkg/errors"
 	log "github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
+
+	"github.com/heroku/x/testing/testlog"
 )
 
 func TestLoggerEmitsAppAndDeployData(t *testing.T) {
@@ -87,6 +89,30 @@ func TestLoggerTrimsNewLineFromSaramaLoggerMsg(t *testing.T) {
 	if entry.Message != newMsg {
 		t.Fatalf("wanted message with new line char removed, got %q", entry.Message)
 	}
+}
+
+func TestReportPanic(t *testing.T) {
+	logger, hook := testlog.New()
+
+	defer func() {
+		if p := recover(); p == nil {
+			t.Fatal("expected ReportPanic to repanic")
+		}
+
+		entries := hook.Entries()
+		if want, got := 1, len(entries); want != got {
+			t.Fatalf("want hook entries to be %d, got %d", want, got)
+		}
+		if want, got := "test message", entries[0].Message; want != got {
+			t.Errorf("want hook entry message to be %q, got %q", want, got)
+		}
+	}()
+
+	func() {
+		defer ReportPanic(logger)
+
+		panic("test message")
+	}()
 }
 
 type dummyOutput struct {

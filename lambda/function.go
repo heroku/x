@@ -127,7 +127,8 @@ func (f *Function) Start(handler interface{}) {
 
 	// Run logger, rollbar agent and metrics provider in the background.
 	go func() {
-		defer rollbar.ReportPanic(f.Logger)
+		defer metrics.ReportPanic(f.MetricsProvider)
+		defer svclog.ReportPanic(f.Logger)
 
 		// Run any background servers, if configured.
 		// For example, the l2met agent.

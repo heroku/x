@@ -10,8 +10,6 @@ import (
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-
-	"github.com/heroku/x/testing/testlog"
 )
 
 func TestShouldIgnore(t *testing.T) {
@@ -45,30 +43,6 @@ func TestShouldIgnore(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestReportPanic(t *testing.T) {
-	logger, hook := testlog.New()
-
-	defer func() {
-		if p := recover(); p == nil {
-			t.Fatal("expected ReportPanic to repanic")
-		}
-
-		entries := hook.Entries()
-		if want, got := 1, len(entries); want != got {
-			t.Fatalf("want hook entries to be %d, got %d", want, got)
-		}
-		if want, got := "test message", entries[0].Message; want != got {
-			t.Errorf("want hook entry message to be %q, got %q", want, got)
-		}
-	}()
-
-	func() {
-		defer ReportPanic(logger)
-
-		panic("test message")
-	}()
 }
 
 type tempError struct {

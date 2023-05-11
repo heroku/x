@@ -56,13 +56,6 @@ func shouldIgnore(err error) bool {
 	return false
 }
 
-// ReportPanic attempts to report the panic to rollbar via the logrus.
-func ReportPanic(logger logrus.FieldLogger) {
-	if p := recover(); p != nil {
-		logger.Panic(p)
-	}
-}
-
 var ignoreFuncs = []func(error) bool{
 	isCanceledOrEOF,
 	isTimeout,

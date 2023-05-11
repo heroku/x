@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"github.com/heroku/x/cmdutil/metrics/otel"
+
+	xmetrics "github.com/heroku/x/go-kit/metrics"
 )
 
 // Config stores all the env related config to bootstrap metrics.
@@ -17,4 +19,15 @@ type Config struct {
 	// Setting this value to `true` overrides that default.
 	L2MetOverrideEnabled bool `env:"METRICS_ENABLE_L2MET_OVERRIDE"`
 	OTEL                 otel.Config
+}
+
+// ReportPanic attempts to report a panic via the metrics provider.
+func ReportPanic(metricsProvider xmetrics.Provider) {
+	if p := recover(); p != nil {
+		if metricsProvider != nil {
+			metricsProvider.NewCounter("panic").Add(1)
+			metricsProvider.Flush()
+		}
+		panic(p)
+	}
 }

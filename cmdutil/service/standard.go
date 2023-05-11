@@ -12,6 +12,7 @@ import (
 
 	"github.com/heroku/x/cmdutil"
 	"github.com/heroku/x/cmdutil/debug"
+	"github.com/heroku/x/cmdutil/metrics"
 	"github.com/heroku/x/cmdutil/oc"
 	"github.com/heroku/x/cmdutil/rollbar"
 	"github.com/heroku/x/cmdutil/signals"
@@ -101,7 +102,13 @@ func New(appConfig interface{}, ofs ...OptionFunc) *Standard {
 // Add adds cmdutil.Servers to be managed.
 func (s *Standard) Add(svs ...cmdutil.Server) {
 	for _, sv := range svs {
-		s.g.Add(sv.Run, sv.Stop)
+		sv := sv
+		runWithPanicReport := func() error {
+			defer metrics.ReportPanic(s.MetricsProvider)
+			defer svclog.ReportPanic(s.Logger)
+			return sv.Run()
+		}
+		s.g.Add(runWithPanicReport, sv.Stop)
 	}
 }
 
@@ -112,12 +119,8 @@ func (s *Standard) Add(svs ...cmdutil.Server) {
 // If the error returned by oklog/run.Run is non-nil, it is logged
 // with s.Logger.Fatal.
 func (s *Standard) Run() {
-	defer rollbar.ReportPanic(s.Logger)
-
 	err := s.g.Run()
 
-	// Not using defer here since it will have no effect if Fatal below
-	// is called.
 	if s.MetricsProvider != nil {
 		s.MetricsProvider.Stop()
 	}
