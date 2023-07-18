@@ -14,11 +14,6 @@ import (
 	"github.com/heroku/x/go-kit/metricsregistry"
 )
 
-const (
-	requestCount    = "http.server.requests"
-	requestDuration = "http.server.request-duration.ms"
-)
-
 // New returns an HTTP middleware which captures request metrics and reports
 // them to the given provider.
 func New(p metrics.Provider) func(http.Handler) http.Handler {
@@ -59,51 +54,6 @@ func New(p metrics.Provider) func(http.Handler) http.Handler {
 			reg.GetOrRegisterCounter("http.server." + met + ".requests").Add(1)
 			reg.GetOrRegisterHistogram("http.server."+met+".request-duration.ms", 50).Observe(ms(dur))
 			reg.GetOrRegisterCounter("http.server." + met + ".response-statuses." + sts).Add(1)
-		})
-	}
-}
-
-// NewV2 returns an HTTP middleware which captures HTTP request counts and latency
-// annotated with attributes for method, route, status.
-func NewV2(p metrics.Provider) func(http.Handler) http.Handler {
-	reg := metricsregistry.New(p)
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
-
-			start := time.Now()
-			next.ServeHTTP(ww, r)
-			dur := time.Since(start)
-
-			st := ww.Status()
-			if st == 0 {
-				// Assume no Write or WriteHeader means OK.
-				st = http.StatusOK
-			}
-			sts := strconv.Itoa(st)
-
-			ctx := r.Context()
-			if ctx.Value(chi.RouteCtxKey) == nil {
-				return
-			}
-			rtCtx := chi.RouteContext(ctx)
-
-			if len(rtCtx.RoutePatterns) == 0 {
-				// Did not match a route, give up.
-				return
-			}
-
-			method := strings.ToLower(r.Method)
-			path := nameRoutePatterns(rtCtx.RoutePatterns)
-
-			labels := []string{
-				"method", method,
-				"path", path,
-				"response-status", sts,
-			}
-
-			reg.GetOrRegisterCounter(requestCount).With(labels...).Add(1)
-			reg.GetOrRegisterExplicitHistogram(requestDuration, metrics.ThirtySecondDistribution).With(labels...).Observe(ms(dur))
 		})
 	}
 }
