@@ -14,6 +14,11 @@ import (
 	"github.com/heroku/x/go-kit/metricsregistry"
 )
 
+const (
+	requestCount    = "http.server.requests"
+	requestDuration = "http.server.request-duration.ms"
+)
+
 // New returns an HTTP middleware which captures request metrics and reports
 // them to the given provider.
 func New(p metrics.Provider) func(http.Handler) http.Handler {
@@ -97,8 +102,8 @@ func NewV2(p metrics.Provider) func(http.Handler) http.Handler {
 				"response-status", sts,
 			}
 
-			reg.GetOrRegisterCounter("http.server.requests").With(labels...).Add(1)
-			reg.GetOrRegisterExplicitHistogram("http.server.request-duration.ms", metrics.ThirtySecondDistribution).With(labels...).Observe(ms(dur))
+			reg.GetOrRegisterCounter(requestCount).With(labels...).Add(1)
+			reg.GetOrRegisterExplicitHistogram(requestDuration, metrics.ThirtySecondDistribution).With(labels...).Observe(ms(dur))
 		})
 	}
 }
