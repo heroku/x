@@ -58,6 +58,51 @@ func New(p metrics.Provider) func(http.Handler) http.Handler {
 	}
 }
 
+// NewV2 returns an HTTP middleware which captures HTTP request counts and latency
+// annotated with attributes for method, route, status.
+func NewV2(p metrics.Provider) func(http.Handler) http.Handler {
+	reg := metricsregistry.New(p)
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
+
+			start := time.Now()
+			next.ServeHTTP(ww, r)
+			dur := time.Since(start)
+
+			st := ww.Status()
+			if st == 0 {
+				// Assume no Write or WriteHeader means OK.
+				st = http.StatusOK
+			}
+			sts := strconv.Itoa(st)
+
+			ctx := r.Context()
+			if ctx.Value(chi.RouteCtxKey) == nil {
+				return
+			}
+			rtCtx := chi.RouteContext(ctx)
+
+			if len(rtCtx.RoutePatterns) == 0 {
+				// Did not match a route, give up.
+				return
+			}
+
+			method := strings.ToLower(r.Method)
+			path := nameRoutePatterns(rtCtx.RoutePatterns)
+
+			labels := []string{
+				"method", method,
+				"path", path,
+				"response-status", sts,
+			}
+
+			reg.GetOrRegisterCounter("http.server.requests").With(labels...).Add(1)
+			reg.GetOrRegisterExplicitHistogram("http.server.request-duration.ms", metrics.ThirtySecondDistribution).With(labels...).Observe(ms(dur))
+		})
+	}
+}
+
 // NewServer returns an http.Handler which calls next for each
 // request and reports metrics to the given provider.
 //
@@ -81,7 +126,7 @@ var dashRe = regexp.MustCompile(`[_]+`)
 // request context. For example, a chi.Router that mounts a sub-router on / to
 // handle a set of paths might have a set of patterns like:
 //
-//    []string{"/*", "/kpi/v1/apps/:id"}
+//	[]string{"/*", "/kpi/v1/apps/:id"}
 //
 // which would be transformed into a metric called "kpi.v1.apps.id".
 func nameRoutePatterns(patterns []string) string {
