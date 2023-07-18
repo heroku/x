@@ -5,14 +5,14 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
 	"github.com/heroku/x/go-kit/metrics"
 	"github.com/heroku/x/go-kit/metricsregistry"
+
+	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/middleware"
 )
 
 const (
-
 	// metric names
 	requestDuration = "http.server.duration"        // duration in milliseconds
 	activeRequests  = "http.server.active_requests" // counter for number of requests
