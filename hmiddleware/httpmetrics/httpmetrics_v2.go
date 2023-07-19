@@ -67,7 +67,6 @@ func NewOTEL(p metrics.Provider) func(http.Handler) http.Handler {
 				labels = append(labels, kv...)
 			}
 
-			reg.GetOrRegisterCounter(activeRequests).With(labels...).Add(1)
 			reg.GetOrRegisterExplicitHistogram(requestDuration, metrics.ThirtySecondDistribution).With(labels...).Observe(ms(dur))
 		})
 	}

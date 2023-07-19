@@ -25,8 +25,6 @@ func TestOTELMiddleware(t *testing.T) {
 	hand := NewOTEL(p)(next)
 	hand.ServeHTTP(w, r)
 
-	p.CheckCounter("http.server.active_requests.http.request.method:GET:url.scheme:http:server.address:example.org", 1)
-
 	p.CheckObservationCount("http.server.duration.http.request.method:GET:url.scheme:http:server.address:example.org", 1)
 }
 
@@ -42,8 +40,6 @@ func TestOTELResponseStatus(t *testing.T) {
 
 	hand := NewOTEL(p)(next)
 	hand.ServeHTTP(w, r)
-
-	p.CheckCounter("http.server.active_requests.http.request.method:GET:http.response.status_code:502:url.scheme:http:server.address:example.org", 1)
 
 	p.CheckObservationCount("http.server.duration.http.request.method:GET:http.response.status_code:502:url.scheme:http:server.address:example.org", 1)
 }
@@ -65,7 +61,6 @@ func TestOTELChi(t *testing.T) {
 	hand := NewOTEL(p)(next)
 	hand.ServeHTTP(w, r)
 
-	p.CheckCounter("http.server.active_requests.http.request.method:GET:http.route:/apps/{foo_id}/bars/{bar_id}:url.scheme:http:server.address:example.org", 1)
 	p.CheckObservationCount("http.server.duration.http.request.method:GET:http.route:/apps/{foo_id}/bars/{bar_id}:url.scheme:http:server.address:example.org", 1)
 
 }
@@ -89,7 +84,6 @@ func TestOTELNestedChiRouters(t *testing.T) {
 	w := httptest.NewRecorder()
 	outer.ServeHTTP(w, r)
 
-	p.CheckCounter("http.server.active_requests.http.request.method:GET:http.response.status_code:200:http.route:/hello/{name}:url.scheme:http:server.address:example.org", 1)
 	p.CheckObservationCount("http.server.duration.http.request.method:GET:http.response.status_code:200:http.route:/hello/{name}:url.scheme:http:server.address:example.org", 1)
 
 }
