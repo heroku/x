@@ -14,8 +14,7 @@ import (
 
 const (
 	// metric names
-	requestDuration = "http.server.duration"        // duration in milliseconds
-	activeRequests  = "http.server.active_requests" // counter for number of requests
+	requestDuration = "http.server.duration" // duration in milliseconds
 
 	// metric attribute keys
 	routeKey         = "http.route"
