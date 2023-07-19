@@ -81,7 +81,7 @@ var dashRe = regexp.MustCompile(`[_]+`)
 // request context. For example, a chi.Router that mounts a sub-router on / to
 // handle a set of paths might have a set of patterns like:
 //
-//    []string{"/*", "/kpi/v1/apps/:id"}
+//	[]string{"/*", "/kpi/v1/apps/:id"}
 //
 // which would be transformed into a metric called "kpi.v1.apps.id".
 func nameRoutePatterns(patterns []string) string {
