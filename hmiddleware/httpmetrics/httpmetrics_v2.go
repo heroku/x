@@ -25,11 +25,11 @@ const (
 	urlSchemeKey     = "url.scheme"
 )
 
-// NewV2 returns an HTTP middleware which captures HTTP request counts and latency
+// NewOTEL returns an HTTP middleware which captures HTTP request counts and latency
 // annotated with attributes for method, route, status.
 //
 // See https://opentelemetry.io/docs/specs/otel/metrics/semantic_conventions/http-metrics/
-func NewV2(p metrics.Provider) func(http.Handler) http.Handler {
+func NewOTEL(p metrics.Provider) func(http.Handler) http.Handler {
 	reg := metricsregistry.New(p)
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

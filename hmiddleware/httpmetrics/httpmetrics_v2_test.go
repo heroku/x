@@ -13,7 +13,7 @@ import (
 	"github.com/heroku/x/go-kit/metrics/testmetrics"
 )
 
-func TestV2Middleware(t *testing.T) {
+func TestOTELMiddleware(t *testing.T) {
 	p := testmetrics.NewProvider(t)
 
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -22,7 +22,7 @@ func TestV2Middleware(t *testing.T) {
 	r := httptest.NewRequest("GET", "http://example.org/foo/bar", nil)
 	w := httptest.NewRecorder()
 
-	hand := NewV2(p)(next)
+	hand := NewOTEL(p)(next)
 	hand.ServeHTTP(w, r)
 
 	p.CheckCounter("http.server.active_requests.http.request.method:GET:url.scheme:http:server.address:example.org", 1)
@@ -30,7 +30,7 @@ func TestV2Middleware(t *testing.T) {
 	p.CheckObservationCount("http.server.duration.http.request.method:GET:url.scheme:http:server.address:example.org", 1)
 }
 
-func TestV2ResponseStatus(t *testing.T) {
+func TestOTELResponseStatus(t *testing.T) {
 	p := testmetrics.NewProvider(t)
 
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -40,7 +40,7 @@ func TestV2ResponseStatus(t *testing.T) {
 	r := httptest.NewRequest("GET", "http://example.org/foo/bar", nil)
 	w := httptest.NewRecorder()
 
-	hand := NewV2(p)(next)
+	hand := NewOTEL(p)(next)
 	hand.ServeHTTP(w, r)
 
 	p.CheckCounter("http.server.active_requests.http.request.method:GET:http.response.status_code:502:url.scheme:http:server.address:example.org", 1)
@@ -48,7 +48,7 @@ func TestV2ResponseStatus(t *testing.T) {
 	p.CheckObservationCount("http.server.duration.http.request.method:GET:http.response.status_code:502:url.scheme:http:server.address:example.org", 1)
 }
 
-func TestV2Chi(t *testing.T) {
+func TestOTELChi(t *testing.T) {
 	p := testmetrics.NewProvider(t)
 
 	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -62,7 +62,7 @@ func TestV2Chi(t *testing.T) {
 
 	w := httptest.NewRecorder()
 
-	hand := NewV2(p)(next)
+	hand := NewOTEL(p)(next)
 	hand.ServeHTTP(w, r)
 
 	p.CheckCounter("http.server.active_requests.http.request.method:GET:http.route:/apps/{foo_id}/bars/{bar_id}:url.scheme:http:server.address:example.org", 1)
@@ -70,7 +70,7 @@ func TestV2Chi(t *testing.T) {
 
 }
 
-func TestV2NestedChiRouters(t *testing.T) {
+func TestOTELNestedChiRouters(t *testing.T) {
 	p := testmetrics.NewProvider(t)
 
 	inner := chi.NewRouter()
@@ -82,7 +82,7 @@ func TestV2NestedChiRouters(t *testing.T) {
 	})
 
 	outer := chi.NewRouter()
-	outer.Use(NewV2(p))
+	outer.Use(NewOTEL(p))
 	outer.Mount("/", inner)
 
 	r := httptest.NewRequest("GET", "http://example.org/hello/world", nil)
