@@ -52,7 +52,6 @@ func NewOTEL(p metrics.Provider) func(http.Handler) http.Handler {
 			if ctx.Value(chi.RouteCtxKey) != nil {
 				rtCtx := chi.RouteContext(ctx)
 				if len(rtCtx.RoutePatterns) > 0 {
-					// pick last route pattern as it is the one chi used
 					route := getRouteAsString(rtCtx.RoutePatterns)
 					kv := []string{routeKey, route}
 					labels = append(labels, kv...)
@@ -77,5 +76,5 @@ func getRouteAsString(patterns []string) string {
 	for _, pattern := range patterns {
 		result += pattern
 	}
-	return strings.Replace(result, "/*/", "/", -1)
+	return strings.ReplaceAll(result, "/*/", "/")
 }
