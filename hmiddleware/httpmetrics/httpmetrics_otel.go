@@ -3,6 +3,7 @@ package httpmetrics
 import (
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/heroku/x/go-kit/metrics"
@@ -52,7 +53,7 @@ func NewOTEL(p metrics.Provider) func(http.Handler) http.Handler {
 				rtCtx := chi.RouteContext(ctx)
 				if len(rtCtx.RoutePatterns) > 0 {
 					// pick last route pattern as it is the one chi used
-					route := rtCtx.RoutePatterns[len(rtCtx.RoutePatterns)-1]
+					route := getRouteAsString(rtCtx.RoutePatterns)
 					kv := []string{routeKey, route}
 					labels = append(labels, kv...)
 				}
@@ -69,4 +70,12 @@ func NewOTEL(p metrics.Provider) func(http.Handler) http.Handler {
 			reg.GetOrRegisterExplicitHistogram(requestDuration, metrics.ThirtySecondDistribution).With(labels...).Observe(ms(dur))
 		})
 	}
+}
+
+func getRouteAsString(patterns []string) string {
+	var result string
+	for _, pattern := range patterns {
+		result += pattern
+	}
+	return strings.Replace(result, "/*/", "/", -1)
 }
