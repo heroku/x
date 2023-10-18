@@ -1,18 +1,15 @@
 package otel
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
-	"go.opentelemetry.io/otel/sdk/export/metric"
-	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
+	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
-
-	"github.com/heroku/x/go-kit/metrics/provider/otel/selector/explicit"
 )
 
 var (
@@ -29,41 +26,6 @@ const DefaultAgentEndpoint = "0.0.0.0:55680"
 
 // Option is used for optional arguments when initializing Provider.
 type Option func(*Provider) error
-
-// WithDefaultAggregator initializes the Provider with a default aggregator.
-var WithDefaultAggregator = WithExactAggregator
-
-// WithExactAggregator initializes the Provider with the simple.NewWithExactDistribution.
-//
-// NOTE: simple.NewWithExactDistribution is removed in go.opentelemetry.io/otel/sdk/metric@v0.26.0.
-func WithExactAggregator() Option {
-	return WithAggregator(simple.NewWithExactDistribution())
-}
-
-// WithExplicitHistogramAggregator initializes the Provider with with our custom explicit.NewExplicitHistogramSelector.
-//
-// This AggregatorSelector hooks the Provider interface to allow customization of a histogram's bucket definition.
-func WithExplicitHistogramAggregator() Option {
-	return func(p *Provider) error {
-		selector, cache := explicit.NewExplicitHistogramDistribution()
-		p.optionCache = cache
-		p.selector = selector
-
-		return nil
-	}
-}
-
-// WithAggregator initializes the Provider with an aggregator used by its controller.
-func WithAggregator(agg metric.AggregatorSelector) Option {
-	return func(p *Provider) error {
-		if agg == nil {
-			return ErrAggregatorNil
-		}
-
-		p.selector = agg
-		return nil
-	}
-}
 
 // WithAttributes initializes a serviceNameResource with attributes.
 // If a resource already exists, a new resource is created by merging the two resources.
@@ -117,28 +79,39 @@ func WithServiceInstanceIDAttribute(serviceInstanceID string) Option {
 }
 
 // WithDefaultEndpointExporter initializes the Provider with an exporter using a default endpoint.
-func WithDefaultEndpointExporter() Option {
-	return WithEndpointExporter(DefaultAgentEndpoint)
+func WithDefaultExporter(ctx context.Context) Option {
+	return WithGRPCExporter(ctx, DefaultAgentEndpoint)
 }
 
-// WithEndpointExporter initializes the Provider with a default exporter.
-func WithEndpointExporter(endpoint string) Option {
+func WithGRPCExporter(ctx context.Context, endpoint string, options ...otlpmetricgrpc.Option) Option {
 	return func(p *Provider) error {
-		if endpoint == "" {
-			return ErrEndpointNil
+		defaults := []otlpmetricgrpc.Option{
+			otlpmetricgrpc.WithEndpoint(endpoint),
+			otlpmetricgrpc.WithInsecure(),
 		}
-		p.exporter = defaultExporter(endpoint)
+		options = append(defaults, options...)
+		exp, err := otlpmetricgrpc.New(ctx, options...)
+		if err != nil {
+			return err
+		}
+
+		p.exporter = exp
 		return nil
 	}
 }
 
-// WithExporter initializes the Provider with an exporter.
-func WithExporter(exp exporter) Option {
+func WithReader(reader *metric.PeriodicReader) Option {
 	return func(p *Provider) error {
-		if exp == nil {
-			return ErrExporterNil
-		}
-		p.exporter = exp
+		p.reader = reader
+
+		return nil
+	}
+}
+
+func WithExporter(exporter metric.Exporter) Option {
+	return func(p *Provider) error {
+		p.exporter = exporter
+
 		return nil
 	}
 }
@@ -149,15 +122,4 @@ func WithCollectPeriod(collectPeriod time.Duration) Option {
 		p.collectPeriod = collectPeriod
 		return nil
 	}
-}
-
-// defaultExporter returns a new otlp exporter that uses a gRPC driver.
-// A collector agent endpoint (host:port) is required as the addr.
-func defaultExporter(addr string) exporter {
-	c := otlpmetricgrpc.NewClient(
-		otlpmetricgrpc.WithEndpoint(addr),
-		otlpmetricgrpc.WithInsecure(),
-	)
-	eo := otlpmetric.WithMetricExportKindSelector(metric.DeltaExportKindSelector())
-	return otlpmetric.NewUnstarted(c, eo)
 }

@@ -10,22 +10,17 @@ import (
 	"github.com/go-kit/kit/metrics"
 	"github.com/go-kit/kit/metrics/generic"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/global"
-	metricexport "go.opentelemetry.io/otel/sdk/export/metric"
-	"go.opentelemetry.io/otel/sdk/export/metric/aggregation"
-	"go.opentelemetry.io/otel/sdk/metric/aggregator/histogram"
-	metriccontroller "go.opentelemetry.io/otel/sdk/metric/controller/basic"
-	processor "go.opentelemetry.io/otel/sdk/metric/processor/basic"
+	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 
 	xmetrics "github.com/heroku/x/go-kit/metrics"
-	"github.com/heroku/x/go-kit/metrics/provider/otel/selector/explicit"
 )
 
-var _ metrics.Counter = (*Counter)(nil)
-var _ metrics.Gauge = (*Gauge)(nil)
-var _ metrics.Histogram = (*Histogram)(nil)
+var (
+	_ metrics.Counter   = (*Counter)(nil)
+	_ metrics.Gauge     = (*Gauge)(nil)
+	_ metrics.Histogram = (*Histogram)(nil)
+)
 
 const (
 	// The values of these attributes should be the service name.
@@ -47,6 +42,8 @@ const (
 	cloudKey = "cloud"
 )
 
+var DefaultReaderInterval = metric.WithInterval(time.Minute)
+
 // Provider initializes a global otlp meter provider that can collect metrics and
 // use a collector to push those metrics to various backends (e.g. Argus, Honeycomb).
 // Initialize with New(...). An initialized Provider must be started before
@@ -54,10 +51,9 @@ const (
 type Provider struct {
 	ctx                 context.Context // used for init and shutdown of the otlp exporter and other bits of this Provider
 	serviceNameResource *resource.Resource
-	optionCache         explicit.OptionCache
-	selector            metricexport.AggregatorSelector
-	exporter            exporter
-	controller          controller
+	exporter            metric.Exporter
+	reader              *metric.PeriodicReader
+	meterProvider       metric.MeterProvider
 
 	defaultTags   []string
 	prefix        string
@@ -108,22 +104,8 @@ func New(ctx context.Context, serviceName string, opts ...Option) (xmetrics.Prov
 		metriccontroller.WithResource(p.serviceNameResource),
 		metriccontroller.WithCollectPeriod(p.collectPeriod),
 	)
-	global.SetMeterProvider(p.controller.MeterProvider())
 
 	return &p, nil
-}
-
-type exporter interface {
-	Start(ctx context.Context) error
-	Shutdown(ctx context.Context) error
-	Export(parent context.Context, resource *resource.Resource, cps metricexport.CheckpointSet) error
-	ExportKindFor(desc *metric.Descriptor, kind aggregation.Kind) metricexport.ExportKind
-}
-
-type controller interface {
-	MeterProvider() metric.MeterProvider
-	Start(ctx context.Context) error
-	Stop(ctx context.Context) error
 }
 
 // Start starts the provider's controller and exporter.
