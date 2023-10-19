@@ -1,15 +1,20 @@
 package otel
 
 import (
-	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
+	"net/url"
 	"time"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
+	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+
+	"github.com/heroku/x/tlsconfig"
 )
 
 var (
@@ -21,28 +26,77 @@ var (
 	ErrEndpointNil = errors.New("endpoint cannot be nil")
 )
 
-// DefaultAgentEndpoint is a default exporter endpoint that points to a local otel collector.
-const DefaultAgentEndpoint = "0.0.0.0:55680"
+const (
+	// DefaultAgentEndpoint is a default exporter endpoint that points to a local otel collector.
+	DefaultAgentEndpoint = "0.0.0.0:55680"
+
+	// If you are encountering this error it means that you are attempting to
+	// establish an aggregation selection (explicit, or exponential) after you have
+	// created an exporter.
+	exporterAlreadyCreatedPanic = "histogram aggregation selection must happen before exporter selection"
+)
 
 // Option is used for optional arguments when initializing Provider.
-type Option func(*Provider) error
+type Option func(*config) error
+
+func WithPrefix(prefix string) Option {
+	return func(cfg *config) error {
+		cfg.prefix = prefix
+		return nil
+	}
+}
+
+// WithCollectPeriod initial
+func WithCollectPeriod(collectPeriod time.Duration) Option {
+	return func(c *config) error {
+		c.collectPeriod = collectPeriod
+		return nil
+	}
+}
+
+var DefaultAggregationSelector = WithExponentialHistogramAggregationSelector
+
+func WithExponentialHistogramAggregationSelector() Option {
+	return WithAggregationSelector(ExponentialAggregationSelector)
+}
+
+func WithExplicitHistogramAggregationSelector() Option {
+	return WithAggregationSelector(ExplicitAggregationSelector)
+}
+
+func WithAggregationSelector(selector metric.AggregationSelector) Option {
+	return func(c *config) error {
+		c.aggregationSelector = selector
+
+		return nil
+	}
+}
+
+func WithService(name, namespace, instanceID string) Option {
+	return WithResource(resource.NewWithAttributes(
+		semconv.SchemaURL,
+		semconv.ServiceName(name),
+		semconv.ServiceNamespace(namespace),
+		semconv.ServiceInstanceID(instanceID),
+	))
+}
+
+func WithResource(res *resource.Resource) Option {
+	return func(cfg *config) error {
+		merged, err := resource.Merge(cfg.serviceResource, res)
+		if err != nil {
+			return fmt.Errorf("failed to merge resources: %w", err)
+		}
+
+		cfg.serviceResource = merged
+		return nil
+	}
+}
 
 // WithAttributes initializes a serviceNameResource with attributes.
 // If a resource already exists, a new resource is created by merging the two resources.
 func WithAttributes(attributes ...attribute.KeyValue) Option {
-	return func(p *Provider) error {
-		res, err := resource.New(p.ctx, resource.WithAttributes(attributes...))
-		if err != nil {
-			return err
-		}
-
-		mergedRes, err := resource.Merge(p.serviceNameResource, res)
-		if err != nil {
-			return fmt.Errorf("failed to merge resources: %w", err)
-		}
-		p.serviceNameResource = mergedRes
-		return nil
-	}
+	return WithResource(resource.NewWithAttributes(semconv.SchemaURL, attributes...))
 }
 
 // WithStageAttribute adds the "stage" and "_subservice" attributes.
@@ -56,10 +110,7 @@ func WithStageAttribute(stage string) Option {
 
 // WithServiceNamespaceAttribute adds the "service.namespace" attribute.
 func WithServiceNamespaceAttribute(serviceNamespace string) Option {
-	attrs := []attribute.KeyValue{
-		attribute.String(serviceNamespaceKey, serviceNamespace),
-	}
-	return WithAttributes(attrs...)
+	return WithAttributes(semconv.ServiceNamespace(serviceNamespace))
 }
 
 // WithCloudAttribute adds the "cloud" attribute.
@@ -72,54 +123,52 @@ func WithCloudAttribute(cloud string) Option {
 
 // WithServiceInstanceIDAttribute adds the "service.instance.id" attribute.
 func WithServiceInstanceIDAttribute(serviceInstanceID string) Option {
-	attrs := []attribute.KeyValue{
-		attribute.String(serviceInstanceIDKey, serviceInstanceID),
-	}
-	return WithAttributes(attrs...)
+	return WithAttributes(semconv.ServiceInstanceID(serviceInstanceID))
 }
 
 // WithDefaultEndpointExporter initializes the Provider with an exporter using a default endpoint.
-func WithDefaultExporter(ctx context.Context) Option {
-	return WithGRPCExporter(ctx, DefaultAgentEndpoint)
+func WithDefaultEndpointExporter() Option {
+	return WithHTTPExporter(DefaultAgentEndpoint)
 }
 
-func WithGRPCExporter(ctx context.Context, endpoint string, options ...otlpmetricgrpc.Option) Option {
-	return func(p *Provider) error {
+func WithHTTPExporter(endpoint string, options ...otlpmetrichttp.Option) Option {
+	return WithExporterFunc(func(cfg *config) (metric.Exporter, error) {
+		u, err := url.Parse(endpoint)
+		if err != nil {
+			return nil, err
+		}
+
+		authHeader := make(map[string]string)
+		authHeader["Authorization"] = "Basic" + base64.StdEncoding.EncodeToString([]byte(u.User.String()))
+
+		defaults := []otlpmetrichttp.Option{
+			otlpmetrichttp.WithEndpoint(u.Hostname()),
+			otlpmetrichttp.WithTLSClientConfig(tlsconfig.New()),
+			otlpmetrichttp.WithHeaders(authHeader),
+			otlpmetrichttp.WithAggregationSelector(cfg.aggregationSelector),
+		}
+		options = append(defaults, options...)
+
+		return otlpmetrichttp.New(cfg.ctx, options...)
+	})
+}
+
+func WithGRPCExporter(endpoint string, options ...otlpmetricgrpc.Option) Option {
+	return WithExporterFunc(func(cfg *config) (metric.Exporter, error) {
 		defaults := []otlpmetricgrpc.Option{
 			otlpmetricgrpc.WithEndpoint(endpoint),
 			otlpmetricgrpc.WithInsecure(),
+			otlpmetricgrpc.WithAggregationSelector(cfg.aggregationSelector),
 		}
 		options = append(defaults, options...)
-		exp, err := otlpmetricgrpc.New(ctx, options...)
-		if err != nil {
-			return err
-		}
-
-		p.exporter = exp
-		return nil
-	}
+		return otlpmetricgrpc.New(cfg.ctx, options...)
+	})
 }
 
-func WithReader(reader *metric.PeriodicReader) Option {
-	return func(p *Provider) error {
-		p.reader = reader
+func WithExporterFunc(fn exporterFactory) Option {
+	return func(c *config) error {
+		c.exporterFactory = fn
 
-		return nil
-	}
-}
-
-func WithExporter(exporter metric.Exporter) Option {
-	return func(p *Provider) error {
-		p.exporter = exporter
-
-		return nil
-	}
-}
-
-// WithCollectPeriod initializes the controller with the collectPeriod.
-func WithCollectPeriod(collectPeriod time.Duration) Option {
-	return func(p *Provider) error {
-		p.collectPeriod = collectPeriod
 		return nil
 	}
 }
