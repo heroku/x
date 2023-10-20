@@ -145,7 +145,11 @@ var ExplicitAggregationSelector = metric.DefaultAggregationSelector
 
 func ExponentialAggregationSelector(ik metric.InstrumentKind) metric.Aggregation {
 	switch ik {
-	case metric.InstrumentKindCounter, metric.InstrumentKindUpDownCounter, metric.InstrumentKindObservableCounter, metric.InstrumentKindObservableUpDownCounter:
+	case
+		metric.InstrumentKindCounter,
+		metric.InstrumentKindUpDownCounter,
+		metric.InstrumentKindObservableCounter,
+		metric.InstrumentKindObservableUpDownCounter:
 		return metric.AggregationSum{}
 	case metric.InstrumentKindObservableGauge:
 		return metric.AggregationLastValue{}
