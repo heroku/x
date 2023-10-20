@@ -5,12 +5,12 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
+
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric"
-	"go.opentelemetry.io/otel/sdk/export/metric"
+	"go.opentelemetry.io/otel/sdk/resource"
 
 	"github.com/heroku/x/go-kit/metrics"
-	"github.com/heroku/x/go-kit/metrics/provider/otel"
+	otel "github.com/heroku/x/go-kit/metrics/provider/otel"
 )
 
 // MustProvider ensures setting up and starting a otel.Provider succeeds.
@@ -23,10 +23,6 @@ func MustProvider(ctx context.Context, logger logrus.FieldLogger, cfg Config, se
 		logger.Fatal("provider collectorURL cannot be nil")
 	}
 
-	client := otel.NewHTTPClient(*cfg.CollectorURL)
-	expOpts := otlpmetric.WithMetricExportKindSelector(metric.DeltaExportKindSelector())
-	exporter := otlpmetric.NewUnstarted(client, expOpts)
-
 	attrs := []attribute.KeyValue{}
 	if cfg.Honeycomb.MetricsDataset != "" {
 		attrs = append(attrs, attribute.String("dataset", cfg.Honeycomb.MetricsDataset))
@@ -35,12 +31,15 @@ func MustProvider(ctx context.Context, logger logrus.FieldLogger, cfg Config, se
 		attrs = append(attrs, attribute.String(md, "true"))
 	}
 
+	res := resource.NewSchemaless(attrs...)
+
 	allOpts := []otel.Option{
-		otel.WithExporter(exporter),
-		otel.WithAttributes(attrs...),
-		otel.WithServiceNamespaceAttribute(serviceNamespace),
-		otel.WithServiceInstanceIDAttribute(serviceInstanceID),
-		otel.WithStageAttribute(stage),
+		otel.WithOpenTelemetryStandardService(service, serviceNamespace, serviceInstanceID),
+		otel.WithServiceStandard(service),
+		otel.WithEnvironmentStandard(stage),
+		otel.WithResource(res),
+		otel.WithExponentialHistograms(),
+		otel.WithHTTPEndpointExporter(cfg.CollectorURL.String()),
 	}
 	allOpts = append(allOpts, opts...)
 

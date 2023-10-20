@@ -6,33 +6,13 @@ import (
 	"sync"
 	"time"
 
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
-	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 
 	xmetrics "github.com/heroku/x/go-kit/metrics"
 )
 
 const (
-	// The values of these attributes should be the service name.
-	serviceKey     = "_service"
-	serviceNameKey = "service.name"
-	componentKey   = "component"
-
-	// The "service.namespace" attribute should be the cloud/deploy (e.g. "va01").
-	serviceNamespaceKey = "service.namespace"
-
-	// The "service.instance.id" attribute will be an identifier for this specific instance of the service (e.g. "web.1").
-	serviceInstanceIDKey = "service.instance.id"
-
-	// The values of these attributes should be the stage (e.g. "production").
-	stageKey      = "stage"
-	subserviceKey = "_subservice"
-
-	// The value of the "cloud" attribute should be the cloud (e.g. "heroku.com")
-	cloudKey = "cloud"
-
 	defaultExponentialHistogramMaxSize  = 50
 	defaultExponentialHistogramMaxScale = 20
 )
@@ -95,14 +75,10 @@ type exporterFactory func(*config) (metric.Exporter, error)
 func New(ctx context.Context, serviceName string, opts ...Option) (xmetrics.Provider, error) {
 	cfg := &config{
 		ctx:             ctx,
-		serviceResource: resource.Default(),
+		serviceResource: resource.Default(), // this fetches from env by default and pre-populates some fields.
 	}
 	defaultOpts := []Option{
-		WithAttributes(
-			attribute.String(serviceKey, serviceName),
-			attribute.String(serviceNameKey, serviceName),
-			attribute.String(componentKey, serviceName),
-		),
+		WithServiceStandard(serviceName),
 		DefaultAggregationSelector(),
 		WithDefaultEndpointExporter(),
 	}

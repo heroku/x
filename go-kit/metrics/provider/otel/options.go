@@ -3,16 +3,12 @@ package otel
 import (
 	"encoding/base64"
 	"errors"
-	"fmt"
 	"net/url"
 	"time"
 
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	"go.opentelemetry.io/otel/sdk/metric"
-	"go.opentelemetry.io/otel/sdk/resource"
-	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 
 	"github.com/heroku/x/tlsconfig"
 )
@@ -24,6 +20,11 @@ var (
 	ErrAggregatorNil = errors.New("aggregator cannot be nil")
 	// ErrEndpointNil is returned if an endpoint is required, but is not passed in.
 	ErrEndpointNil = errors.New("endpoint cannot be nil")
+)
+
+var (
+	DefaultAggregationSelector = WithExponentialHistograms
+	DefaultEndpointExporter    = WithHTTPExporter
 )
 
 const (
@@ -54,13 +55,11 @@ func WithCollectPeriod(collectPeriod time.Duration) Option {
 	}
 }
 
-var DefaultAggregationSelector = WithExponentialHistogramAggregationSelector
-
-func WithExponentialHistogramAggregationSelector() Option {
+func WithExponentialHistograms() Option {
 	return WithAggregationSelector(ExponentialAggregationSelector)
 }
 
-func WithExplicitHistogramAggregationSelector() Option {
+func WithExplicitHistograms() Option {
 	return WithAggregationSelector(ExplicitAggregationSelector)
 }
 
@@ -72,66 +71,11 @@ func WithAggregationSelector(selector metric.AggregationSelector) Option {
 	}
 }
 
-func WithService(name, namespace, instanceID string) Option {
-	return WithResource(resource.NewWithAttributes(
-		semconv.SchemaURL,
-		semconv.ServiceName(name),
-		semconv.ServiceNamespace(namespace),
-		semconv.ServiceInstanceID(instanceID),
-	))
+func WithHTTPExporter(options ...otlpmetrichttp.Option) Option {
+	return WithHTTPEndpointExporter(DefaultAgentEndpoint)
 }
 
-func WithResource(res *resource.Resource) Option {
-	return func(cfg *config) error {
-		merged, err := resource.Merge(cfg.serviceResource, res)
-		if err != nil {
-			return fmt.Errorf("failed to merge resources: %w", err)
-		}
-
-		cfg.serviceResource = merged
-		return nil
-	}
-}
-
-// WithAttributes initializes a serviceNameResource with attributes.
-// If a resource already exists, a new resource is created by merging the two resources.
-func WithAttributes(attributes ...attribute.KeyValue) Option {
-	return WithResource(resource.NewWithAttributes(semconv.SchemaURL, attributes...))
-}
-
-// WithStageAttribute adds the "stage" and "_subservice" attributes.
-func WithStageAttribute(stage string) Option {
-	attrs := []attribute.KeyValue{
-		attribute.String(stageKey, stage),
-		attribute.String(subserviceKey, stage),
-	}
-	return WithAttributes(attrs...)
-}
-
-// WithServiceNamespaceAttribute adds the "service.namespace" attribute.
-func WithServiceNamespaceAttribute(serviceNamespace string) Option {
-	return WithAttributes(semconv.ServiceNamespace(serviceNamespace))
-}
-
-// WithCloudAttribute adds the "cloud" attribute.
-func WithCloudAttribute(cloud string) Option {
-	attrs := []attribute.KeyValue{
-		attribute.String(cloudKey, cloud),
-	}
-	return WithAttributes(attrs...)
-}
-
-// WithServiceInstanceIDAttribute adds the "service.instance.id" attribute.
-func WithServiceInstanceIDAttribute(serviceInstanceID string) Option {
-	return WithAttributes(semconv.ServiceInstanceID(serviceInstanceID))
-}
-
-// WithDefaultEndpointExporter initializes the Provider with an exporter using a default endpoint.
-func WithDefaultEndpointExporter() Option {
-	return WithHTTPExporter(DefaultAgentEndpoint)
-}
-
-func WithHTTPExporter(endpoint string, options ...otlpmetrichttp.Option) Option {
+func WithHTTPEndpointExporter(endpoint string, options ...otlpmetrichttp.Option) Option {
 	return WithExporterFunc(func(cfg *config) (metric.Exporter, error) {
 		u, err := url.Parse(endpoint)
 		if err != nil {
