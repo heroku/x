@@ -3,21 +3,21 @@
 //
 // For example, the following proto file:
 //
-//		syntax = "proto3";
-//		import "github.com/heroku/x/loggingtags/safe.proto";
+//	syntax = "proto3";
+//	import "github.com/heroku/x/loggingtags/safe.proto";
 //
-//		package loggingtags.examples;
+//	package loggingtags.examples;
 //
-//		message Sample {
-//		  string safe   = 1 [(heroku.loggingtags.safe) = true];
-//		  string unsafe = 2;
-//		}
+//	message Sample {
+//	  string safe   = 1 [(heroku.loggingtags.safe) = true];
+//	  string unsafe = 2;
+//	}
 //
 // will generate a method on the Sample type which implements
 //
-//		type loggable interface{
-//			LoggingTags() map[string]interface{}
-//		}
+//	type loggable interface{
+//		LoggingTags() map[string]interface{}
+//	}
 //
 // Calling the LoggingTags() method on Sample will return only the name and
 // value of the `safe` field.

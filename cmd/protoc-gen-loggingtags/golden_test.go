@@ -105,7 +105,7 @@ func TestSample(t *testing.T) {
 		"--proto_path=" + filepath.Join("internal", "test"),
 		"--proto_path=.",
 		"--loggingtags_out=" + workdir,
-		filepath.Join("sample.proto"),
+		"sample.proto",
 	})
 
 	goldenPath := filepath.Join("internal", "test", "sample.pb.loggingtags.go")

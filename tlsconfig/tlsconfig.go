@@ -5,18 +5,18 @@
 // See https://wiki.mozilla.org/Security/Server_Side_TLS
 //
 // Prioritized by:
-//   Key Ex:   ECDHE > DH > RSA
-//   Enc:      CHACHA20 > AES-GCM > AES-CBC > 3DES
-//   MAC:      AEAD > SHA256 > SHA384 > SHA1 (SHA)
-//   AES:      128 > 256
-//   Cert Sig: ECDSA > RSA
+//
+//	Key Ex:   ECDHE > DH > RSA
+//	Enc:      CHACHA20 > AES-GCM > AES-CBC > 3DES
+//	MAC:      AEAD > SHA256 > SHA384 > SHA1 (SHA)
+//	AES:      128 > 256
+//	Cert Sig: ECDSA > RSA
 //
 // Modern:    strongest ciphers (PFS-only) & latest TLS version(s)
 // Default:   mix of various strength ciphers & recent TLS versions
 // Strict:    deprecated, Default plus ECDHE+RSA+AES{128,256}+CBC+SHA1 for IE 11
 // Legacy:    many ciphers & TLS versions for maximum compatibility, less secure
 // SFAllowed: provides only the ciphers allowed according to SFSS-151.
-//
 package tlsconfig
 
 import (
@@ -313,11 +313,11 @@ func (c *CA) NewLeaf(config LeafConfig) (*tls.Certificate, error) {
 		}
 
 		unsignedCert.ExtraExtensions = []pkix.Extension{
-			pkix.Extension{
+			{
 				Id:    InstanceIdentityDocOID,
 				Value: b64(gz(iid.Doc)),
 			},
-			pkix.Extension{
+			{
 				Id:    InstanceIdentitySigOID,
 				Value: b64(iid.Sig),
 			},

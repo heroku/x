@@ -13,9 +13,9 @@ import (
 //
 // A loggable request or response implements this interface
 //
-//		type loggable interface {
-//			LoggingTags() map[string]interface{}
-//		}
+//	type loggable interface {
+//		LoggingTags() map[string]interface{}
+//	}
 //
 // Any request or response implementing this interface will add tags to the
 // context for logging in success and error cases.

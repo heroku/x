@@ -13,9 +13,8 @@ import (
 // which performs server health checks on the given interval
 // for any stream which is initiated.
 //
-//		health := grpchealthcheck.NewStreamInterceptor(30 * time.Second)
-//		conn, _ := grpc.Dial("server", grpc.WithStreamInterceptor(health))
-//
+//	health := grpchealthcheck.NewStreamInterceptor(30 * time.Second)
+//	conn, _ := grpc.Dial("server", grpc.WithStreamInterceptor(health))
 func NewStreamInterceptor(interval time.Duration) grpc.StreamClientInterceptor {
 	return func(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, streamer grpc.Streamer, opts ...grpc.CallOption) (grpc.ClientStream, error) {
 		stream, err := streamer(ctx, desc, cc, method, opts...)
