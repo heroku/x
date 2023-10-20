@@ -14,13 +14,17 @@ import (
 	"github.com/heroku/x/go-kit/metricsregistry"
 )
 
+const (
+	prefix = "http.server."
+)
+
 // New returns an HTTP middleware which captures request metrics and reports
 // them to the given provider.
 func New(p metrics.Provider) func(http.Handler) http.Handler {
 	reg := metricsregistry.New(p)
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			reg.GetOrRegisterCounter("http.server.all.requests").Add(1)
+			reg.GetOrRegisterCounter(prefix + "all.requests").Add(1)
 
 			ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
 
@@ -35,8 +39,8 @@ func New(p metrics.Provider) func(http.Handler) http.Handler {
 			}
 			sts := strconv.Itoa(st)
 
-			reg.GetOrRegisterHistogram("http.server.all.request-duration.ms", 50).Observe(ms(dur))
-			reg.GetOrRegisterCounter("http.server.all.response-statuses." + sts).Add(1)
+			reg.GetOrRegisterHistogram(prefix+"all.request-duration.ms", 50).Observe(ms(dur))
+			reg.GetOrRegisterCounter(prefix + "all.response-statuses." + sts).Add(1)
 
 			ctx := r.Context()
 			if ctx.Value(chi.RouteCtxKey) == nil {
@@ -51,9 +55,9 @@ func New(p metrics.Provider) func(http.Handler) http.Handler {
 
 			// GET /apps/:foo/bars/:baz_id -> get.apps.foo.bars.baz-id
 			met := strings.ToLower(r.Method) + "." + nameRoutePatterns(rtCtx.RoutePatterns)
-			reg.GetOrRegisterCounter("http.server." + met + ".requests").Add(1)
-			reg.GetOrRegisterHistogram("http.server."+met+".request-duration.ms", 50).Observe(ms(dur))
-			reg.GetOrRegisterCounter("http.server." + met + ".response-statuses." + sts).Add(1)
+			reg.GetOrRegisterCounter(prefix + met + ".requests").Add(1)
+			reg.GetOrRegisterHistogram(prefix+met+".request-duration.ms", 50).Observe(ms(dur))
+			reg.GetOrRegisterCounter(prefix + met + ".response-statuses." + sts).Add(1)
 		})
 	}
 }
