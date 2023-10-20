@@ -52,10 +52,7 @@ func (p *Provider) newCounter(name string, labelValues ...string) metrics.Counte
 	m := p.meterProvider.Meter(name)
 
 	if _, ok := p.counters[k]; !ok {
-		c, err := m.Float64Counter(name)
-		if err != nil {
-			// TODO how to service this error
-		}
+		c, _ := m.Float64Counter(name)
 
 		p.counters[k] = &Counter{
 			Float64Counter: c,
@@ -96,7 +93,7 @@ func (p *Provider) newGauge(name string, labelValues ...string) metrics.Gauge {
 	if _, ok := p.gauges[k]; !ok {
 		gg := generic.NewGauge(name)
 
-		callback := func(ctx context.Context, result metric.Float64Observer) error {
+		callback := func(_ context.Context, result metric.Float64Observer) error {
 			result.Observe(gg.Value(), metric.WithAttributeSet(attributes))
 
 			return nil
@@ -197,7 +194,7 @@ func (h *Histogram) With(labelValues ...string) metrics.Histogram {
 
 // Observe implements metrics.Histogram.
 func (h *Histogram) Observe(value float64) {
-	h.Float64Histogram.Record(h.p.cfg.ctx, value, metric.WithAttributeSet(h.attributes))
+	h.Record(h.p.cfg.ctx, value, metric.WithAttributeSet(h.attributes))
 }
 
 // NewCardinalityCounter implements metrics.Provider.

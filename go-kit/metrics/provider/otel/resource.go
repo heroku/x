@@ -59,7 +59,7 @@ func HoneycombDataset(val string) attribute.KeyValue {
 	return HoneycombDatasetKey.String(val)
 }
 
-func MetricDestinations(destinations []string) []attribute.KeyValue {
+func MetricsDestinations(destinations []string) []attribute.KeyValue {
 	attrs := []attribute.KeyValue{}
 
 	for _, md := range destinations {

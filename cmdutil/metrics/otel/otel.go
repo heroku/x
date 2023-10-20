@@ -6,9 +6,6 @@ import (
 
 	"github.com/sirupsen/logrus"
 
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/sdk/resource"
-
 	"github.com/heroku/x/go-kit/metrics"
 	otel "github.com/heroku/x/go-kit/metrics/provider/otel"
 )
@@ -23,22 +20,29 @@ func MustProvider(ctx context.Context, logger logrus.FieldLogger, cfg Config, se
 		logger.Fatal("provider collectorURL cannot be nil")
 	}
 
-	attrs := []attribute.KeyValue{}
+	// configure some optional resource attributes
+	attrs := otel.MetricsDestinations(cfg.MetricsDestinations)
 	if cfg.Honeycomb.MetricsDataset != "" {
-		attrs = append(attrs, attribute.String("dataset", cfg.Honeycomb.MetricsDataset))
+		attrs = append(attrs, otel.HoneycombDataset(cfg.Honeycomb.MetricsDataset))
 	}
-	for _, md := range cfg.MetricsDestinations {
-		attrs = append(attrs, attribute.String(md, "true"))
-	}
-
-	res := resource.NewSchemaless(attrs...)
 
 	allOpts := []otel.Option{
+		// ensure we have service.id, service.namespace, and service.instance.id attributes
 		otel.WithOpenTelemetryStandardService(service, serviceNamespace, serviceInstanceID),
+
+		// ensure we have _service and component attributes
 		otel.WithServiceStandard(service),
+
+		// ensure we have stage and _subcomponent attributes
 		otel.WithEnvironmentStandard(stage),
-		otel.WithResource(res),
+
+		// if set, ensure we have honeycomb dataset and metrics destination attributes set
+		otel.WithAttributes(attrs...),
+
+		// exponential histograms are generally easier to use than explicit
 		otel.WithExponentialHistograms(),
+
+		// ensure we use the http exporter
 		otel.WithHTTPEndpointExporter(cfg.CollectorURL.String()),
 	}
 	allOpts = append(allOpts, opts...)
@@ -46,10 +50,6 @@ func MustProvider(ctx context.Context, logger logrus.FieldLogger, cfg Config, se
 	otelProvider, err := otel.New(ctx, service, allOpts...)
 	if err != nil {
 		logger.Fatal(err)
-	}
-
-	if err := otelProvider.(*otel.Provider).Start(); err != nil {
-		logger.WithError(err).Fatal("failed to start  metrics provider")
 	}
 
 	return otelProvider

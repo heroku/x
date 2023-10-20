@@ -80,7 +80,7 @@ func New(ctx context.Context, serviceName string, opts ...Option) (xmetrics.Prov
 	defaultOpts := []Option{
 		WithServiceStandard(serviceName),
 		DefaultAggregationSelector(),
-		WithDefaultEndpointExporter(),
+		DefaultEndpointExporter(),
 	}
 
 	opts = append(defaultOpts, opts...)
