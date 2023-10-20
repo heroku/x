@@ -29,7 +29,7 @@ var (
 
 const (
 	// DefaultAgentEndpoint is a default exporter endpoint that points to a local otel collector.
-	DefaultAgentEndpoint = "0.0.0.0:55680"
+	DefaultAgentEndpoint = "http://0.0.0.0:55680"
 
 	// If you are encountering this error it means that you are attempting to
 	// establish an aggregation selection (explicit, or exponential) after you have
