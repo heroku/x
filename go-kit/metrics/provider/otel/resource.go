@@ -68,7 +68,7 @@ func MetricsDestinations(destinations []string) []attribute.KeyValue {
 	return attrs
 }
 
-func OtelSemConv(name, namespace, instanceID string) []attribute.KeyValue {
+func SemConv(name, namespace, instanceID string) []attribute.KeyValue {
 	return []attribute.KeyValue{
 		semconv.ServiceName(name),
 		semconv.ServiceNamespace(namespace),
@@ -93,7 +93,7 @@ func EnvironmentSemConv(stage string) []attribute.KeyValue {
 func WithOpenTelemetryStandardService(name, namespace, instanceID string) Option {
 	return WithResource(resource.NewWithAttributes(
 		semconv.SchemaURL,
-		OtelSemConv(name, namespace, instanceID)...,
+		SemConv(name, namespace, instanceID)...,
 	))
 }
 
