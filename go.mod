@@ -1,6 +1,6 @@
 module github.com/heroku/x
 
-go 1.17
+go 1.21
 
 require (
 	contrib.go.opencensus.io/exporter/ocagent v0.6.0
@@ -16,10 +16,10 @@ require (
 	github.com/go-kit/kit v0.9.0
 	github.com/gogo/protobuf v1.3.0 // indirect
 	github.com/golang-jwt/jwt/v4 v4.4.2
-	github.com/golang/protobuf v1.5.2
+	github.com/golang/protobuf v1.5.3
 	github.com/gomodule/redigo v1.8.9
 	github.com/google/gops v0.3.22
-	github.com/google/uuid v1.1.2
+	github.com/google/uuid v1.3.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/heroku/rollrus v0.2.0
@@ -48,29 +48,32 @@ require (
 	go.opentelemetry.io/otel/sdk v1.0.0-RC3
 	go.opentelemetry.io/otel/sdk/export/metric v0.23.0
 	go.opentelemetry.io/otel/sdk/metric v0.23.0
-	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9
-	golang.org/x/sync v0.0.0-20190423024810-112230192c58
-	golang.org/x/sys v0.0.0-20211102061401-a2f17f7b995c // indirect
+	golang.org/x/crypto v0.13.0
+	golang.org/x/sync v0.3.0
+	golang.org/x/sys v0.12.0 // indirect
 	golang.org/x/time v0.0.0-20181108054448-85acf8d2951c
-	google.golang.org/grpc v1.40.0
+	google.golang.org/grpc v1.58.0
 	google.golang.org/grpc/examples v0.0.0-20210916203835-567da6b86340
-	google.golang.org/protobuf v1.27.1
+	google.golang.org/protobuf v1.31.0
 	gopkg.in/ini.v1 v1.42.0 // indirect
 	gopkg.in/square/go-jose.v2 v2.5.1
 )
 
 require (
 	github.com/cenkalti/backoff/v4 v4.1.1 // indirect
-	github.com/census-instrumentation/opencensus-proto v0.2.1 // indirect
+	github.com/census-instrumentation/opencensus-proto v0.4.1 // indirect
 	github.com/golang/groupcache v0.0.0-20190702054246-869f871628b6 // indirect
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.18.0 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.3 // indirect
 	go.opentelemetry.io/otel/internal/metric v0.23.0 // indirect
 	go.opentelemetry.io/otel/trace v1.0.0-RC3 // indirect
 	go.opentelemetry.io/proto/otlp v0.9.0 // indirect
-	golang.org/x/net v0.0.0-20200822124328-c89045814202 // indirect
-	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d // indirect
-	golang.org/x/text v0.3.2 // indirect
+	golang.org/x/net v0.15.0 // indirect
+	golang.org/x/oauth2 v0.12.0 // indirect
+	golang.org/x/text v0.13.0 // indirect
 	google.golang.org/api v0.7.0 // indirect
-	google.golang.org/appengine v1.5.0 // indirect
-	google.golang.org/genproto v0.0.0-20200806141610-86f49bd18e98 // indirect
+	google.golang.org/appengine v1.6.7 // indirect
+	google.golang.org/genproto v0.0.0-20230803162519-f966b187b2e5 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20230822172742-b8732ec3820d // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20230822172742-b8732ec3820d // indirect
 )
