@@ -120,6 +120,7 @@ var (
 func Legacy(config *tls.Config) {
 	config.CipherSuites = LegacyCiphers
 	config.MinVersion = tls.VersionTLS10
+	//nolint: staticcheck
 	config.PreferServerCipherSuites = true
 }
 
@@ -127,6 +128,7 @@ func Legacy(config *tls.Config) {
 func Default(config *tls.Config) {
 	config.CipherSuites = DefaultCiphers
 	config.MinVersion = tls.VersionTLS11
+	//nolint: staticcheck
 	config.PreferServerCipherSuites = true
 }
 
@@ -136,6 +138,7 @@ func Default(config *tls.Config) {
 func DefaultCommonRuntime(config *tls.Config) {
 	config.CipherSuites = DefaultCiphers
 	config.MinVersion = tls.VersionTLS10
+	//nolint: staticcheck
 	config.PreferServerCipherSuites = true
 }
 
@@ -143,6 +146,7 @@ func DefaultCommonRuntime(config *tls.Config) {
 func Modern(config *tls.Config) {
 	config.CipherSuites = ModernCiphers
 	config.MinVersion = tls.VersionTLS12
+	//nolint: staticcheck
 	config.PreferServerCipherSuites = true
 }
 
@@ -150,6 +154,7 @@ func Modern(config *tls.Config) {
 func Strict(config *tls.Config) {
 	config.CipherSuites = StrictCiphers
 	config.MinVersion = tls.VersionTLS13
+	//nolint: staticcheck
 	config.PreferServerCipherSuites = true
 }
 
@@ -157,6 +162,7 @@ func Strict(config *tls.Config) {
 func SFAllowed(config *tls.Config) {
 	config.CipherSuites = SFCiphers
 	config.MinVersion = tls.VersionTLS12
+	//nolint: staticcheck
 	config.PreferServerCipherSuites = true
 }
 

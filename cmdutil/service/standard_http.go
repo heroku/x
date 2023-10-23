@@ -24,6 +24,7 @@ import (
 type httpConfig struct {
 	Platform platformConfig
 	Bypass   bypassConfig
+	Timeouts timeoutConfig
 }
 
 // HTTP returns a standard HTTP server for the provided handler. Port, TLS, and
@@ -44,28 +45,29 @@ func HTTP(l logrus.FieldLogger, m metrics.Provider, h http.Handler, opts ...func
 	var srvs []cmdutil.Server
 
 	if cfg.Platform.Port != 0 {
-		s := &http.Server{
-			Handler: h,
-			Addr:    fmt.Sprintf(":%d", cfg.Platform.Port),
-		}
+
+		s := httpServerWithTimeouts(cfg.Timeouts)
+		s.Handler = h
+		s.Addr = fmt.Sprintf(":%d", cfg.Platform.Port)
 		o.configureServer(s)
 		srvs = append(srvs, standardServer(l, s))
 	}
 
 	if cfg.Platform.AdditionalPort != 0 {
-		s := &http.Server{
-			Handler: h,
-			Addr:    fmt.Sprintf(":%d", cfg.Platform.AdditionalPort),
-		}
+		s := httpServerWithTimeouts(cfg.Timeouts)
+
+		s.Handler = h
+		s.Addr = fmt.Sprintf(":%d", cfg.Platform.AdditionalPort)
 		o.configureServer(s)
 		srvs = append(srvs, standardServer(l, s))
 	}
 
 	if cfg.Bypass.InsecurePort != 0 {
-		s := &http.Server{
-			Handler: h,
-			Addr:    fmt.Sprintf(":%d", cfg.Bypass.InsecurePort),
-		}
+
+		s := httpServerWithTimeouts(cfg.Timeouts)
+		s.Handler = h
+		s.Addr = fmt.Sprintf(":%d", cfg.Bypass.InsecurePort)
+
 		o.configureServer(s)
 		srvs = append(srvs, bypassServer(l, s))
 	}
@@ -76,11 +78,11 @@ func HTTP(l logrus.FieldLogger, m metrics.Provider, h http.Handler, opts ...func
 			tlsConfig = newTLSConfig(cfg.Bypass.TLS)
 		}
 
-		s := &http.Server{
-			Handler:   h,
-			Addr:      fmt.Sprintf(":%d", cfg.Bypass.SecurePort),
-			TLSConfig: tlsConfig,
-		}
+		s := httpServerWithTimeouts(cfg.Timeouts)
+		s.Handler = h
+		s.TLSConfig = tlsConfig
+		s.Addr = fmt.Sprintf(":%d", cfg.Bypass.SecurePort)
+
 		o.configureServer(s)
 		srvs = append(srvs, bypassServer(l, s))
 	}
@@ -92,6 +94,15 @@ func HTTP(l logrus.FieldLogger, m metrics.Provider, h http.Handler, opts ...func
 	}
 
 	return cmdutil.MultiServer(srvs...)
+}
+
+func httpServerWithTimeouts(t timeoutConfig) *http.Server {
+	return &http.Server{
+		ReadTimeout:       t.Read,
+		ReadHeaderTimeout: t.ReadHeader,
+		WriteTimeout:      t.Write,
+		IdleTimeout:       t.Idle,
+	}
 }
 
 type httpOptions struct {

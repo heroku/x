@@ -3,7 +3,6 @@ package service
 import (
 	"bufio"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -15,8 +14,9 @@ import (
 
 func TestStandardHTTPServer(t *testing.T) {
 	l, _ := testlog.New()
+	//nolint: gosec
 	srv := &http.Server{
-		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			if _, err := io.WriteString(w, "OK"); err != nil {
 				t.Error(err)
 			}
@@ -45,7 +45,7 @@ func TestStandardHTTPServer(t *testing.T) {
 	}
 	defer res.Body.Close()
 
-	data, _ := ioutil.ReadAll(res.Body)
+	data, _ := io.ReadAll(res.Body)
 	if string(data) != "OK" {
 		t.Fatalf("want OK got %v", string(data))
 	}
@@ -57,8 +57,9 @@ func TestStandardHTTPServer(t *testing.T) {
 
 func TestBypassHTTPServer(t *testing.T) {
 	l, _ := testlog.New()
+	//nolint: gosec
 	srv := &http.Server{
-		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			if _, err := io.WriteString(w, "OK"); err != nil {
 				t.Error(err)
 			}
@@ -86,8 +87,7 @@ func TestBypassHTTPServer(t *testing.T) {
 	}
 	defer conn.Close()
 
-	_, err = io.WriteString(conn, "PROXY TCP4 127.0.0.1 127.0.0.1 44444 55555\n")
-	if err != nil {
+	if _, err = io.WriteString(conn, "PROXY TCP4 127.0.0.1 127.0.0.1 44444 55555\n"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -103,7 +103,7 @@ func TestBypassHTTPServer(t *testing.T) {
 	}
 	defer res.Body.Close()
 
-	data, _ := ioutil.ReadAll(res.Body)
+	data, _ := io.ReadAll(res.Body)
 	if string(data) != "OK" {
 		t.Fatalf("want OK got %v", string(data))
 	}

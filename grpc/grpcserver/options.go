@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"time"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_logrus "github.com/grpc-ecosystem/go-grpc-middleware/logging/logrus"
@@ -21,6 +22,10 @@ import (
 	"github.com/heroku/x/tlsconfig"
 )
 
+const (
+	defaultReadHeaderTimeout = 60 * time.Second
+)
+
 var defaultLogOpts = []grpc_logrus.Option{
 	grpc_logrus.WithCodes(ErrorToCode),
 }
@@ -32,10 +37,17 @@ type options struct {
 	authStreamInterceptor     grpc.StreamServerInterceptor
 	highCardUnaryInterceptor  grpc.UnaryServerInterceptor
 	highCardStreamInterceptor grpc.StreamServerInterceptor
+	readHeaderTimeout         time.Duration
 
 	useValidateInterceptor bool
 
 	grpcOptions []grpc.ServerOption
+}
+
+func defaultOptions() options {
+	return options{
+		readHeaderTimeout: defaultReadHeaderTimeout,
+	}
 }
 
 // ServerOption sets optional fields on the standard gRPC server
@@ -85,6 +97,12 @@ func HighCardInterceptors(unary grpc.UnaryServerInterceptor, stream grpc.StreamS
 func WithOCGRPCServerHandler(h *ocgrpc.ServerHandler) ServerOption {
 	return func(o *options) {
 		o.grpcOptions = append(o.grpcOptions, grpc.StatsHandler(h))
+	}
+}
+
+func WithReadHeaderTimeout(d time.Duration) ServerOption {
+	return func(o *options) {
+		o.readHeaderTimeout = d
 	}
 }
 
@@ -207,12 +225,12 @@ func WithPeerValidator(f func(*x509.Certificate) bool) ServerOption {
 func validatePeer(ctx context.Context, f func(*x509.Certificate) bool) error {
 	cert, ok := getPeerCertFromContext(ctx)
 	if !ok {
-		//TODO: SA1019: grpc.Errorf is deprecated: use status.Errorf instead.  (staticcheck)
+		// TODO: SA1019: grpc.Errorf is deprecated: use status.Errorf instead.  (staticcheck)
 		return grpc.Errorf(codes.Unauthenticated, "unauthenticated") //nolint:staticcheck
 	}
 
 	if !f(cert) {
-		//TODO: SA1019: grpc.Errorf is deprecated: use status.Errorf instead.  (staticcheck)
+		// TODO: SA1019: grpc.Errorf is deprecated: use status.Errorf instead.  (staticcheck)
 		return grpc.Errorf(codes.PermissionDenied, "forbidden") //nolint:staticcheck
 	}
 

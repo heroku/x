@@ -2,6 +2,7 @@ package service
 
 import (
 	"net/url"
+	"time"
 
 	"github.com/heroku/x/cmdutil/debug"
 	"github.com/heroku/x/cmdutil/metrics"
@@ -79,4 +80,11 @@ type spaceCAConfig struct {
 
 	// Domain of the service used in the generation of the cert
 	Domain string `env:"DOMAIN"`
+}
+
+type timeoutConfig struct {
+	Read       time.Duration `env:"SERVER_READ_TIMEOUT"`
+	ReadHeader time.Duration `env:"SERVER_READ_HEADER_TIMEOUT,default=30s"`
+	Write      time.Duration `env:"SERVER_WRITE_TIMEOUT"`
+	Idle       time.Duration `env:"SERVER_IDLE_TIMEOUT"`
 }
