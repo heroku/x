@@ -6,6 +6,7 @@ import (
 
 	"github.com/hydrogen18/memlistener"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 // Local returns an in-process server for the provided gRPC server.
@@ -43,7 +44,7 @@ func (s *LocalServer) Conn(opts ...grpc.DialOption) *grpc.ClientConn {
 		grpc.WithDialer(func(addr string, timeout time.Duration) (net.Conn, error) { //nolint:staticcheck
 			return s.ln.Dial("mem", "")
 		}),
-		grpc.WithInsecure(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	}
 
 	conn, _ := grpc.Dial("", append(defaultOptions, opts...)...)
