@@ -1,6 +1,6 @@
 # See https://github.com/golangci/golangci-lint#config-file
 run:
-  deadline: 1m #Default
+  deadline: 2m #Default
   issues-exit-code: 1 #Default
   tests: true #Default
 
