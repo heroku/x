@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -59,7 +58,7 @@ PREREQUISITES
         S3ENV_AWS_ACCESS_KEY_ID
         S3ENV_AWS_REGION
 		S3ENV_AWS_SECRET_ACCESS_KEY
-		
+
 EXAMPLES
         s3env config                  # show all config vars
         s3env config:set FOO=1 BAR=2  # set two vars
@@ -99,7 +98,6 @@ func loadS3Object() {
 			"",
 		),
 	})
-
 	if err != nil {
 		fmt.Printf("s3env: aws error: %s\n", err)
 		return
@@ -166,7 +164,6 @@ func persistVars() error {
 		Body:                 bytes.NewReader(buf.Bytes()),
 		ServerSideEncryption: aws.String(cfg.ServerSideEncryption),
 	})
-
 	if err != nil {
 		return fmt.Errorf("saving to s3 failed with error: %s", err)
 	}
@@ -189,7 +186,7 @@ func input() (io.ReadCloser, error) {
 			buf := new(bytes.Buffer)
 			buf.Write([]byte("{}"))
 
-			return ioutil.NopCloser(buf), nil
+			return io.NopCloser(buf), nil
 		}
 		return nil, err
 	}
