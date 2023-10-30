@@ -67,7 +67,7 @@ func (s *TCPServer) serve() error {
 	for {
 		conn, err := s.ln.Accept()
 		if err != nil {
-			if e, ok := err.(net.Error); ok && e.Temporary() {
+			if e, ok := err.(net.Error); ok && e.Timeout() {
 				s.logger.
 					WithField("at", "accept").
 					WithError(err).

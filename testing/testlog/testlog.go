@@ -3,7 +3,7 @@ package testlog
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"strconv"
 	"strings"
 	"sync"
@@ -22,7 +22,7 @@ type Hook struct {
 // observe and make assertions about what was logged.
 func New() (*logrus.Logger, *Hook) {
 	l := logrus.New()
-	l.Out = ioutil.Discard
+	l.Out = io.Discard
 
 	hook := new(Hook)
 	l.Hooks.Add(hook)

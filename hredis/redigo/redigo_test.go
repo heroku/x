@@ -22,9 +22,7 @@ func setup(t *testing.T) (*redigomock.Conn, DialURLFunc, func()) {
 	}
 }
 
-var (
-	errInvalidPassword = errors.New("ERR invalid password")
-)
+var errInvalidPassword = errors.New("ERR invalid password")
 
 func TestPoolBadThenGood(t *testing.T) {
 	mock, dialURL, tearDown := setup(t)
@@ -103,14 +101,13 @@ func TestPoolWithNoGoodPasses(t *testing.T) {
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Fatalf("got %q, want nil", err)
 	}
-
 }
 
 // Note: If this test fails, it can leave the redis with a password different than you
 // expect. Probably best to run redis with a fresh docker container, like so:
 //
-//    docker run --rm -p 127.0.0.1:6379:6379 --name test-redis redis
-//    REDIS_URL=redis://127.0.0.1:6379 go test -count=1 -v ./hredis/...
+//	docker run --rm -p 127.0.0.1:6379:6379 --name test-redis redis
+//	REDIS_URL=redis://127.0.0.1:6379 go test -count=1 -v ./hredis/...
 func TestIntegrationTest(t *testing.T) {
 	redisURL := os.Getenv("REDIS_URL")
 	if redisURL == "" {

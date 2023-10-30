@@ -1,12 +1,10 @@
 package encoding
 
 import (
+	"bytes"
 	"io"
-	"io/ioutil"
 	"testing"
 	"time"
-
-	"bytes"
 
 	"github.com/pkg/errors"
 )
@@ -31,7 +29,7 @@ func TestEncode(t *testing.T) {
 				Timestamp:   lockedDate,
 				Message:     "hi",
 			},
-			writer:  ioutil.Discard,
+			writer:  io.Discard,
 			msgSize: int64(77), // "74 <encoded msg>"
 		},
 
@@ -45,7 +43,7 @@ func TestEncode(t *testing.T) {
 				Timestamp:   lockedDate,
 				Message:     "hi",
 			},
-			writer: ioutil.Discard,
+			writer: io.Discard,
 			err:    ErrInvalidMessage,
 		},
 

@@ -1,10 +1,8 @@
 package service
 
 import (
-	"math/rand"
 	"strings"
 	"syscall"
-	"time"
 
 	"github.com/joeshaw/envdecode"
 	"github.com/oklog/run"
@@ -37,10 +35,6 @@ type Standard struct {
 // If appConfig is non-nil, envdecode.MustStrictDecode will be called on it
 // to ensure that it is processed.
 func New(appConfig interface{}, ofs ...OptionFunc) *Standard {
-	// Initialize the pseudo-random number generator with a unique value so we
-	// get unique sequences across runs.
-	rand.Seed(time.Now().UnixNano())
-
 	var sc standardConfig
 	envdecode.MustStrictDecode(&sc)
 

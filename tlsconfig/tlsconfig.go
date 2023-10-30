@@ -5,18 +5,18 @@
 // See https://wiki.mozilla.org/Security/Server_Side_TLS
 //
 // Prioritized by:
-//   Key Ex:   ECDHE > DH > RSA
-//   Enc:      CHACHA20 > AES-GCM > AES-CBC > 3DES
-//   MAC:      AEAD > SHA256 > SHA384 > SHA1 (SHA)
-//   AES:      128 > 256
-//   Cert Sig: ECDSA > RSA
+//
+//	Key Ex:   ECDHE > DH > RSA
+//	Enc:      CHACHA20 > AES-GCM > AES-CBC > 3DES
+//	MAC:      AEAD > SHA256 > SHA384 > SHA1 (SHA)
+//	AES:      128 > 256
+//	Cert Sig: ECDSA > RSA
 //
 // Modern:    strongest ciphers (PFS-only) & latest TLS version(s)
 // Default:   mix of various strength ciphers & recent TLS versions
 // Strict:    deprecated, Default plus ECDHE+RSA+AES{128,256}+CBC+SHA1 for IE 11
 // Legacy:    many ciphers & TLS versions for maximum compatibility, less secure
 // SFAllowed: provides only the ciphers allowed according to SFSS-151.
-//
 package tlsconfig
 
 import (
@@ -120,6 +120,7 @@ var (
 func Legacy(config *tls.Config) {
 	config.CipherSuites = LegacyCiphers
 	config.MinVersion = tls.VersionTLS10
+	//nolint: staticcheck
 	config.PreferServerCipherSuites = true
 }
 
@@ -127,6 +128,7 @@ func Legacy(config *tls.Config) {
 func Default(config *tls.Config) {
 	config.CipherSuites = DefaultCiphers
 	config.MinVersion = tls.VersionTLS11
+	//nolint: staticcheck
 	config.PreferServerCipherSuites = true
 }
 
@@ -136,6 +138,7 @@ func Default(config *tls.Config) {
 func DefaultCommonRuntime(config *tls.Config) {
 	config.CipherSuites = DefaultCiphers
 	config.MinVersion = tls.VersionTLS10
+	//nolint: staticcheck
 	config.PreferServerCipherSuites = true
 }
 
@@ -143,6 +146,7 @@ func DefaultCommonRuntime(config *tls.Config) {
 func Modern(config *tls.Config) {
 	config.CipherSuites = ModernCiphers
 	config.MinVersion = tls.VersionTLS12
+	//nolint: staticcheck
 	config.PreferServerCipherSuites = true
 }
 
@@ -150,6 +154,7 @@ func Modern(config *tls.Config) {
 func Strict(config *tls.Config) {
 	config.CipherSuites = StrictCiphers
 	config.MinVersion = tls.VersionTLS13
+	//nolint: staticcheck
 	config.PreferServerCipherSuites = true
 }
 
@@ -157,6 +162,7 @@ func Strict(config *tls.Config) {
 func SFAllowed(config *tls.Config) {
 	config.CipherSuites = SFCiphers
 	config.MinVersion = tls.VersionTLS12
+	//nolint: staticcheck
 	config.PreferServerCipherSuites = true
 }
 
@@ -313,11 +319,11 @@ func (c *CA) NewLeaf(config LeafConfig) (*tls.Certificate, error) {
 		}
 
 		unsignedCert.ExtraExtensions = []pkix.Extension{
-			pkix.Extension{
+			{
 				Id:    InstanceIdentityDocOID,
 				Value: b64(gz(iid.Doc)),
 			},
-			pkix.Extension{
+			{
 				Id:    InstanceIdentitySigOID,
 				Value: b64(iid.Sig),
 			},

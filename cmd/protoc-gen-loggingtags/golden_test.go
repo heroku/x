@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -60,7 +59,7 @@ func TestGenerate(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			workdir, err := ioutil.TempDir("", "proto-test")
+			workdir, err := os.MkdirTemp("", "proto-test")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -95,7 +94,7 @@ func TestGenerate(t *testing.T) {
 }
 
 func TestSample(t *testing.T) {
-	workdir, err := ioutil.TempDir("", "proto-test")
+	workdir, err := os.MkdirTemp("", "proto-test")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -105,7 +104,7 @@ func TestSample(t *testing.T) {
 		"--proto_path=" + filepath.Join("internal", "test"),
 		"--proto_path=.",
 		"--loggingtags_out=" + workdir,
-		filepath.Join("sample.proto"),
+		"sample.proto",
 	})
 
 	goldenPath := filepath.Join("internal", "test", "sample.pb.loggingtags.go")

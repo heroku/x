@@ -2,7 +2,7 @@
 package svclog
 
 import (
-	"io/ioutil"
+	"io"
 	"strings"
 	"time"
 
@@ -95,7 +95,7 @@ func (sl saramaLogger) Printf(format string, args ...interface{}) {
 // NewNullLogger returns a logger that discards the output useful for testing
 func NewNullLogger() logrus.FieldLogger {
 	logger := logrus.New()
-	logger.SetOutput(ioutil.Discard)
+	logger.SetOutput(io.Discard)
 	return logger
 }
 

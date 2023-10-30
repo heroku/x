@@ -84,7 +84,7 @@ func NewStandardServer(logger log.FieldLogger, port int, serverCACerts [][]byte,
 // standard set of services, and a HTTP server that should be what is served on
 // a listener.
 func NewStandardH2C(http11 http.Handler, opts ...ServerOption) (*grpc.Server, *http.Server) {
-	var o options
+	o := defaultOptions()
 	for _, so := range opts {
 		so(&o)
 	}
@@ -98,7 +98,10 @@ func NewStandardH2C(http11 http.Handler, opts ...ServerOption) (*grpc.Server, *h
 		NonUpgradeHandler: http11,
 	}
 
-	hSrv := &http.Server{Handler: h2cSrv}
+	hSrv := &http.Server{
+		Handler:           h2cSrv,
+		ReadHeaderTimeout: o.readHeaderTimeout,
+	}
 
 	return gSrv, hSrv
 }

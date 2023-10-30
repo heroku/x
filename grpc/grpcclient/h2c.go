@@ -10,6 +10,7 @@ import (
 	"github.com/lstoll/grpce/h2c"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 // DialH2CContext will establish a connection to the grpcserver.NewStandardH2C server
@@ -24,7 +25,7 @@ func DialH2CContext(ctx context.Context, serverURL string, opts ...grpc.DialOpti
 	opts = append(opts,
 		grpc.WithContextDialer(h2c.Dialer{URL: u}.DialGRPCContext),
 		// TLS is done at the HTTP/1.1 level, so we never know....
-		grpc.WithInsecure(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 
 	port := u.Port()
@@ -41,7 +42,6 @@ func DialH2CContext(ctx context.Context, serverURL string, opts ...grpc.DialOpti
 		return nil, errors.Wrap(err, "Error dialing server")
 	}
 	return conn, nil
-
 }
 
 // DialH2C will establish a connection to the grpcserver.NewStandardH2C server

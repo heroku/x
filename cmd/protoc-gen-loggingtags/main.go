@@ -2,7 +2,7 @@ package main
 
 import (
 	"flag"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"strings"
@@ -21,7 +21,7 @@ func main() {
 	if *file != "stdin" {
 		f, _ = os.Open("input.txt")
 	}
-	input, err := ioutil.ReadAll(f)
+	input, err := io.ReadAll(f)
 	if err != nil {
 		log.Fatal(err)
 	}

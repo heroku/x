@@ -4,12 +4,12 @@
 // trace, profile memory, etc. by running the gops command line connected to
 // locahost:9999 like:
 //
-//		$ gops stack localhost:9999
-//		goroutine 50 [running]:
-//		  runtime/pprof.writeGoroutineStacks(0x4a18a20, 0xc000010138, 0x0, 0x0)
-//		  	/usr/local/Cellar/go/1.13.5/libexec/src/runtime/pprof/pprof.go:679 +0x9d
-//		  runtime/pprof.writeGoroutine(0x4a18a20, 0xc000010138, 0x2, 0x0, 0x0)
-//		  ...
+//	$ gops stack localhost:9999
+//	goroutine 50 [running]:
+//	  runtime/pprof.writeGoroutineStacks(0x4a18a20, 0xc000010138, 0x0, 0x0)
+//	  	/usr/local/Cellar/go/1.13.5/libexec/src/runtime/pprof/pprof.go:679 +0x9d
+//	  runtime/pprof.writeGoroutine(0x4a18a20, 0xc000010138, 0x2, 0x0, 0x0)
+//	  ...
 //
 // Learn more about gops at https://github.com/google/gops.
 package debug
@@ -24,7 +24,8 @@ import (
 // New inializes a debug server listening on the provided port.
 //
 // Connect to the debug server with gops:
-//		gops stack localhost:PORT
+//
+//	gops stack localhost:PORT
 func New(l logrus.FieldLogger, port int) *Server {
 	return &Server{
 		logger: l,

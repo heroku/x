@@ -10,9 +10,10 @@ import (
 
 // SyslogSplitFunc splits the data based on the defined length prefix.
 // format:
-//nolint:lll
 // 64 <190>1 2019-07-20T17:50:10.879238Z shuttle token shuttle - - 99\n65 <190>1 2019-07-20T17:50:10.879238Z shuttle token shuttle - - 100\n
 // ^ frame size                                                       ^ boundary
+//
+//nolint:lll
 func SyslogSplitFunc(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	// first space gives us the frame size
 	sp := bytes.IndexByte(data, ' ')

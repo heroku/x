@@ -1,7 +1,7 @@
 package hmiddleware
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -18,7 +18,6 @@ func TestPreRequestLogger(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, err := w.Write([]byte("ok"))
-
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -55,7 +54,6 @@ func TestPreRequestLoggerDoesNotDoubleWrapTheResponseWriter(t *testing.T) {
 
 		w.WriteHeader(http.StatusOK)
 		_, err := w.Write([]byte("ok"))
-
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -82,7 +80,6 @@ func TestPostRequestLogger(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, err := w.Write([]byte("ok"))
-
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -119,7 +116,6 @@ func TestPostRequestLoggerDoesNotDoubleWrapTheResponseWriter(t *testing.T) {
 
 		w.WriteHeader(http.StatusOK)
 		_, err := w.Write([]byte("ok"))
-
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -190,7 +186,7 @@ func runPostRequestLoggerTest(t testing.TB, h http.Handler, hook *testlog.Hook) 
 		t.Fatalf("StatusCode = %v, want %v", rsp.StatusCode, http.StatusOK)
 	}
 
-	if data, _ := ioutil.ReadAll(rsp.Body); string(data) != "ok" {
+	if data, _ := io.ReadAll(rsp.Body); string(data) != "ok" {
 		t.Fatalf("Body = %v, want %v", string(data), "ok")
 	}
 
@@ -219,7 +215,6 @@ func TestRobotAllLogger(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, err := w.Write([]byte("ok"))
-
 		if err != nil {
 			t.Fatal(err)
 		}

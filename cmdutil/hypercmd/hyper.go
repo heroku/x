@@ -5,7 +5,6 @@ package hypercmd
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 
 	"github.com/pkg/errors"
@@ -19,7 +18,7 @@ func New(name string, fn func()) cli.Command {
 		Name:   name,
 		Usage:  "Run " + name,
 		Before: serviceEnvLoader(name),
-		Action: func(c *cli.Context) error {
+		Action: func(_ *cli.Context) error {
 			fn()
 			return nil
 		},
@@ -29,8 +28,8 @@ func New(name string, fn func()) cli.Command {
 // serviceEnvLoader will load JSON-format environment files before executing
 // the service function.
 func serviceEnvLoader(name string) cli.BeforeFunc {
-	return func(c *cli.Context) error {
-		data, err := ioutil.ReadFile(".env." + name)
+	return func(_ *cli.Context) error {
+		data, err := os.ReadFile(".env." + name)
 		if err != nil {
 			if os.IsNotExist(err) {
 				return nil

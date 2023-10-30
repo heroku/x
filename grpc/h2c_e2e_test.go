@@ -3,7 +3,7 @@ package grpc
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"testing"
@@ -51,7 +51,7 @@ func TestH2CContextE2E(t *testing.T) {
 	}
 	defer resp.Body.Close()
 
-	bb, err := ioutil.ReadAll(resp.Body)
+	bb, err := io.ReadAll(resp.Body)
 	if err != nil {
 		t.Errorf("Error reading HTTP/1.1 call to H2C Server body [%+v]", err)
 	}

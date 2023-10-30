@@ -1,7 +1,7 @@
 package healthcheck
 
 import (
-	"io/ioutil"
+	"io"
 	"net"
 	"testing"
 	"time"
@@ -37,7 +37,7 @@ func TestTCPServer(t *testing.T) {
 		t.Fatal("unexpected error", err)
 	}
 
-	data, err := ioutil.ReadAll(conn)
+	data, err := io.ReadAll(conn)
 	if err != nil {
 		t.Fatal(err)
 	}
