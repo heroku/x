@@ -13,11 +13,11 @@ import (
 )
 
 const (
-	defaultExponentialHistogramMaxSize  = 50
+	defaultExponentialHistogramMaxSize  = 160
 	defaultExponentialHistogramMaxScale = 20
 )
 
-var DefaultReaderInterval = metric.WithInterval(time.Minute)
+var DefaultReaderInterval = time.Minute
 
 type config struct {
 	ctx                 context.Context // used for init and shutdown of the otlp exporter and other bits of this Provider
@@ -75,6 +75,7 @@ type exporterFactory func(*config) (metric.Exporter, error)
 func New(ctx context.Context, serviceName string, opts ...Option) (xmetrics.Provider, error) {
 	cfg := &config{
 		ctx:             ctx,
+		collectPeriod:   DefaultReaderInterval,
 		serviceResource: resource.Default(), // this fetches from env by default and pre-populates some fields.
 	}
 	defaultOpts := []Option{

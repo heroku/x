@@ -152,6 +152,9 @@ func (p *Provider) NewExplicitHistogram(name string, fn xmetrics.DistributionFun
 
 // NewHistogram implements metrics.Provider.
 func (p *Provider) NewHistogram(name string, buckets int) metrics.Histogram {
+	if buckets <= 0 {
+		buckets = defaultExponentialHistogramMaxSize
+	}
 	stream := sdk.Stream{
 		Name: prefixName(p.cfg.prefix, name),
 		Aggregation: sdk.AggregationBase2ExponentialHistogram{
