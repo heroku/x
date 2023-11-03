@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	"go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 
 	"github.com/heroku/x/tlsconfig"
 )
@@ -50,6 +51,22 @@ func WithCollectPeriod(collectPeriod time.Duration) Option {
 	}
 }
 
+func CumulativeTemporalitySelector(_ metric.InstrumentKind) metricdata.Temporality {
+	return metricdata.CumulativeTemporality
+}
+
+func DeltaTemporalitySelector(_ metric.InstrumentKind) metricdata.Temporality {
+	return metricdata.DeltaTemporality
+}
+
+func WithCumulativeTemporality() Option {
+	return WithTemporalitySelector(CumulativeTemporalitySelector)
+}
+
+func WithDeltaTemporality() Option {
+	return WithTemporalitySelector(DeltaTemporalitySelector)
+}
+
 func WithTemporalitySelector(temporality metric.TemporalitySelector) Option {
 	return func(c *config) error {
 		c.temporalitySelector = temporality
@@ -58,12 +75,22 @@ func WithTemporalitySelector(temporality metric.TemporalitySelector) Option {
 	}
 }
 
-func WithExponentialHistograms() Option {
+func WithExponentialAggregation() Option {
 	return WithAggregationSelector(ExponentialAggregationSelector)
 }
 
-func WithExplicitHistograms() Option {
+func WithExplicitAggregation() Option {
 	return WithAggregationSelector(ExplicitAggregationSelector)
+}
+
+// Deprecated: WithExponentialHistograms is deprecated use WithExponentialAggregation instead.
+func WithExponentialHistograms() Option {
+	return WithExponentialAggregation()
+}
+
+// Deprecated: WithExplicitHistograms is deprecated use WithExplicitAggregation instead.
+func WithExplicitHistograms() Option {
+	return WithExplicitAggregation()
 }
 
 func WithAggregationSelector(selector metric.AggregationSelector) Option {

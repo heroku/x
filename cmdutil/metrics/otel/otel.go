@@ -39,8 +39,11 @@ func MustProvider(ctx context.Context, logger logrus.FieldLogger, cfg Config, se
 		// if set, ensure we have honeycomb dataset and metrics destination attributes set
 		otel.WithAttributes(attrs...),
 
-		// use the default (exponential) aggregation selector, exponential histograms are generally easier to use than explicit
-		otel.DefaultAggregationSelector(),
+		// use the exponential aggregation selector, exponential histograms are generally easier to use than explicit
+		otel.WithExponentialAggregation(),
+
+		// use Delta Temporality by default
+		otel.WithDeltaTemporality(),
 
 		// ensure we use the http exporter
 		otel.WithHTTPEndpointExporter(cfg.CollectorURL.String()),
