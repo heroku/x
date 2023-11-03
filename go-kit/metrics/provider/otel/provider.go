@@ -24,6 +24,7 @@ type config struct {
 	serviceResource     *resource.Resource
 	prefix              string
 	collectPeriod       time.Duration
+	temporalitySelector metric.TemporalitySelector
 	aggregationSelector metric.AggregationSelector
 	exporterFactory     exporterFactory
 }

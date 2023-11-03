@@ -50,6 +50,14 @@ func WithCollectPeriod(collectPeriod time.Duration) Option {
 	}
 }
 
+func WithTemporalitySelector(temporality metric.TemporalitySelector) Option {
+	return func(c *config) error {
+		c.temporalitySelector = temporality
+
+		return nil
+	}
+}
+
 func WithExponentialHistograms() Option {
 	return WithAggregationSelector(ExponentialAggregationSelector)
 }
@@ -80,6 +88,7 @@ func WithHTTPEndpointExporter(endpoint string, options ...otlpmetrichttp.Option)
 		defaults := []otlpmetrichttp.Option{
 			otlpmetrichttp.WithEndpoint(u.Host),
 			otlpmetrichttp.WithAggregationSelector(cfg.aggregationSelector),
+			otlpmetrichttp.WithTemporalitySelector(cfg.temporalitySelector),
 		}
 
 		if u.Scheme == "https" {
@@ -107,6 +116,7 @@ func WithGRPCExporter(endpoint string, options ...otlpmetricgrpc.Option) Option 
 		defaults := []otlpmetricgrpc.Option{
 			otlpmetricgrpc.WithEndpoint(endpoint),
 			otlpmetricgrpc.WithInsecure(),
+			otlpmetricgrpc.WithTemporalitySelector(cfg.temporalitySelector),
 			otlpmetricgrpc.WithAggregationSelector(cfg.aggregationSelector),
 		}
 		options = append(defaults, options...)
