@@ -67,7 +67,7 @@ func WithAggregationSelector(selector metric.AggregationSelector) Option {
 }
 
 func WithHTTPExporter(options ...otlpmetrichttp.Option) Option {
-	return WithHTTPEndpointExporter(DefaultAgentEndpoint)
+	return WithHTTPEndpointExporter(DefaultAgentEndpoint, options...)
 }
 
 func WithHTTPEndpointExporter(endpoint string, options ...otlpmetrichttp.Option) Option {
@@ -77,15 +77,25 @@ func WithHTTPEndpointExporter(endpoint string, options ...otlpmetrichttp.Option)
 			return nil, err
 		}
 
-		authHeader := make(map[string]string)
-		authHeader["Authorization"] = "Basic" + base64.StdEncoding.EncodeToString([]byte(u.User.String()))
-
 		defaults := []otlpmetrichttp.Option{
 			otlpmetrichttp.WithEndpoint(u.Host),
-			otlpmetrichttp.WithTLSClientConfig(tlsconfig.New()),
-			otlpmetrichttp.WithHeaders(authHeader),
 			otlpmetrichttp.WithAggregationSelector(cfg.aggregationSelector),
 		}
+
+		if u.Scheme == "https" {
+			defaults = append(defaults, otlpmetrichttp.WithTLSClientConfig(tlsconfig.New()))
+		} else {
+			defaults = append(defaults, otlpmetrichttp.WithInsecure())
+		}
+
+		if u.User.String() != "" {
+			authHeader := make(map[string]string)
+			authHeader["Authorization"] = "Basic" + base64.StdEncoding.EncodeToString([]byte(u.User.String()))
+
+			defaults = append(defaults, otlpmetrichttp.WithHeaders(authHeader))
+		}
+
+		// finally append any passed in options
 		options = append(defaults, options...)
 
 		return otlpmetrichttp.New(cfg.ctx, options...)
