@@ -81,7 +81,7 @@ func WithHTTPEndpointExporter(endpoint string, options ...otlpmetrichttp.Option)
 		authHeader["Authorization"] = "Basic" + base64.StdEncoding.EncodeToString([]byte(u.User.String()))
 
 		defaults := []otlpmetrichttp.Option{
-			otlpmetrichttp.WithEndpoint(u.Hostname()),
+			otlpmetrichttp.WithEndpoint(u.Host),
 			otlpmetrichttp.WithTLSClientConfig(tlsconfig.New()),
 			otlpmetrichttp.WithHeaders(authHeader),
 			otlpmetrichttp.WithAggregationSelector(cfg.aggregationSelector),
