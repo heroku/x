@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"google.golang.org/grpc/credentials"
 
 	"github.com/heroku/x/tlsconfig"
 )
@@ -140,12 +141,30 @@ func WithHTTPEndpointExporter(endpoint string, options ...otlpmetrichttp.Option)
 
 func WithGRPCExporter(endpoint string, options ...otlpmetricgrpc.Option) Option {
 	return WithExporterFunc(func(cfg *config) (metric.Exporter, error) {
-		defaults := []otlpmetricgrpc.Option{
-			otlpmetricgrpc.WithEndpoint(endpoint),
-			otlpmetricgrpc.WithInsecure(),
-			otlpmetricgrpc.WithTemporalitySelector(cfg.temporalitySelector),
-			otlpmetricgrpc.WithAggregationSelector(cfg.aggregationSelector),
+		u, err := url.Parse(endpoint)
+		if err != nil {
+			return nil, err
 		}
+
+		defaults := []otlpmetricgrpc.Option{
+			otlpmetricgrpc.WithEndpoint(u.Host),
+			otlpmetricgrpc.WithAggregationSelector(cfg.aggregationSelector),
+			otlpmetricgrpc.WithTemporalitySelector(cfg.temporalitySelector),
+		}
+		if u.Scheme == "https" {
+			// use system root ca for TLS
+			defaults = append(defaults, otlpmetricgrpc.WithTLSCredentials(credentials.NewTLS(tlsconfig.New())))
+		} else {
+			defaults = append(defaults, otlpmetricgrpc.WithInsecure())
+		}
+
+		if u.User.String() != "" {
+			authHeader := make(map[string]string)
+			authHeader["Authorization"] = "Basic" + base64.StdEncoding.EncodeToString([]byte(u.User.String()))
+
+			defaults = append(defaults, otlpmetricgrpc.WithHeaders(authHeader))
+		}
+
 		options = append(defaults, options...)
 		return otlpmetricgrpc.New(cfg.ctx, options...)
 	})

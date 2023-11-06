@@ -7,7 +7,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	"github.com/heroku/x/go-kit/metrics"
-	otel "github.com/heroku/x/go-kit/metrics/provider/otel"
+	"github.com/heroku/x/go-kit/metrics/provider/otel"
 )
 
 // MustProvider ensures setting up and starting a otel.Provider succeeds.
@@ -16,7 +16,13 @@ func MustProvider(ctx context.Context, logger logrus.FieldLogger, cfg Config, se
 	// This provider is used for metrics reporting to the  collector.
 	logger.WithField("metrics_destinations", strings.Join(cfg.MetricsDestinations, ",")).Info("setting up  provider")
 
-	if cfg.CollectorURL == nil {
+	// for backwards compatiblity prefer the CollectorURL over EndpointURL
+	endpoint := cfg.CollectorURL
+	if endpoint == nil {
+		endpoint = cfg.EndpointURL
+	}
+
+	if endpoint == nil {
 		logger.Fatal("provider collectorURL cannot be nil")
 	}
 
@@ -33,7 +39,7 @@ func MustProvider(ctx context.Context, logger logrus.FieldLogger, cfg Config, se
 		// ensure we have _service and component attributes
 		otel.WithServiceStandard(service),
 
-		// ensure we have stage and _subcomponent attributes
+		// ensure we have stage and _subservice attributes
 		otel.WithEnvironmentStandard(stage),
 
 		// if set, ensure we have honeycomb dataset and metrics destination attributes set
@@ -46,7 +52,7 @@ func MustProvider(ctx context.Context, logger logrus.FieldLogger, cfg Config, se
 		otel.WithDeltaTemporality(),
 
 		// ensure we use the http exporter
-		otel.WithHTTPEndpointExporter(cfg.CollectorURL.String()),
+		otel.WithHTTPEndpointExporter(endpoint.String()),
 	}
 	allOpts = append(allOpts, opts...)
 

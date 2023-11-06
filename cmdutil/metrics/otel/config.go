@@ -13,4 +13,7 @@ type Config struct {
 	CollectorURL        *url.URL `env:"OTEL_COLLECTOR_URL"`
 	MetricsDestinations []string `env:"OTEL_METRICS_DESTINATIONS,default=honeycomb;argus"`
 	Honeycomb           honeycomb.Config
+
+	// EndpointURL maps to the official opentelemetry environment variable for configuring the endpoint
+	EndpointURL *url.URL `env:"OTEL_EXPORTER_OTLP_ENDPOINT"`
 }
