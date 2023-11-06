@@ -101,7 +101,8 @@ func EnvironmentConv(stage string) []attribute.KeyValue {
 	}
 }
 
-// WithOpenTelemetryStandardService returns an Option that configures service attributes according to open-telemetry semconv conventions.
+// WithOpenTelemetryStandardService returns an Option that configures service
+// attributes according to open-telemetry semconv conventions.
 func WithOpenTelemetryStandardService(name, namespace, instanceID string) Option {
 	return WithResource(resource.NewWithAttributes(
 		semconv.SchemaURL,
@@ -123,7 +124,8 @@ func WithEnvironmentStandard(env string) Option {
 	))
 }
 
-// WithResource will merge the given resource with the provided default, any duplicate attributes will be overwritten.
+// WithResource will merge the given resource with the provided default, any
+// duplicate attributes will be overwritten.
 func WithResource(res *resource.Resource) Option {
 	return func(cfg *config) error {
 		merged, err := resource.Merge(cfg.serviceResource, res)
