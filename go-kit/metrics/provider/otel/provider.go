@@ -62,9 +62,11 @@ func (v *viewCache) View(i metric.Instrument) (metric.Stream, bool) {
 
 	stream, ok := v.streams[i.Name]
 
-	// copy these items over, the `name` should already be consistent
-	stream.Unit = i.Unit
-	stream.Description = i.Description
+	if ok {
+		// copy these items over, the `name` should already be consistent
+		stream.Unit = i.Unit
+		stream.Description = i.Description
+	}
 
 	return stream, ok
 }
