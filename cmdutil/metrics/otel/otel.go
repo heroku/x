@@ -5,9 +5,6 @@ import (
 	"strings"
 
 	"github.com/sirupsen/logrus"
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric"
-	"go.opentelemetry.io/otel/sdk/export/metric"
 
 	"github.com/heroku/x/go-kit/metrics"
 	"github.com/heroku/x/go-kit/metrics/provider/otel"
@@ -19,38 +16,49 @@ func MustProvider(ctx context.Context, logger logrus.FieldLogger, cfg Config, se
 	// This provider is used for metrics reporting to the  collector.
 	logger.WithField("metrics_destinations", strings.Join(cfg.MetricsDestinations, ",")).Info("setting up  provider")
 
-	if cfg.CollectorURL == nil {
+	// to allow transitioning between endpoints first check if the newer env is present
+	endpoint := cfg.EndpointURL
+	if endpoint == nil {
+		endpoint = cfg.CollectorURL
+	}
+
+	if endpoint == nil {
 		logger.Fatal("provider collectorURL cannot be nil")
 	}
 
-	client := otel.NewHTTPClient(*cfg.CollectorURL)
-	expOpts := otlpmetric.WithMetricExportKindSelector(metric.DeltaExportKindSelector())
-	exporter := otlpmetric.NewUnstarted(client, expOpts)
-
-	attrs := []attribute.KeyValue{}
+	// configure some optional resource attributes
+	attrs := otel.MetricsDestinations(cfg.MetricsDestinations)
 	if cfg.Honeycomb.MetricsDataset != "" {
-		attrs = append(attrs, attribute.String("dataset", cfg.Honeycomb.MetricsDataset))
-	}
-	for _, md := range cfg.MetricsDestinations {
-		attrs = append(attrs, attribute.String(md, "true"))
+		attrs = append(attrs, otel.HoneycombDataset(cfg.Honeycomb.MetricsDataset))
 	}
 
 	allOpts := []otel.Option{
-		otel.WithExporter(exporter),
+		// ensure we have service.id, service.namespace, and service.instance.id attributes
+		otel.WithOpenTelemetryStandardService(service, serviceNamespace, serviceInstanceID),
+
+		// ensure we have _service and component attributes
+		otel.WithServiceStandard(service),
+
+		// ensure we have stage and _subservice attributes
+		otel.WithEnvironmentStandard(stage),
+
+		// if set, ensure we have honeycomb dataset and metrics destination attributes set
 		otel.WithAttributes(attrs...),
-		otel.WithServiceNamespaceAttribute(serviceNamespace),
-		otel.WithServiceInstanceIDAttribute(serviceInstanceID),
-		otel.WithStageAttribute(stage),
+
+		// use the exponential aggregation selector, exponential histograms are generally easier to use than explicit
+		otel.WithExponentialAggregation(),
+
+		// use Delta Temporality by default
+		otel.WithDeltaTemporality(),
+
+		// ensure we use the http exporter
+		otel.WithHTTPEndpointExporter(endpoint.String()),
 	}
 	allOpts = append(allOpts, opts...)
 
 	otelProvider, err := otel.New(ctx, service, allOpts...)
 	if err != nil {
 		logger.Fatal(err)
-	}
-
-	if err := otelProvider.(*otel.Provider).Start(); err != nil {
-		logger.WithError(err).Fatal("failed to start  metrics provider")
 	}
 
 	return otelProvider

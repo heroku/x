@@ -1,18 +1,18 @@
 package otel
 
 import (
+	"encoding/base64"
 	"errors"
-	"fmt"
+	"net/url"
 	"time"
 
-	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
-	"go.opentelemetry.io/otel/sdk/export/metric"
-	"go.opentelemetry.io/otel/sdk/metric/selector/simple"
-	"go.opentelemetry.io/otel/sdk/resource"
+	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
+	"go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"google.golang.org/grpc/credentials"
 
-	"github.com/heroku/x/go-kit/metrics/provider/otel/selector/explicit"
+	"github.com/heroku/x/tlsconfig"
 )
 
 var (
@@ -24,140 +24,156 @@ var (
 	ErrEndpointNil = errors.New("endpoint cannot be nil")
 )
 
-// DefaultAgentEndpoint is a default exporter endpoint that points to a local otel collector.
-const DefaultAgentEndpoint = "0.0.0.0:55680"
+var (
+	DefaultAggregationSelector = WithExponentialHistograms
+	DefaultEndpointExporter    = WithHTTPExporter
+)
+
+const (
+	// DefaultAgentEndpoint is a default exporter endpoint that points to a local otel collector.
+	DefaultAgentEndpoint = "http://0.0.0.0:55680"
+)
 
 // Option is used for optional arguments when initializing Provider.
-type Option func(*Provider) error
+type Option func(*config) error
 
-// WithDefaultAggregator initializes the Provider with a default aggregator.
-var WithDefaultAggregator = WithExactAggregator
-
-// WithExactAggregator initializes the Provider with the simple.NewWithExactDistribution.
-//
-// NOTE: simple.NewWithExactDistribution is removed in go.opentelemetry.io/otel/sdk/metric@v0.26.0.
-func WithExactAggregator() Option {
-	return WithAggregator(simple.NewWithExactDistribution())
-}
-
-// WithExplicitHistogramAggregator initializes the Provider with with our custom explicit.NewExplicitHistogramSelector.
-//
-// This AggregatorSelector hooks the Provider interface to allow customization of a histogram's bucket definition.
-func WithExplicitHistogramAggregator() Option {
-	return func(p *Provider) error {
-		selector, cache := explicit.NewExplicitHistogramDistribution()
-		p.optionCache = cache
-		p.selector = selector
-
+func WithPrefix(prefix string) Option {
+	return func(cfg *config) error {
+		cfg.prefix = prefix
 		return nil
 	}
 }
 
-// WithAggregator initializes the Provider with an aggregator used by its controller.
-func WithAggregator(agg metric.AggregatorSelector) Option {
-	return func(p *Provider) error {
-		if agg == nil {
-			return ErrAggregatorNil
-		}
-
-		p.selector = agg
-		return nil
-	}
-}
-
-// WithAttributes initializes a serviceNameResource with attributes.
-// If a resource already exists, a new resource is created by merging the two resources.
-func WithAttributes(attributes ...attribute.KeyValue) Option {
-	return func(p *Provider) error {
-		res, err := resource.New(p.ctx, resource.WithAttributes(attributes...))
-		if err != nil {
-			return err
-		}
-
-		mergedRes, err := resource.Merge(p.serviceNameResource, res)
-		if err != nil {
-			return fmt.Errorf("failed to merge resources: %w", err)
-		}
-		p.serviceNameResource = mergedRes
-		return nil
-	}
-}
-
-// WithStageAttribute adds the "stage" and "_subservice" attributes.
-func WithStageAttribute(stage string) Option {
-	attrs := []attribute.KeyValue{
-		attribute.String(stageKey, stage),
-		attribute.String(subserviceKey, stage),
-	}
-	return WithAttributes(attrs...)
-}
-
-// WithServiceNamespaceAttribute adds the "service.namespace" attribute.
-func WithServiceNamespaceAttribute(serviceNamespace string) Option {
-	attrs := []attribute.KeyValue{
-		attribute.String(serviceNamespaceKey, serviceNamespace),
-	}
-	return WithAttributes(attrs...)
-}
-
-// WithCloudAttribute adds the "cloud" attribute.
-func WithCloudAttribute(cloud string) Option {
-	attrs := []attribute.KeyValue{
-		attribute.String(cloudKey, cloud),
-	}
-	return WithAttributes(attrs...)
-}
-
-// WithServiceInstanceIDAttribute adds the "service.instance.id" attribute.
-func WithServiceInstanceIDAttribute(serviceInstanceID string) Option {
-	attrs := []attribute.KeyValue{
-		attribute.String(serviceInstanceIDKey, serviceInstanceID),
-	}
-	return WithAttributes(attrs...)
-}
-
-// WithDefaultEndpointExporter initializes the Provider with an exporter using a default endpoint.
-func WithDefaultEndpointExporter() Option {
-	return WithEndpointExporter(DefaultAgentEndpoint)
-}
-
-// WithEndpointExporter initializes the Provider with a default exporter.
-func WithEndpointExporter(endpoint string) Option {
-	return func(p *Provider) error {
-		if endpoint == "" {
-			return ErrEndpointNil
-		}
-		p.exporter = defaultExporter(endpoint)
-		return nil
-	}
-}
-
-// WithExporter initializes the Provider with an exporter.
-func WithExporter(exp exporter) Option {
-	return func(p *Provider) error {
-		if exp == nil {
-			return ErrExporterNil
-		}
-		p.exporter = exp
-		return nil
-	}
-}
-
-// WithCollectPeriod initializes the controller with the collectPeriod.
+// WithCollectPeriod initial
 func WithCollectPeriod(collectPeriod time.Duration) Option {
-	return func(p *Provider) error {
-		p.collectPeriod = collectPeriod
+	return func(c *config) error {
+		c.collectPeriod = collectPeriod
 		return nil
 	}
 }
 
-// defaultExporter returns a new otlp exporter that uses a gRPC driver.
-// A collector agent endpoint (host:port) is required as the addr.
-func defaultExporter(addr string) exporter {
-	c := otlpmetricgrpc.NewClient(
-		otlpmetricgrpc.WithEndpoint(addr),
-		otlpmetricgrpc.WithInsecure(),
-	)
-	eo := otlpmetric.WithMetricExportKindSelector(metric.DeltaExportKindSelector())
-	return otlpmetric.NewUnstarted(c, eo)
+func CumulativeTemporalitySelector(_ metric.InstrumentKind) metricdata.Temporality {
+	return metricdata.CumulativeTemporality
+}
+
+func DeltaTemporalitySelector(_ metric.InstrumentKind) metricdata.Temporality {
+	return metricdata.DeltaTemporality
+}
+
+func WithCumulativeTemporality() Option {
+	return WithTemporalitySelector(CumulativeTemporalitySelector)
+}
+
+func WithDeltaTemporality() Option {
+	return WithTemporalitySelector(DeltaTemporalitySelector)
+}
+
+func WithTemporalitySelector(temporality metric.TemporalitySelector) Option {
+	return func(c *config) error {
+		c.temporalitySelector = temporality
+
+		return nil
+	}
+}
+
+func WithExponentialAggregation() Option {
+	return WithAggregationSelector(ExponentialAggregationSelector)
+}
+
+func WithExplicitAggregation() Option {
+	return WithAggregationSelector(ExplicitAggregationSelector)
+}
+
+// Deprecated: WithExponentialHistograms is deprecated use WithExponentialAggregation instead.
+func WithExponentialHistograms() Option {
+	return WithExponentialAggregation()
+}
+
+// Deprecated: WithExplicitHistograms is deprecated use WithExplicitAggregation instead.
+func WithExplicitHistograms() Option {
+	return WithExplicitAggregation()
+}
+
+func WithAggregationSelector(selector metric.AggregationSelector) Option {
+	return func(c *config) error {
+		c.aggregationSelector = selector
+
+		return nil
+	}
+}
+
+func WithHTTPExporter(options ...otlpmetrichttp.Option) Option {
+	return WithHTTPEndpointExporter(DefaultAgentEndpoint, options...)
+}
+
+func WithHTTPEndpointExporter(endpoint string, options ...otlpmetrichttp.Option) Option {
+	return WithExporterFunc(func(cfg *config) (metric.Exporter, error) {
+		u, err := url.Parse(endpoint)
+		if err != nil {
+			return nil, err
+		}
+
+		defaults := []otlpmetrichttp.Option{
+			otlpmetrichttp.WithEndpoint(u.Host),
+			otlpmetrichttp.WithAggregationSelector(cfg.aggregationSelector),
+			otlpmetrichttp.WithTemporalitySelector(cfg.temporalitySelector),
+		}
+
+		if u.Scheme == "https" {
+			defaults = append(defaults, otlpmetrichttp.WithTLSClientConfig(tlsconfig.New()))
+		} else {
+			defaults = append(defaults, otlpmetrichttp.WithInsecure())
+		}
+
+		if u.User.String() != "" {
+			authHeader := make(map[string]string)
+			authHeader["Authorization"] = "Basic" + base64.StdEncoding.EncodeToString([]byte(u.User.String()))
+
+			defaults = append(defaults, otlpmetrichttp.WithHeaders(authHeader))
+		}
+
+		// finally append any passed in options
+		options = append(defaults, options...)
+
+		return otlpmetrichttp.New(cfg.ctx, options...)
+	})
+}
+
+func WithGRPCExporter(endpoint string, options ...otlpmetricgrpc.Option) Option {
+	return WithExporterFunc(func(cfg *config) (metric.Exporter, error) {
+		u, err := url.Parse(endpoint)
+		if err != nil {
+			return nil, err
+		}
+
+		defaults := []otlpmetricgrpc.Option{
+			otlpmetricgrpc.WithEndpoint(u.Host),
+			otlpmetricgrpc.WithAggregationSelector(cfg.aggregationSelector),
+			otlpmetricgrpc.WithTemporalitySelector(cfg.temporalitySelector),
+		}
+		if u.Scheme == "https" {
+			// use system root ca for TLS
+			defaults = append(defaults, otlpmetricgrpc.WithTLSCredentials(credentials.NewTLS(tlsconfig.New())))
+		} else {
+			defaults = append(defaults, otlpmetricgrpc.WithInsecure())
+		}
+
+		if u.User.String() != "" {
+			authHeader := make(map[string]string)
+			authHeader["Authorization"] = "Basic" + base64.StdEncoding.EncodeToString([]byte(u.User.String()))
+
+			defaults = append(defaults, otlpmetricgrpc.WithHeaders(authHeader))
+		}
+
+		options = append(defaults, options...)
+		return otlpmetricgrpc.New(cfg.ctx, options...)
+	})
+}
+
+func WithExporterFunc(fn exporterFactory) Option {
+	return func(c *config) error {
+		c.exporterFactory = fn
+
+		return nil
+	}
 }

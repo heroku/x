@@ -19,7 +19,7 @@ require (
 	github.com/golang/protobuf v1.5.3
 	github.com/gomodule/redigo v1.8.9
 	github.com/google/gops v0.3.22
-	github.com/google/uuid v1.3.0
+	github.com/google/uuid v1.3.1
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/heroku/rollrus v0.2.0
@@ -40,19 +40,17 @@ require (
 	github.com/unrolled/secure v1.0.1
 	github.com/urfave/cli v1.21.0
 	go.opencensus.io v0.22.1
-	go.opentelemetry.io/otel v1.0.0-RC3
-	go.opentelemetry.io/otel/exporters/otlp/otlpmetric v0.23.0
-	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v0.23.0
-	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v0.22.0
-	go.opentelemetry.io/otel/metric v0.23.0
-	go.opentelemetry.io/otel/sdk v1.0.0-RC3
-	go.opentelemetry.io/otel/sdk/export/metric v0.23.0
-	go.opentelemetry.io/otel/sdk/metric v0.23.0
-	golang.org/x/crypto v0.13.0
+	go.opentelemetry.io/otel v1.19.0
+	go.opentelemetry.io/otel/exporters/otlp/otlpmetric v0.42.0 // indirect
+	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v0.42.0
+	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v0.42.0
+	go.opentelemetry.io/otel/metric v1.19.0
+	go.opentelemetry.io/otel/sdk v1.19.0
+	golang.org/x/crypto v0.14.0
 	golang.org/x/sync v0.3.0
-	golang.org/x/sys v0.12.0 // indirect
+	golang.org/x/sys v0.13.0 // indirect
 	golang.org/x/time v0.0.0-20181108054448-85acf8d2951c
-	google.golang.org/grpc v1.58.0
+	google.golang.org/grpc v1.59.0
 	google.golang.org/grpc/examples v0.0.0-20210916203835-567da6b86340
 	google.golang.org/protobuf v1.31.0
 	gopkg.in/ini.v1 v1.42.0 // indirect
@@ -60,20 +58,25 @@ require (
 )
 
 require (
-	github.com/cenkalti/backoff/v4 v4.1.1 // indirect
+	go.opentelemetry.io/otel/sdk/metric v1.19.0
+	golang.org/x/text v0.13.0
+)
+
+require (
+	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.4.1 // indirect
+	github.com/go-logr/logr v1.2.4 // indirect
+	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang/groupcache v0.0.0-20190702054246-869f871628b6 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.18.0 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.3 // indirect
-	go.opentelemetry.io/otel/internal/metric v0.23.0 // indirect
-	go.opentelemetry.io/otel/trace v1.0.0-RC3 // indirect
-	go.opentelemetry.io/proto/otlp v0.9.0 // indirect
-	golang.org/x/net v0.15.0 // indirect
+	go.opentelemetry.io/otel/trace v1.19.0 // indirect
+	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
+	golang.org/x/net v0.17.0 // indirect
 	golang.org/x/oauth2 v0.12.0 // indirect
-	golang.org/x/text v0.13.0 // indirect
 	google.golang.org/api v0.7.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/genproto v0.0.0-20230803162519-f966b187b2e5 // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20230822172742-b8732ec3820d // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20230822172742-b8732ec3820d // indirect
+	google.golang.org/genproto v0.0.0-20231012201019-e917dd12ba7a // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20231016165738-49dd2c1f3d0b // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20231016165738-49dd2c1f3d0b // indirect
 )
