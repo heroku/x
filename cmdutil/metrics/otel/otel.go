@@ -16,10 +16,10 @@ func MustProvider(ctx context.Context, logger logrus.FieldLogger, cfg Config, se
 	// This provider is used for metrics reporting to the  collector.
 	logger.WithField("metrics_destinations", strings.Join(cfg.MetricsDestinations, ",")).Info("setting up  provider")
 
-	// for backwards compatibility prefer the CollectorURL over EndpointURL
-	endpoint := cfg.CollectorURL
+	// to allow transitioning between endpoints first check if the newer env is present
+	endpoint := cfg.EndpointURL
 	if endpoint == nil {
-		endpoint = cfg.EndpointURL
+		endpoint = cfg.CollectorURL
 	}
 
 	if endpoint == nil {
