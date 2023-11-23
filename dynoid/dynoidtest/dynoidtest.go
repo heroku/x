@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/coreos/go-oidc/v3/oidc"
-	"github.com/go-chi/chi"
 	"github.com/golang-jwt/jwt/v4"
 	jose "gopkg.in/square/go-jose.v2"
 )
@@ -70,9 +69,9 @@ type roundTripper struct {
 }
 
 func (rt *roundTripper) init() {
-	r := chi.NewRouter()
+	mux := http.NewServeMux()
 
-	r.Get("/issuers/test/.well-known/openid-configuration", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/issuers/test/.well-known/openid-configuration", func(w http.ResponseWriter, r *http.Request) {
 		header := w.Header()
 		header.Set("Content-Type", "application/json")
 
@@ -89,7 +88,7 @@ func (rt *roundTripper) init() {
 			`}`))
 	})
 
-	r.Get("/issuers/test/.well-known/jwks.json", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/issuers/test/.well-known/jwks.json", func(w http.ResponseWriter, r *http.Request) {
 		jwks := &jose.JSONWebKeySet{}
 		jwks.Keys = append(jwks.Keys, jose.JSONWebKey{Key: rt.issuer.key.Public(), KeyID: "primary"})
 
@@ -102,7 +101,7 @@ func (rt *roundTripper) init() {
 		_ = enc.Encode(jwks)
 	})
 
-	rt.handler = r
+	rt.handler = mux
 }
 
 func (rt *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
