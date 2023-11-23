@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync"
 	"time"
 
@@ -57,6 +58,11 @@ func (rt *roundTripper) init() {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/issuers/test/.well-known/openid-configuration", func(w http.ResponseWriter, r *http.Request) {
+		if !strings.EqualFold(r.Method, http.MethodGet) {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
 		header := w.Header()
 		header.Set("Content-Type", "application/json")
 
@@ -74,6 +80,11 @@ func (rt *roundTripper) init() {
 	})
 
 	mux.HandleFunc("/issuers/test/.well-known/jwks.json", func(w http.ResponseWriter, r *http.Request) {
+		if !strings.EqualFold(r.Method, http.MethodGet) {
+			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+
 		jwks := &jose.JSONWebKeySet{}
 		jwks.Keys = append(jwks.Keys, jose.JSONWebKey{Key: rt.issuer.key.Public(), KeyID: "primary"})
 
