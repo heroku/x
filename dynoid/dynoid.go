@@ -6,12 +6,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"os"
 	"path"
 	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/coreos/go-oidc/v3/oidc"
+)
+
+const (
+	AudienceHeroku = "heroku"
 )
 
 // Returned by an IssuerCallback get's an issuer it doesn't trust
@@ -134,6 +139,37 @@ func (t *Token) LogValue() slog.Value {
 		slog.String("space_id", t.SpaceID),
 		slog.Any("subject", t.Subject),
 	)
+}
+
+// ReadLocal reads the local machines token for the given audience
+//
+// Suitable for passing as a bearer token
+func ReadLocal(audience string) (string, error) {
+	tokenPath := "/etc/heroku/dyno_id_token"
+
+	if audience != "heroku" {
+		tokenPath = fmt.Sprintf("/etc/heroku/dyno-id/%s/token", audience)
+	}
+
+	rawToken, err := os.ReadFile(tokenPath)
+	if err != nil {
+		return "", err
+	}
+
+	return string(rawToken), nil
+}
+
+// ReadLocalToken reads the local machines token for the given audience and
+// parses it
+func ReadLocalToken(ctx context.Context, audience string) (*Token, error) {
+	rawToken, err := ReadLocal(audience)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read token (%w)", err)
+	}
+
+	verifier := NewWithCallback(audience, func(issuer string) error { return nil })
+
+	return verifier.VerifyHeroku(ctx, rawToken)
 }
 
 // AllowHerokuSpace verifies that the issuer is from Heroku for the given host

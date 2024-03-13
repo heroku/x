@@ -1,10 +1,7 @@
 package dynoid
 
 import (
-	"context"
 	"testing"
-
-	"github.com/coreos/go-oidc/v3/oidc"
 
 	"github.com/heroku/x/dynoid/dynoidtest"
 )
@@ -20,11 +17,9 @@ func TestVerification(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	ctx := context.Background()
-	ctx = oidc.ClientContext(ctx, iss.HTTPClient())
+	verifier := NewWithCallback("heroku", AllowHerokuHost(dynoidtest.IssuerHost))
 
-	verifier := NewWithCallback("heroku", AllowHerokuHost("heroku.local"))
-
+	ctx := iss.Context()
 	if _, err = verifier.Verify(ctx, token); err != nil {
 		t.Error(err)
 	}
