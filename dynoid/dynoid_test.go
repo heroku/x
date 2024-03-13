@@ -23,11 +23,9 @@ func TestVerification(t *testing.T) {
 	ctx := context.Background()
 	ctx = oidc.ClientContext(ctx, iss.HTTPClient())
 
-	verifier := New("heroku")
-	verifier.IssuerCallback = AllowHerokuHost("heroku.local")
+	verifier := NewWithCallback("heroku", AllowHerokuHost("heroku.local"))
 
-	_, err = verifier.Verify(ctx, token)
-	if err != nil {
+	if _, err = verifier.Verify(ctx, token); err != nil {
 		t.Error(err)
 	}
 }
