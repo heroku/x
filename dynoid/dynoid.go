@@ -145,6 +145,7 @@ func (t *Token) LogValue() slog.Value {
 //
 // Suitable for passing as a bearer token
 func ReadLocal(audience string) (string, error) {
+	//nolint: gosec
 	tokenPath := "/etc/heroku/dyno_id_token"
 
 	if audience != "heroku" {
