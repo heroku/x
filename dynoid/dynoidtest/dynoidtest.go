@@ -23,23 +23,23 @@ const (
 
 type Issuer struct {
 	key *rsa.PrivateKey
-	ctx context.Context
 }
 
 func New() (*Issuer, error) {
-	return NewWithContext(context.Background())
+	_, iss, err := NewWithContext(context.Background())
+	return iss, err
 }
 
-func NewWithContext(ctx context.Context) (*Issuer, error) {
+func NewWithContext(ctx context.Context) (context.Context, *Issuer, error) {
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
-		return nil, err
+		return ctx, nil, err
 	}
 
 	iss := &Issuer{key: key}
-	iss.ctx = oidc.ClientContext(ctx, iss.HTTPClient())
+	ctx = oidc.ClientContext(ctx, iss.HTTPClient())
 
-	return iss, nil
+	return ctx, iss, nil
 }
 
 func (iss *Issuer) GenerateIDToken(clientID string) (string, error) {
@@ -57,10 +57,6 @@ func (iss *Issuer) GenerateIDToken(clientID string) (string, error) {
 	token.Header["kid"] = "primary"
 
 	return token.SignedString(iss.key)
-}
-
-func (iss *Issuer) Context() context.Context {
-	return iss.ctx
 }
 
 func (iss *Issuer) HTTPClient() *http.Client {

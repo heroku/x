@@ -1,13 +1,14 @@
 package dynoid
 
 import (
+	"context"
 	"testing"
 
 	"github.com/heroku/x/dynoid/dynoidtest"
 )
 
 func TestVerification(t *testing.T) {
-	iss, err := dynoidtest.New()
+	ctx, iss, err := dynoidtest.NewWithContext(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -19,7 +20,6 @@ func TestVerification(t *testing.T) {
 
 	verifier := NewWithCallback("heroku", AllowHerokuHost(dynoidtest.IssuerHost))
 
-	ctx := iss.Context()
 	if _, err = verifier.Verify(ctx, token); err != nil {
 		t.Error(err)
 	}

@@ -24,7 +24,7 @@ func TestAuthorize(t *testing.T) {
 	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
 	})
 
-	ctx, generate := newIssuer(t)
+	ctx, generate := newTokenGenerator(t)
 
 	tests := map[string]struct {
 		AuthorizationHeader string
@@ -59,13 +59,13 @@ func TestAuthorize(t *testing.T) {
 	}
 }
 
-func newIssuer(t *testing.T) (context.Context, func(clientID string) (header string)) {
-	issuer, err := dynoidtest.New()
+func newTokenGenerator(t *testing.T) (context.Context, func(clientID string) (header string)) {
+	ctx, issuer, err := dynoidtest.NewWithContext(context.Background())
 	if err != nil {
 		t.Fatalf("failed to get new issuer (%v)", err)
 	}
 
-	return issuer.Context(), func(clientID string) string {
+	return ctx, func(clientID string) string {
 		token, err := issuer.GenerateIDToken(clientID)
 		if err != nil {
 			t.Fatalf("failed to generate token (%v)", err)
