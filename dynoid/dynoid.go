@@ -22,7 +22,7 @@ const (
 	DefaultTokenPath = "/etc/heroku/dyno_id_token"
 )
 
-// Returned by an IssuerCallback get's an issuer it doesn't trust
+// Returned by an IssuerCallback getting an issuer it doesn't trust
 type UntrustedIssuerError struct {
 	Issuer string
 }
