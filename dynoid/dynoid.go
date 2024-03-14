@@ -16,7 +16,10 @@ import (
 )
 
 const (
-	AudienceHeroku = "heroku"
+	DefaultAudience = "heroku"
+
+	//nolint: gosec
+	DefaultTokenPath = "/etc/heroku/dyno_id_token"
 )
 
 // Returned by an IssuerCallback get's an issuer it doesn't trust
@@ -141,18 +144,20 @@ func (t *Token) LogValue() slog.Value {
 	)
 }
 
+// LocalTokenPath returns the path on disk to the token for the given audience
+func LocalTokenPath(audience string) string {
+	if audience == DefaultAudience {
+		return DefaultTokenPath
+	}
+
+	return fmt.Sprintf("/etc/heroku/dyno-id/%s/token", audience)
+}
+
 // ReadLocal reads the local machines token for the given audience
 //
 // Suitable for passing as a bearer token
 func ReadLocal(audience string) (string, error) {
-	//nolint: gosec
-	tokenPath := "/etc/heroku/dyno_id_token"
-
-	if audience != "heroku" {
-		tokenPath = fmt.Sprintf("/etc/heroku/dyno-id/%s/token", audience)
-	}
-
-	rawToken, err := os.ReadFile(tokenPath)
+	rawToken, err := os.ReadFile(LocalTokenPath(audience))
 	if err != nil {
 		return "", err
 	}

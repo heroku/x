@@ -50,6 +50,8 @@ func Authorize(audience string, callback dynoid.IssuerCallback) func(http.Handle
 	}
 }
 
+// AuthorizeSameSpace restricts access to tokens from the same space/issuer for
+// the given audience.
 func AuthorizeSameSpace(audience string) func(http.Handler) http.Handler {
 	token, err := dynoid.ReadLocalToken(context.Background(), audience)
 	if err != nil {
@@ -65,19 +67,17 @@ func AuthorizeSameSpace(audience string) func(http.Handler) http.Handler {
 	})
 }
 
-func internalServerError(format string, v ...any) func(http.Handler) http.Handler {
-	return func(http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(w, format, v...)
-		})
-	}
-}
-
 // AuthorizeSpace populates the dyno identity and blocks any requests that
 // aren't from one of the given spaces.
 func AuthorizeSpaces(audience, host string, spaces ...string) func(http.Handler) http.Handler {
 	return Authorize(audience, dynoid.AllowHerokuSpace(host, spaces...))
+}
+
+// AddToContext adds the Token to the given context
+func AddToContext(ctx context.Context, token *dynoid.Token, err error) context.Context {
+	ctx = context.WithValue(ctx, DynoIDKey, token)
+	ctx = context.WithValue(ctx, DynoIDErrKey, err)
+	return ctx
 }
 
 // FromContext fetches the Token from the context
@@ -86,13 +86,6 @@ func FromContext(ctx context.Context) (*dynoid.Token, error) {
 	err, _ := ctx.Value(DynoIDErrKey).(error)
 
 	return token, err
-}
-
-// AddToContext adds the Token to the given context
-func AddToContext(ctx context.Context, token *dynoid.Token, err error) context.Context {
-	ctx = context.WithValue(ctx, DynoIDKey, token)
-	ctx = context.WithValue(ctx, DynoIDErrKey, err)
-	return ctx
 }
 
 func populateDynoID(audience string, callback dynoid.IssuerCallback) func(*http.Request) *http.Request {
@@ -118,4 +111,13 @@ func tokenFromHeader(r *http.Request) string {
 		return bearer[7:]
 	}
 	return ""
+}
+
+func internalServerError(format string, v ...any) func(http.Handler) http.Handler {
+	return func(http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusInternalServerError)
+			fmt.Fprintf(w, format, v...)
+		})
+	}
 }
