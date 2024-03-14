@@ -8,7 +8,6 @@ import (
 	"log/slog"
 	"os"
 	"path"
-	"strconv"
 	"strings"
 	"sync"
 
@@ -73,17 +72,16 @@ func AllowHerokuHost(host string) IssuerCallback {
 // Subject contains all of the subject information stored by Heroku when issuing
 // a token.
 type Subject struct {
-	AppID      string `json:"app_id"`
-	AppName    string `json:"app_name"`
-	DynoName   string `json:"dyno_name"`
-	DynoNumber int    `json:"dyno_number"`
+	AppID   string `json:"app_id"`
+	AppName string `json:"app_name"`
+	Dyno    string `json:"dyno"`
 }
 
 func (s *Subject) LogValue() slog.Value {
 	return slog.GroupValue(
 		slog.String("app_id", s.AppID),
 		slog.String("app_name", s.AppName),
-		slog.String("dyno", fmt.Sprintf("%s.%d", s.DynoName, s.DynoNumber)),
+		slog.String("dyno", s.Dyno),
 	)
 }
 
@@ -103,20 +101,13 @@ func (s *Subject) UnmarshalText(text []byte) error {
 	}
 
 	app := strings.Split(parts[1], ".")
-	dyno := strings.Split(parts[4], ".")
-
-	if len(app) != 2 || len(dyno) != 2 {
+	if len(app) != 2 {
 		return fmt.Errorf("unexpected subject format: %q", sub)
 	}
 
 	s.AppID = app[0]
 	s.AppName = app[1]
-	s.DynoName = dyno[0]
-	s.DynoNumber, _ = strconv.Atoi(dyno[1])
-
-	if s.DynoNumber == 0 {
-		return fmt.Errorf("unexpected subject format: %q", sub)
-	}
+	s.Dyno = parts[4]
 
 	return nil
 }
@@ -126,7 +117,7 @@ func (s *Subject) String() string {
 		return ""
 	}
 
-	return fmt.Sprintf("app:%s.%s::dyno:%s.%d", s.AppID, s.AppName, s.DynoName, s.DynoNumber)
+	return fmt.Sprintf("app:%s.%s::dyno:%s", s.AppID, s.AppName, s.Dyno)
 }
 
 // Subject contains all of the token information stored by Heroku when issuing
