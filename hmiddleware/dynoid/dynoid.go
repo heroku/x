@@ -107,7 +107,7 @@ func populateDynoID(audience string, callback dynoid.IssuerCallback) func(*http.
 
 func tokenFromHeader(r *http.Request) string {
 	bearer := r.Header.Get("Authorization")
-	if len(bearer) > 7 && strings.ToUpper(bearer[0:6]) == "BEARER" {
+	if len(bearer) > 7 && bearer[:7] == "Bearer " {
 		return bearer[7:]
 	}
 	return ""
