@@ -1,4 +1,4 @@
-package dynoid
+package middleware
 
 import (
 	"context"

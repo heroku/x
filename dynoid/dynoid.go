@@ -16,10 +16,10 @@ import (
 )
 
 const (
-	DefaultAudience = "heroku"
+	defaultAudience = "heroku"
 
 	//nolint: gosec
-	DefaultTokenPath = "/etc/heroku/dyno_id_token"
+	defaultTokenPath = "/etc/heroku/dyno_id_token"
 )
 
 // Returned by an IssuerCallback getting an issuer it doesn't trust
@@ -146,8 +146,8 @@ func (t *Token) LogValue() slog.Value {
 
 // LocalTokenPath returns the path on disk to the token for the given audience
 func LocalTokenPath(audience string) string {
-	if audience == DefaultAudience {
-		return DefaultTokenPath
+	if audience == defaultAudience {
+		return defaultTokenPath
 	}
 
 	return fmt.Sprintf("/etc/heroku/dyno-id/%s/token", audience)

@@ -1,4 +1,4 @@
-package dynoid_test
+package middleware_test
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 
 	"github.com/heroku/x/dynoid"
 	"github.com/heroku/x/dynoid/dynoidtest"
-	middleware "github.com/heroku/x/hmiddleware/dynoid"
+	"github.com/heroku/x/dynoid/middleware"
 )
 
 func TestAuthorize(t *testing.T) {
