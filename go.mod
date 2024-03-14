@@ -14,7 +14,7 @@ require (
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-ini/ini v1.33.0 // indirect
 	github.com/go-kit/kit v0.9.0
-	github.com/gogo/protobuf v1.3.0 // indirect
+	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.4.2
 	github.com/golang/protobuf v1.5.3
 	github.com/gomodule/redigo v1.8.9
