@@ -164,7 +164,7 @@ func ReadLocalToken(ctx context.Context, audience string) (*Token, error) {
 
 	verifier := NewWithCallback(audience, func(issuer string) error { return nil })
 
-	return verifier.VerifyHeroku(ctx, rawToken)
+	return verifier.Verify(ctx, rawToken)
 }
 
 // AllowHerokuSpace verifies that the issuer is from Heroku for the given host
@@ -213,7 +213,7 @@ func NewWithCallback(clientID string, callback IssuerCallback) *Verifier {
 
 // Verify validates the given token with the OIDC provider and validates it
 // against the IssuerCallback
-func (v *Verifier) Verify(ctx context.Context, rawIDToken string) (*oidc.IDToken, error) {
+func (v *Verifier) Verify(ctx context.Context, rawIDToken string) (*Token, error) {
 	if v == nil {
 		*v = *New("")
 	}
@@ -238,13 +238,7 @@ func (v *Verifier) Verify(ctx context.Context, rawIDToken string) (*oidc.IDToken
 
 	verifier := provider.Verifier(v.config)
 
-	return verifier.Verify(ctx, rawIDToken)
-}
-
-// VerifyHeroku verifies the token and parses the returned issuer and subject
-// according to Heroku expected values
-func (v *Verifier) VerifyHeroku(ctx context.Context, rawIDToken string) (*Token, error) {
-	token, err := v.Verify(ctx, rawIDToken)
+	token, err := verifier.Verify(ctx, rawIDToken)
 	if err != nil {
 		return nil, fmt.Errorf("failed to verify token (%w)", err)
 	}

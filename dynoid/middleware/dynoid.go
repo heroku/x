@@ -98,7 +98,7 @@ func populateDynoID(audience string, callback dynoid.IssuerCallback) func(*http.
 			return r.WithContext(AddToContext(ctx, nil, ErrTokenMissing))
 		}
 
-		token, err := verifier.VerifyHeroku(r.Context(), rawToken)
+		token, err := verifier.Verify(r.Context(), rawToken)
 
 		return r.WithContext(AddToContext(ctx, token, err))
 	}
