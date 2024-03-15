@@ -69,8 +69,7 @@ func AllowHerokuHost(host string) IssuerCallback {
 	}
 }
 
-// Subject contains all of the subject information stored by Heroku when issuing
-// a token.
+// Subject contains information about the app and dyno the token was issued for
 type Subject struct {
 	AppID   string `json:"app_id"`
 	AppName string `json:"app_name"`
@@ -120,8 +119,7 @@ func (s *Subject) String() string {
 	return fmt.Sprintf("app:%s.%s::dyno:%s", s.AppID, s.AppName, s.Dyno)
 }
 
-// Subject contains all of the token information stored by Heroku when issuing
-// a token.
+// Token contains all of the token information stored by Heroku when it's issued
 type Token struct {
 	IDToken *oidc.IDToken `json:"-"`
 	SpaceID string        `json:"space_id"`
