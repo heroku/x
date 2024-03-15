@@ -32,15 +32,15 @@ func (e *UntrustedIssuerError) Error() string {
 
 // Returned when the token doesn't match the expected format
 type MalformedTokenError struct {
-	Err error
+	err error
 }
 
 func (e *MalformedTokenError) Error() string {
-	return fmt.Sprintf("malformed token: %s", e.Err.Error())
+	return fmt.Sprintf("malformed token: %s", e.err.Error())
 }
 
 func (e *MalformedTokenError) Unwrap() error {
-	return e.Err
+	return e.err
 }
 
 type staticError string
@@ -286,14 +286,14 @@ func parseIssuer(p string) (string, error) {
 	parts := strings.Split(p, ".")
 	if len(parts) != 3 {
 		return "", &MalformedTokenError{
-			Err: fmt.Errorf("expected 3 parts got %d", len(parts)),
+			err: fmt.Errorf("expected 3 parts got %d", len(parts)),
 		}
 	}
 
 	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
 	if err != nil {
 		return "", &MalformedTokenError{
-			Err: fmt.Errorf("unable to decode token: %w", err),
+			err: fmt.Errorf("unable to decode token: %w", err),
 		}
 	}
 
@@ -304,7 +304,7 @@ func parseIssuer(p string) (string, error) {
 	err = json.Unmarshal(payload, &v)
 	if err != nil {
 		return "", &MalformedTokenError{
-			Err: fmt.Errorf("unable to unmarshal token: %w", err),
+			err: fmt.Errorf("unable to unmarshal token: %w", err),
 		}
 	}
 
