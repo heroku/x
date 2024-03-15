@@ -112,11 +112,10 @@ func tokenFromHeader(r *http.Request) string {
 	return ""
 }
 
-func internalServerError(format string, v ...any) func(http.Handler) http.Handler {
+func internalServerError(error string) func(http.Handler) http.Handler {
 	return func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusInternalServerError)
-			fmt.Fprintf(w, format, v...)
+			http.Error(w, error, http.StatusInternalServerError)
 		})
 	}
 }
