@@ -1,6 +1,7 @@
 package dynoidtest
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/json"
@@ -9,9 +10,15 @@ import (
 	"sync"
 	"time"
 
+	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/go-chi/chi"
 	"github.com/golang-jwt/jwt/v4"
 	jose "gopkg.in/square/go-jose.v2"
+)
+
+const (
+	Audience   = "heroku"
+	IssuerHost = "heroku.local"
 )
 
 type Issuer struct {
@@ -19,19 +26,27 @@ type Issuer struct {
 }
 
 func New() (*Issuer, error) {
+	_, iss, err := NewWithContext(context.Background())
+	return iss, err
+}
+
+func NewWithContext(ctx context.Context) (context.Context, *Issuer, error) {
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
-		return nil, err
+		return ctx, nil, err
 	}
 
-	return &Issuer{key: key}, nil
+	iss := &Issuer{key: key}
+	ctx = oidc.ClientContext(ctx, iss.HTTPClient())
+
+	return ctx, iss, nil
 }
 
 func (iss *Issuer) GenerateIDToken(clientID string) (string, error) {
 	now := time.Now()
 
 	claims := &jwt.RegisteredClaims{
-		Audience:  jwt.ClaimStrings([]string{"heroku"}),
+		Audience:  jwt.ClaimStrings([]string{clientID}),
 		ExpiresAt: jwt.NewNumericDate(now.Add(5 * time.Minute)),
 		IssuedAt:  jwt.NewNumericDate(now),
 		Issuer:    "https://oidc.heroku.local/issuers/test",
