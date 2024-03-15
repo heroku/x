@@ -8,21 +8,15 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/go-chi/chi"
-
 	"github.com/heroku/x/dynoid"
 	"github.com/heroku/x/dynoid/dynoidtest"
 	"github.com/heroku/x/dynoid/middleware"
 )
 
+var noOp = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+
 func TestAuthorize(t *testing.T) {
-	router := chi.NewRouter()
-	router.Use(middleware.Authorize(
-		dynoidtest.Audience,
-		dynoid.AllowHerokuHost(dynoidtest.IssuerHost),
-	))
-	router.Get("/", func(w http.ResponseWriter, r *http.Request) {
-	})
+	handler := middleware.Authorize(dynoidtest.Audience, dynoid.AllowHerokuHost(dynoidtest.IssuerHost))(noOp)
 
 	ctx, generate := newTokenGenerator(t)
 
@@ -44,7 +38,7 @@ func TestAuthorize(t *testing.T) {
 				r.Header.Add("Authorization", tc.AuthorizationHeader)
 			}
 
-			router.ServeHTTP(w, r)
+			handler.ServeHTTP(w, r)
 
 			resp := w.Result()
 			body, err := io.ReadAll(resp.Body)
