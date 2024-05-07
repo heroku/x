@@ -94,7 +94,7 @@ func (p *Provider) newHistogram(name string, labelValues ...string) metrics.Hist
 
 	k := p.keyFor(name, labelValues...)
 	if _, ok := p.histograms[k]; !ok {
-		p.histograms[k] = &Histogram{name: name, p: p, labelValues: labelValues}
+		p.histograms[k] = &Histogram{name: name, p: p, labelValues: labelValues, observations: []float64{}}
 	}
 	return p.histograms[k]
 }
