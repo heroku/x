@@ -181,8 +181,14 @@ func (p *Provider) CheckObservations(name string, obs []float64, labelValues ...
 	p.t.Helper()
 
 	observations := p.getObservations(name, labelValues...)
-	if !reflect.DeepEqual(observations, obs) {
-		p.t.Fatalf("%v = %v, want %v", p.keyFor(name, labelValues...), observations, obs)
+	got := make([]float64, len(observations))
+	copy(got, observations)
+
+	want := make([]float64, len(obs))
+	copy(want, obs)
+
+	if !reflect.DeepEqual(got, want) {
+		p.t.Fatalf("%v = %v, want %v", p.keyFor(name, labelValues...), got, want)
 	}
 }
 
