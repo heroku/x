@@ -104,7 +104,8 @@ func (h *Histogram) With(labelValues ...string) metrics.Histogram {
 	return h.p.newHistogram(h.name, lvs...)
 }
 
-// Counter accumulates a value based on Add calls.
+// CardinalityCounter provides a wrapper around a HyperLogLog probabalistic
+// counter. It implements CardinalityCounter Interface.
 type CardinalityCounter struct {
 	Name    string
 	lvs     []string
@@ -114,8 +115,7 @@ type CardinalityCounter struct {
 	sync.RWMutex
 }
 
-// With returns a new UniqueCounter with the passed in label values merged
-// with the previous label values. The counter's values are copied.
+// With implements xmetrics.CardinalityCounter interface. It returns a CardinalityCounter based on the labelValues.
 func (c *CardinalityCounter) With(labelValues ...string) xmetrics.CardinalityCounter {
 	lvs := append(append([]string(nil), c.lvs...), labelValues...)
 	return c.p.newCardinalityCounter(c.Name, lvs...)

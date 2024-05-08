@@ -332,7 +332,7 @@ func (p *Provider) CheckCardinalityCounter(name string, estimate uint64, labelVa
 		p.t.Fatalf("no counter named %s out of available cardinality counters: \n%s", k, available)
 	}
 	actualEstimate := cc.Estimate()
-	if cc.Estimate() != actualEstimate {
+	if estimate != actualEstimate {
 		p.t.Fatalf("%v = %v, want %v", name, actualEstimate, estimate)
 	}
 
