@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	hll "github.com/axiomhq/hyperloglog"
+
 	"github.com/go-kit/kit/metrics"
 
 	xmetrics "github.com/heroku/x/go-kit/metrics"
