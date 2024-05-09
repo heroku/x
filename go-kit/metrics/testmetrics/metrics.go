@@ -3,7 +3,11 @@ package testmetrics
 import (
 	"sync"
 
+	hll "github.com/axiomhq/hyperloglog"
+
 	"github.com/go-kit/kit/metrics"
+
+	xmetrics "github.com/heroku/x/go-kit/metrics"
 )
 
 // Counter accumulates a value based on Add calls.
@@ -98,4 +102,35 @@ func (h *Histogram) Observe(v float64) {
 func (h *Histogram) With(labelValues ...string) metrics.Histogram {
 	lvs := append(append([]string(nil), h.labelValues...), labelValues...)
 	return h.p.newHistogram(h.name, lvs...)
+}
+
+// CardinalityCounter provides a wrapper around a HyperLogLog probabalistic
+// counter. It implements CardinalityCounter Interface.
+type CardinalityCounter struct {
+	Name    string
+	lvs     []string
+	mu      sync.Mutex
+	counter *hll.Sketch
+	p       *Provider
+	sync.RWMutex
+}
+
+// With implements xmetrics.CardinalityCounter interface. It returns a CardinalityCounter based on the labelValues.
+func (c *CardinalityCounter) With(labelValues ...string) xmetrics.CardinalityCounter {
+	lvs := append(append([]string(nil), c.lvs...), labelValues...)
+	return c.p.newCardinalityCounter(c.Name, lvs...)
+}
+
+// Insert adds the item to the set to be counted.
+func (c *CardinalityCounter) Insert(i []byte) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.counter.Insert(i)
+}
+
+func (c *CardinalityCounter) Estimate() uint64 {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	return c.counter.Estimate()
 }

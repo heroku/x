@@ -10,6 +10,8 @@ import (
 	"sync"
 	"testing"
 
+	hll "github.com/axiomhq/hyperloglog"
+
 	"github.com/go-kit/kit/metrics"
 
 	xmetrics "github.com/heroku/x/go-kit/metrics"
@@ -23,7 +25,7 @@ type Provider struct {
 	counters     map[string]*Counter
 	gauges       map[string]*Gauge
 	histograms   map[string]*Histogram
-	cardCounters map[string]*xmetrics.HLLCounter
+	cardCounters map[string]*CardinalityCounter
 	stopped      bool
 }
 
@@ -34,7 +36,7 @@ func NewProvider(t *testing.T) *Provider {
 		counters:     make(map[string]*Counter),
 		histograms:   make(map[string]*Histogram),
 		gauges:       make(map[string]*Gauge),
-		cardCounters: make(map[string]*xmetrics.HLLCounter),
+		cardCounters: make(map[string]*CardinalityCounter),
 	}
 }
 
@@ -101,13 +103,18 @@ func (p *Provider) newHistogram(name string, labelValues ...string) metrics.Hist
 
 // NewCardinalityCounter implements metrics.Provider.
 func (p *Provider) NewCardinalityCounter(name string) xmetrics.CardinalityCounter {
+	return p.newCardinalityCounter(name)
+}
+
+func (p *Provider) newCardinalityCounter(name string, labelValues ...string) xmetrics.CardinalityCounter {
 	p.Lock()
 	defer p.Unlock()
 
-	if _, ok := p.cardCounters[name]; !ok {
-		p.cardCounters[name] = xmetrics.NewHLLCounter(name)
+	k := p.keyFor(name, labelValues...)
+	if _, ok := p.cardCounters[k]; !ok {
+		p.cardCounters[k] = &CardinalityCounter{Name: name, p: p, lvs: labelValues, counter: hll.New()}
 	}
-	return p.cardCounters[name]
+	return p.cardCounters[k]
 }
 
 // CheckCounter checks that there is a registered counter
@@ -308,24 +315,29 @@ func (p *Provider) CheckStopped() {
 
 // CheckCardinalityCounter checks that there is a registered cardinality
 // counter with the name and estimate provided.
-func (p *Provider) CheckCardinalityCounter(name string, estimate uint64) {
+func (p *Provider) CheckCardinalityCounter(name string, estimate uint64, labelValues ...string) {
 	p.t.Helper()
 
 	p.Lock()
 	defer p.Unlock()
 
-	cc, ok := p.cardCounters[name]
+	k := p.keyFor(name, labelValues...)
+	cc, ok := p.cardCounters[k]
 	if !ok {
 		keys := make([]string, 0, len(p.cardCounters))
 		for k := range p.cardCounters {
 			keys = append(keys, k)
 		}
 		available := strings.Join(keys, "\n")
-		p.t.Fatalf("no cardinality counter named %s out of available cardinality counter: \n%s", name, available)
+		p.t.Fatalf("no counter named %s out of available cardinality counters: \n%s", k, available)
 	}
 	actualEstimate := cc.Estimate()
-	if actualEstimate != estimate {
+	if estimate != actualEstimate {
 		p.t.Fatalf("%v = %v, want %v", name, actualEstimate, estimate)
+	}
+
+	if len(labelValues) > 0 && !reflect.DeepEqual(labelValues, cc.lvs) {
+		p.t.Fatalf("want counter label values: %#v, got %#v", labelValues, cc.lvs)
 	}
 }
 
