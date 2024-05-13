@@ -127,7 +127,7 @@ func WithHTTPEndpointExporter(endpoint string, options ...otlpmetrichttp.Option)
 
 		if u.User.String() != "" {
 			authHeader := make(map[string]string)
-			authHeader["Authorization"] = "Basic" + base64.StdEncoding.EncodeToString([]byte(u.User.String()))
+			authHeader["Authorization"] = "Basic " + base64.StdEncoding.EncodeToString([]byte(u.User.String()))
 
 			defaults = append(defaults, otlpmetrichttp.WithHeaders(authHeader))
 		}
@@ -160,7 +160,7 @@ func WithGRPCExporter(endpoint string, options ...otlpmetricgrpc.Option) Option 
 
 		if u.User.String() != "" {
 			authHeader := make(map[string]string)
-			authHeader["Authorization"] = "Basic" + base64.StdEncoding.EncodeToString([]byte(u.User.String()))
+			authHeader["Authorization"] = "Basic " + base64.StdEncoding.EncodeToString([]byte(u.User.String()))
 
 			defaults = append(defaults, otlpmetricgrpc.WithHeaders(authHeader))
 		}
