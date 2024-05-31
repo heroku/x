@@ -177,3 +177,5 @@ func WithExporterFunc(fn exporterFactory) Option {
 		return nil
 	}
 }
+
+func WithRuntimeInstrumentation(
