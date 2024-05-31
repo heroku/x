@@ -178,4 +178,9 @@ func WithExporterFunc(fn exporterFactory) Option {
 	}
 }
 
-func WithRuntimeInstrumentation(
+func WithRuntimeInstrumentation() {
+	return func(c *config) error {
+		c.enableRuntimeMetrics = true
+		return nil
+	}
+}
