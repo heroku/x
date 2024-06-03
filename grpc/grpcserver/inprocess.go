@@ -1,8 +1,8 @@
 package grpcserver
 
 import (
+	"context"
 	"net"
-	"time"
 
 	"github.com/hydrogen18/memlistener"
 	"google.golang.org/grpc"
@@ -40,13 +40,12 @@ func (s *LocalServer) Stop(err error) {
 // Conn returns a client connection to the in-process server.
 func (s *LocalServer) Conn(opts ...grpc.DialOption) *grpc.ClientConn {
 	defaultOptions := []grpc.DialOption{
-		// TODO: SA1019: grpc.WithDialer is deprecated: use WithContextDialer instead  (staticcheck)
-		grpc.WithDialer(func(addr string, timeout time.Duration) (net.Conn, error) { //nolint:staticcheck
+		grpc.WithContextDialer(func(_ context.Context, addr string) (net.Conn, error) {
 			return s.ln.Dial("mem", "")
 		}),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	}
 
-	conn, _ := grpc.Dial("", append(defaultOptions, opts...)...)
+	conn, _ := grpc.NewClient("", append(defaultOptions, opts...)...)
 	return conn
 }

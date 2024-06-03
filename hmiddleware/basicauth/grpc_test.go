@@ -36,21 +36,22 @@ func TestGRPCPerRPCCredentialBasicAuth(t *testing.T) {
 	srv := httptest.NewServer(hSrv.Handler)
 	defer srv.Close()
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
 	conn, err := grpcclient.DialH2CContext(
-		ctx,
+		context.Background(),
 		srv.URL,
-		grpc.WithBlock(),
 		grpc.WithPerRPCCredentials(&GRPCCredentials{Username: "user", Password: "pass"}),
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer conn.Close()
 
 	client := routeguide.NewRouteGuideClient(conn)
-	_, err = client.GetFeature(context.Background(), &routeguide.Point{})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	_, err = client.GetFeature(ctx, &routeguide.Point{})
 	if err != nil {
 		t.Fatal(err)
 	}
