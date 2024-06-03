@@ -178,9 +178,9 @@ func WithExporterFunc(fn exporterFactory) Option {
 	}
 }
 
-func WithRuntimeInstrumentation() {
+func WithRuntimeInstrumentation(b bool) Option {
 	return func(c *config) error {
-		c.enableRuntimeMetrics = true
+		c.enableRuntimeMetrics = b
 		return nil
 	}
 }
