@@ -14,9 +14,10 @@ GOTEST_COVERAGE_OPT := -coverprofile=$(COVER_PROFILE) -covermode=atomic
 
 # protoc config
 ARCH = $(shell uname -m)
-PROTOC_VERSION = 3.18.1
+PROTOC_VERSION = "27.0"
 PROTOC_OS = $(shell uname -s | sed 's/Darwin/osx/' | sed 's/Linux/linux/')
-PROTOC_ASSET = protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(ARCH).zip
+PROTOC_ARCH = $(shell uname -m | sed 's/arm64/aarch_64/' | sed 's/amd64/x86_64/')
+PROTOC_ASSET = protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip
 PROTOC_DOWNLOAD_URL = https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOC_VERSION)/$(PROTOC_ASSET)
 
 # Additive or overridable variables
