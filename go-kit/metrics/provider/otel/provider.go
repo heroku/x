@@ -131,10 +131,10 @@ func New(ctx context.Context, serviceName string, opts ...Option) (xmetrics.Prov
 // Start starts the provider's controller and exporter.
 func (p *Provider) Start() error {
 	var err error
-	if cfg.enableRuntimeMetrics {
+	if p.cfg.enableRuntimeMetrics {
 		err = runtime.Start(
 			runtime.WithMeterProvider(p.meterProvider),
-			runtime.WithMinimumReadMemStatsInterval(cfg.collectPeriod),
+			runtime.WithMinimumReadMemStatsInterval(p.cfg.collectPeriod),
 		)
 	}
 	return err
