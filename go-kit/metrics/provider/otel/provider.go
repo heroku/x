@@ -122,13 +122,6 @@ func New(ctx context.Context, serviceName string, opts ...Option) (xmetrics.Prov
 		metric.WithView(p.viewCache.View),
 	)
 
-	if cfg.enableRuntimeMetrics {
-		runtime.Start(
-			runtime.WithMeterProvider(meterProvider),
-			runtime.WithMinimumReadMemStatsInterval(cfg.collectPeriod),
-		)
-	}
-
 	// initialize the metricProvider
 	p.meterProvider = meterProvider
 
@@ -137,7 +130,14 @@ func New(ctx context.Context, serviceName string, opts ...Option) (xmetrics.Prov
 
 // Start starts the provider's controller and exporter.
 func (p *Provider) Start() error {
-	return nil
+	var err error
+	if cfg.enableRuntimeMetrics {
+		err = runtime.Start(
+			runtime.WithMeterProvider(p.meterProvider),
+			runtime.WithMinimumReadMemStatsInterval(cfg.collectPeriod),
+		)
+	}
+	return err
 }
 
 // Stop shuts down the provider's controller and exporter.
