@@ -64,5 +64,9 @@ func MustProvider(ctx context.Context, logger logrus.FieldLogger, cfg Config, se
 		logger.Fatal(err)
 	}
 
+	if err := otelProvider; err != nil {
+		logger.Fatal(err)
+	}
+
 	return otelProvider
 }
