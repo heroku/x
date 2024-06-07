@@ -52,6 +52,19 @@ func WithCollectPeriod(collectPeriod time.Duration) Option {
 	}
 }
 
+// WithDefaultTemporalitySelector uses delta temporality for all instrument kinds, except
+// UpDown counters it uses cumulative temporality.
+func WithDefaultTemporalitySelector(ik metric.InstrumentKind) metricdata.Temporality {
+	switch ik {
+	case
+		metric.InstrumentKindUpDownCounter,
+		metric.InstrumentKindObservableUpDownCounter:
+		return metricdata.CumulativeTemporality
+	default:
+		return metricdata.DeltaTemporality
+	}
+}
+
 func CumulativeTemporalitySelector(_ metric.InstrumentKind) metricdata.Temporality {
 	return metricdata.CumulativeTemporality
 }
