@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"go.opentelemetry.io/contrib/instrumentation/runtime"
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 
@@ -20,13 +21,14 @@ const (
 var DefaultReaderInterval = time.Minute
 
 type config struct {
-	ctx                 context.Context // used for init and shutdown of the otlp exporter and other bits of this Provider
-	serviceResource     *resource.Resource
-	prefix              string
-	collectPeriod       time.Duration
-	temporalitySelector metric.TemporalitySelector
-	aggregationSelector metric.AggregationSelector
-	exporterFactory     exporterFactory
+	ctx                  context.Context // used for init and shutdown of the otlp exporter and other bits of this Provider
+	serviceResource      *resource.Resource
+	prefix               string
+	collectPeriod        time.Duration
+	temporalitySelector  metric.TemporalitySelector
+	aggregationSelector  metric.AggregationSelector
+	exporterFactory      exporterFactory
+	enableRuntimeMetrics bool
 }
 
 // Provider initializes a global otlp meter provider that can collect metrics and
@@ -128,7 +130,14 @@ func New(ctx context.Context, serviceName string, opts ...Option) (xmetrics.Prov
 
 // Start starts the provider's controller and exporter.
 func (p *Provider) Start() error {
-	return nil
+	var err error
+	if p.cfg.enableRuntimeMetrics {
+		err = runtime.Start(
+			runtime.WithMeterProvider(p.meterProvider),
+			runtime.WithMinimumReadMemStatsInterval(p.cfg.collectPeriod),
+		)
+	}
+	return err
 }
 
 // Stop shuts down the provider's controller and exporter.

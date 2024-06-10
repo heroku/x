@@ -53,11 +53,18 @@ func MustProvider(ctx context.Context, logger logrus.FieldLogger, cfg Config, se
 
 		// ensure we use the http exporter
 		otel.WithHTTPEndpointExporter(endpoint.String()),
+
+		// optionally enable Golang runtime metrics collection
+		otel.WithRuntimeInstrumentation(cfg.EnableRuntimeMetrics),
 	}
 	allOpts = append(allOpts, opts...)
 
 	otelProvider, err := otel.New(ctx, service, allOpts...)
 	if err != nil {
+		logger.Fatal(err)
+	}
+
+	if err := otelProvider.(*otel.Provider).Start(); err != nil {
 		logger.Fatal(err)
 	}
 

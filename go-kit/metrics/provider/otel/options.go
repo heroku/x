@@ -52,12 +52,29 @@ func WithCollectPeriod(collectPeriod time.Duration) Option {
 	}
 }
 
+// DefaultTemporalitySelector uses delta temporality for all instrument kinds, except
+// UpDown counters it uses cumulative temporality.
+func DefaultTemporalitySelector(ik metric.InstrumentKind) metricdata.Temporality {
+	switch ik {
+	case
+		metric.InstrumentKindUpDownCounter,
+		metric.InstrumentKindObservableUpDownCounter:
+		return metricdata.CumulativeTemporality
+	default:
+		return metricdata.DeltaTemporality
+	}
+}
+
 func CumulativeTemporalitySelector(_ metric.InstrumentKind) metricdata.Temporality {
 	return metricdata.CumulativeTemporality
 }
 
 func DeltaTemporalitySelector(_ metric.InstrumentKind) metricdata.Temporality {
 	return metricdata.DeltaTemporality
+}
+
+func WithDefaultTemporality() Option {
+	return WithTemporalitySelector(DefaultTemporalitySelector)
 }
 
 func WithCumulativeTemporality() Option {
@@ -174,6 +191,13 @@ func WithExporterFunc(fn exporterFactory) Option {
 	return func(c *config) error {
 		c.exporterFactory = fn
 
+		return nil
+	}
+}
+
+func WithRuntimeInstrumentation(b bool) Option {
+	return func(c *config) error {
+		c.enableRuntimeMetrics = b
 		return nil
 	}
 }
