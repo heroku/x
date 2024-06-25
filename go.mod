@@ -29,7 +29,7 @@ require (
 	github.com/joeshaw/envdecode v0.0.0-20180129163420-d5f34bca07f3
 	github.com/lstoll/grpce v1.7.0
 	github.com/oklog/run v1.0.0
-	github.com/pkg/errors v0.8.2-0.20190227000051-27936f6d90f9
+	github.com/pkg/errors v0.9.1
 	github.com/rafaeljusto/redigomock v0.0.0-20190202135759-257e089e14a1
 	github.com/rollbar/rollbar-go v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.6.0
@@ -71,6 +71,9 @@ require (
 	github.com/golang/groupcache v0.0.0-20190702054246-869f871628b6 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.18.0 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.3 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.19 // indirect
+	github.com/rs/zerolog v1.33.0 // indirect
 	go.opentelemetry.io/otel/trace v1.27.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
 	golang.org/x/net v0.23.0 // indirect
