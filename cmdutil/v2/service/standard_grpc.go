@@ -5,7 +5,7 @@ import (
 
 	"github.com/joeshaw/envdecode"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
+	"github.com/rs/zerolog"
 
 	"github.com/heroku/x/cmdutil"
 	"github.com/heroku/x/cmdutil/health"
@@ -56,7 +56,7 @@ func loadMutualTLSCert(cfg grpcConfig) (tls.Certificate, [][]byte, error) {
 //
 // Currently only supports running in router-bypass mode, unlike HTTP.
 func GRPC(
-	l logrus.FieldLogger,
+	l zerolog.Logger,
 	m metrics.Provider,
 	server grpcserver.Starter,
 	grpcOpts ...grpcserver.ServerOption) cmdutil.Server {
@@ -65,7 +65,7 @@ func GRPC(
 
 	cert, serverCACertList, err := loadMutualTLSCert(cfg)
 	if err != nil {
-		l.WithError(err).Fatal()
+		l.Fatal().Err(err).Send()
 	}
 
 	var srvs []cmdutil.Server

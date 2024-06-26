@@ -9,14 +9,12 @@ import (
 	"github.com/rs/zerolog"
 
 	"github.com/heroku/x/cmdutil"
-	"github.com/heroku/x/cmdutil/debug"
 	"github.com/heroku/x/cmdutil/metrics"
-	"github.com/heroku/x/cmdutil/oc"
-	"github.com/heroku/x/cmdutil/signals"
+	"github.com/heroku/x/cmdutil/v2/debug"
 	"github.com/heroku/x/cmdutil/v2/rollbar"
+	"github.com/heroku/x/cmdutil/v2/signals"
 	"github.com/heroku/x/cmdutil/v2/svclog"
 	xmetrics "github.com/heroku/x/go-kit/metrics"
-	"github.com/heroku/x/go-kit/metrics/l2met"
 )
 
 // Standard is a standard service.
@@ -67,28 +65,8 @@ func New(appConfig interface{}, ofs ...OptionFunc) *Standard {
 		Logger: logger,
 	}
 
-	if !sc.Metrics.OTEL.Enabled || sc.Metrics.L2MetOverrideEnabled {
-		l2met := l2met.New(logger)
-		s.MetricsProvider = l2met
-		s.Add(cmdutil.NewContextServer(l2met.Run))
-	}
-
 	s.Add(debug.New(logger, sc.Debug.Port))
 	s.Add(signals.NewServer(logger, syscall.SIGINT, syscall.SIGTERM))
-
-	// only setup an exporter if indicated && the AgentAddress is set
-	// this separates the code change saying yes, do tracing from
-	// the operational aspect of deciding where it goes.
-	if o.enableOpenCensusTracing && sc.OpenCensus.AgentAddress != "" {
-		oce, err := oc.NewExporter(
-			sc.OpenCensus.TraceConfig(),
-			sc.OpenCensus.ExporterOptions(s.App)...,
-		)
-		if err != nil {
-			panic(err)
-		}
-		s.Add(oce)
-	}
 
 	return s
 }
@@ -120,7 +98,7 @@ func (s *Standard) Run() {
 	}
 
 	if err != nil {
-		s.Logger.WithError(err).Fatal()
+		s.Logger.Fatal().Err(err).Send()
 	}
 }
 
