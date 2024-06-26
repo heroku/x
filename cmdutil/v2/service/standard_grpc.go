@@ -8,10 +8,10 @@ import (
 	"github.com/rs/zerolog"
 
 	"github.com/heroku/x/cmdutil"
-	"github.com/heroku/x/cmdutil/health"
 	"github.com/heroku/x/cmdutil/spaceca"
+	"github.com/heroku/x/cmdutil/v2/health"
 	"github.com/heroku/x/go-kit/metrics"
-	"github.com/heroku/x/grpc/grpcserver"
+	"github.com/heroku/x/grpc/v2/grpcserver"
 )
 
 type grpcConfig struct {
