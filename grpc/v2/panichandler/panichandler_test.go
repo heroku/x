@@ -80,7 +80,9 @@ func TestLoggingUnaryPanicHandler_Panic(t *testing.T) {
 		t.Fatalf("Got %+v want Internal grpc error", gerr)
 	}
 
-	testlog.ToLogEvent(t, out.Bytes()).VerifyMessage("grpc unary server panic")
+	if err := testlog.ToLogEvent(t, out.Bytes()).VerifyMessage("grpc unary server panic"); err != nil {
+		t.Error(err)
+	}
 }
 
 func TestLoggingStreamPanicHandler_NoPanic(t *testing.T) {
@@ -142,5 +144,7 @@ func TestLoggingStreamPanicHandler_Panic(t *testing.T) {
 		t.Fatalf("Got %+v want Internal grpc error", gerr)
 	}
 
-	testlog.ToLogEvent(t, out.Bytes()).VerifyMessage("grpc stream server panic")
+	if err := testlog.ToLogEvent(t, out.Bytes()).VerifyMessage("grpc stream server panic"); err != nil {
+		t.Error(err)
+	}
 }
