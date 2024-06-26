@@ -49,7 +49,7 @@ func (s *Server) Run() error {
 		Str("at", "binding").
 		Str("service", "debug").
 		Str("addr", s.addr).
-		Msg("")
+		Send()
 
 	opts := agent.Options{
 		Addr:            s.addr,
