@@ -32,7 +32,7 @@ func Setup(logger zerolog.Logger, cfg Config) zerolog.Logger {
 	logger.Info().
 		Str("at", "setup-rollbar").
 		Str("env", cfg.Env).
-		Msg("")
+		Send()
 
 	/* TODO: Set up rollbar. Skip for now
 	hook := rollrus.NewHook(cfg.Token, cfg.Env,
