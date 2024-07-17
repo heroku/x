@@ -40,7 +40,7 @@ type Provider struct {
 	meterProvider *metric.MeterProvider
 	viewCache     *viewCache
 
-	mu         sync.Mutex
+	mu         sync.RWMutex
 	counters   map[string]*Counter
 	gauges     map[string]*Gauge
 	histograms map[string]*Histogram

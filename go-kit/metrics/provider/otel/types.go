@@ -45,10 +45,18 @@ func (p *Provider) NewCounter(name string) metrics.Counter {
 }
 
 func (p *Provider) newCounter(name string, labelValues ...string) metrics.Counter {
+	k := keyName(name, labelValues...)
+
+	p.mu.RLock()
+	c, ok := p.counters[k]
+	p.mu.RUnlock()
+	if ok {
+		return c
+	}
+
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	k := keyName(name, labelValues...)
 	m := p.meterProvider.Meter(name)
 
 	if _, ok := p.counters[k]; !ok {
@@ -82,10 +90,18 @@ func (p *Provider) NewGauge(name string) metrics.Gauge {
 }
 
 func (p *Provider) newGauge(name string, labelValues ...string) metrics.Gauge {
+	k := keyName(name, labelValues...)
+
+	p.mu.RLock()
+	g, ok := p.gauges[k]
+	p.mu.RUnlock()
+	if ok {
+		return g
+	}
+
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	k := keyName(name, labelValues...)
 	m := p.meterProvider.Meter(name)
 
 	attributes := makeAttributes(labelValues)
@@ -166,11 +182,19 @@ func (p *Provider) NewHistogram(name string, buckets int) metrics.Histogram {
 }
 
 func (p *Provider) newHistogram(stream sdk.Stream, labelValues ...string) metrics.Histogram {
+	name := stream.Name
+	k := keyName(name, labelValues...)
+
+	p.mu.RLock()
+	h, ok := p.histograms[k]
+	p.mu.RUnlock()
+	if ok {
+		return h
+	}
+
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
-	name := stream.Name
-	k := keyName(name, labelValues...)
 	m := p.meterProvider.Meter(name)
 
 	if _, ok := p.histograms[k]; !ok {
