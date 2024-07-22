@@ -1,7 +1,6 @@
 package testlog
 
 import (
-	"bufio"
 	"bytes"
 	"fmt"
 	"log/slog"
@@ -36,25 +35,12 @@ func New() (*slog.Logger, *Hook) {
 // ExpectLogLine uses the hook to validate that
 // the next log line contains the passed message and set of key-values in the passed map.
 func (hook *Hook) ExpectLogLine(t *testing.T, msg string, m map[string]interface{}) {
-	line, err := hook.buf.ReadString('\n')
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if !strings.Contains(line, msg) {
-		t.Errorf("expected log line to contain message: %s", msg)
-	}
-
-	for k, v := range m {
-		if !strings.Contains(line, fmt.Sprintf("%s=%s", k, v)) {
-			t.Errorf("expected log line to contain %s=%s", k, v)
-		}
-	}
+	ExpectLogLineFromBuffer(t, hook.buf, msg, m)
 }
 
-// ExpectLogLineFromReader is the same as hook.ExpectLogLine but instead validates lines from a reader.
-func ExpectLogLine(t *testing.T, r bufio.Reader, msg string, m map[string]interface{}) {
-	line, err := r.ReadString('\n')
+// ExpectLogLineFromBuffer is the same as hook.ExpectLogLine but instead validates lines from a buffer.
+func ExpectLogLineFromBuffer(t *testing.T, b *bytes.Buffer, msg string, m map[string]interface{}) {
+	line, err := b.ReadString('\n')
 	if err != nil {
 		t.Fatal(err)
 	}

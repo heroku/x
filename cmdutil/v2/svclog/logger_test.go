@@ -19,7 +19,7 @@ func TestLoggerEmitsAppAndDeployData(t *testing.T) {
 	logger := NewLogger(cfg)
 	logger.Info("message")
 
-	testlog.ExpectLogLineFromReader(t, buf, "", map[string]interface{}{
+	testlog.ExpectLogLineFromBuffer(t, buf, "", map[string]interface{}{
 		"app":    "sushi",
 		"deploy": "production",
 		"msg":    "message",
@@ -43,7 +43,7 @@ func TestReportPanic(t *testing.T) {
 			t.Fatal("expected ReportPanic to repanic")
 		}
 
-		testlog.ExpectLogLineFromReader(t, buf, "", map[string]interface{}{
+		testlog.ExpectLogLineFromBuffer(t, buf, "", map[string]interface{}{
 			"msg":   "\"test message\"",
 			"at":    "panic",
 			"level": "ERROR",
