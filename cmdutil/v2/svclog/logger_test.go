@@ -2,9 +2,9 @@ package svclog
 
 import (
 	"bytes"
-	"fmt"
-	"strings"
 	"testing"
+
+	"github.com/heroku/x/testing/v2/testlog"
 )
 
 func TestLoggerEmitsAppAndDeployData(t *testing.T) {
@@ -19,7 +19,7 @@ func TestLoggerEmitsAppAndDeployData(t *testing.T) {
 	logger := NewLogger(cfg)
 	logger.Info("message")
 
-	expectLogLine(t, buf, map[string]string{
+	testlog.ExpectLogLineFromReader(t, buf, "", map[string]interface{}{
 		"app":    "sushi",
 		"deploy": "production",
 		"msg":    "message",
@@ -43,7 +43,7 @@ func TestReportPanic(t *testing.T) {
 			t.Fatal("expected ReportPanic to repanic")
 		}
 
-		expectLogLine(t, buf, map[string]string{
+		testlog.ExpectLogLineFromReader(t, buf, "", map[string]interface{}{
 			"msg":   "\"test message\"",
 			"at":    "panic",
 			"level": "ERROR",
@@ -55,17 +55,4 @@ func TestReportPanic(t *testing.T) {
 
 		panic("test message")
 	}()
-}
-
-func expectLogLine(t *testing.T, buf *bytes.Buffer, m map[string]string) {
-	msg, err := buf.ReadString('\n')
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	for k, v := range m {
-		if !strings.Contains(msg, fmt.Sprintf("%s=%s", k, v)) {
-			t.Errorf("expected log line to contain %s=%s", k, v)
-		}
-	}
 }
