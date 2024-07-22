@@ -1,6 +1,7 @@
 package testlog
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"log/slog"
@@ -29,7 +30,25 @@ func New() (*slog.Logger, *Hook) {
 	)
 
 	return logger, hook
+}
 
+// IsEmpty returns true if there no logs have been written to the hook.
+func (hook *Hook) IsEmpty() bool {
+	return hook.buf.Len() == 0
+}
+
+// ExpectAllContain validates that all log lines contain this substring.
+func (hook *Hook) ExpectAllContain(t *testing.T, msg string) {
+	scanner := bufio.NewScanner(hook.buf)
+	for scanner.Scan() {
+		if s := scanner.Text(); !strings.Contains(s, msg) {
+			t.Errorf("expected log line '%s' to contain '%s'", s, msg)
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		t.Fatal(err)
+	}
 }
 
 // ExpectLogLine uses the hook to validate that
