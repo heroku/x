@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/heroku/x/cmdutil/service"
+	"github.com/heroku/x/cmdutil/v2/service"
 )
 
 func ExampleWithHTTPServerHook() {
