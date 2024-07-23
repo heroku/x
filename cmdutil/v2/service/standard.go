@@ -104,9 +104,8 @@ func (s *Standard) Run() {
 }
 
 type options struct {
-	customMetricsSuffix     string
-	skipMetricsSuffix       bool
-	enableOpenCensusTracing bool
+	customMetricsSuffix string
+	skipMetricsSuffix   bool
 }
 
 // OptionFunc is a function that modifies internal service options.

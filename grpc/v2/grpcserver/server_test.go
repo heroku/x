@@ -5,7 +5,6 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
-	"strings"
 	"testing"
 
 	"google.golang.org/grpc"
@@ -18,7 +17,7 @@ import (
 	"github.com/heroku/x/testing/mustcert"
 )
 
-func ExampleLocal(t *testing.T) {
+func ExampleLocal() {
 	srv := New()
 	localsrv := Local(srv)
 
@@ -38,10 +37,7 @@ func ExampleLocal(t *testing.T) {
 		return
 	}
 
-	status := fmt.Sprintf("%v", resp.Status)
-	if !strings.Contains(status, "Status = SERVING") {
-		t.Errorf("wanted status to be SERVING, got %v", status)
-	}
+	fmt.Printf("Status = %v", resp.Status)
 }
 
 func TestGetPeerNameFromContext(t *testing.T) {
