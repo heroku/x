@@ -27,10 +27,6 @@ func TestPanicReporting(t *testing.T) {
 
 	s := New(&cfg)
 
-	l2met := l2met.New(s.Logger)
-	s.MetricsProvider = l2met
-	s.Add(cmdutil.NewContextServer(l2met.Run))
-
 	f := func() error {
 		panic("test panic")
 		return nil
