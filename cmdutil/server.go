@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"runtime"
+	"time"
 
 	"github.com/oklog/run"
 )
@@ -160,8 +161,9 @@ func NewPprofServer(config ProfileConfig) Server {
 		}
 
 		pprofSrv := &http.Server{
-			Addr:    config.Addr,
-			Handler: mux,
+			Addr:              config.Addr,
+			Handler:           mux,
+			ReadHeaderTimeout: 5 * time.Second,
 		}
 
 		go func() {
