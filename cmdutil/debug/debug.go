@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"net/http"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/google/gops/agent"
@@ -93,14 +94,23 @@ func (s *Server) Stop(_ error) {
 	}
 }
 
+// PProfServer wraps a pprof server.
+type PProfServer struct {
+	logger        logrus.FieldLogger
+	addr          string
+	done          chan struct{}
+	pprofServer   *http.Server
+	profileConfig ProfileConfig
+}
+
 // ProfileConfig holds the configuration for the pprof server.
 type ProfileConfig struct {
 	Addr            string
 	ProfileHandlers map[string]http.HandlerFunc
 }
 
-// NewPprofServer sets up a pprof server with configurable profiling types and returns a Server instance.
-func NewPprofServer(config ProfileConfig, l logrus.FieldLogger) *Server {
+// NewPProfServer sets up a pprof server with configurable profiling types and returns a PProfServer instance.
+func NewPProfServer(config ProfileConfig, l logrus.FieldLogger) *PProfServer {
 	if config.Addr == "" {
 		config.Addr = "127.0.0.1:9998" // Default port
 	}
@@ -108,44 +118,73 @@ func NewPprofServer(config ProfileConfig, l logrus.FieldLogger) *Server {
 	// Create a new HTTP mux for handling pprof routes.
 	mux := http.NewServeMux()
 
-	// Iterate over the profile handlers and add them to the mux.
+	// Iterate over the handlers and add them to the mux.
 	for profile, handler := range config.ProfileHandlers {
 		if handler != nil {
 			if profile == "mutex" {
 				runtime.SetMutexProfileFraction(2)
 			}
 			mux.HandleFunc("/debug/pprof/"+profile, handler)
-			l.WithFields(logrus.Fields{
-				"at":      "adding",
-				"service": "pprof",
-				"profile": profile,
-			}).Info("Added pprof profile handler")
-		} else {
-			l.WithFields(logrus.Fields{
-				"at":      "ignoring",
-				"service": "pprof",
-				"profile": profile,
-			}).Warn("Unknown pprof profile type")
 		}
 	}
 
-	l.WithFields(logrus.Fields{
-		"at":      "binding",
-		"service": "pprof",
-		"addr":    config.Addr,
-	}).Info()
-
-	// Create a new HTTP server for serving pprof endpoints.
 	httpServer := &http.Server{
 		Addr:              config.Addr,
 		Handler:           mux,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
-	return &Server{
-		logger:      l,
-		addr:        config.Addr,
-		done:        make(chan struct{}),
-		pprofServer: httpServer,
+	return &PProfServer{
+		logger:        l,
+		addr:          config.Addr,
+		done:          make(chan struct{}),
+		pprofServer:   httpServer,
+		profileConfig: config,
 	}
+}
+
+// Run starts the pprof server.
+//
+// It implements oklog group's runFn.
+func (s *PProfServer) Run() error {
+	s.logger.WithFields(logrus.Fields{
+		"at":       "binding",
+		"service":  "pprof",
+		"addr":     s.addr,
+		"profiles": strings.Join(s.getProfileNames(), ","),
+	}).Info()
+
+	if s.pprofServer != nil {
+		go func() {
+			if err := s.pprofServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				s.logger.WithError(err).Error("pprof server error")
+			}
+		}()
+	}
+
+	<-s.done
+	return nil
+}
+
+// Stop shuts down the pprof server.
+//
+// It implements oklog group's interruptFn.
+func (s *PProfServer) Stop(_ error) {
+	if s.pprofServer != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := s.pprofServer.Shutdown(ctx); err != nil {
+			s.logger.WithError(err).Error("Error shutting down pprof server")
+		}
+	}
+	close(s.done)
+}
+
+// getProfileNames returns the list of profile names configured.
+func (s *PProfServer) getProfileNames() []string {
+	var profiles []string
+	for profile := range s.profileConfig.ProfileHandlers {
+		profiles = append(profiles, profile)
+	}
+	return profiles
 }
