@@ -4,10 +4,6 @@ package cmdutil
 
 import (
 	"context"
-	"net/http"
-	"net/http/pprof"
-	"runtime"
-	"time"
 
 	"github.com/oklog/run"
 )
@@ -96,81 +92,4 @@ func MultiServer(servers ...Server) Server {
 		RunFunc:  g.Run,
 		StopFunc: s.Stop,
 	}
-}
-
-// NewPprofServer sets up a pprof server with optional mutex profiling.
-// func NewPprofServer(addr string, enableMutexProfiling bool) Server {
-//     if addr == "" {
-//         addr = "127.0.0.1:9998" // Default port
-//     }
-
-//     return NewContextServer(func(ctx context.Context) error {
-//         if enableMutexProfiling {
-//             runtime.SetMutexProfileFraction(2)
-//         }
-
-//         pprofSrv := &http.Server{
-//             Addr:    addr,
-//             Handler: http.HandlerFunc(pprof.Index),
-//         }
-
-//         go func() {
-//             <-ctx.Done()
-//             pprofSrv.Close()
-//         }()
-
-//         return pprofSrv.ListenAndServe()
-//     })
-// }
-
-// ProfileConfig holds the configuration for the pprof server.
-type ProfileConfig struct {
-	Addr     string
-	Profiles []string
-}
-
-// NewPprofServer sets up a pprof server with optional mutex profiling and configurable profiling types.
-func NewPprofServer(config ProfileConfig) Server {
-	if config.Addr == "" {
-		config.Addr = "127.0.0.1:9998" // Default port
-	}
-
-	return NewContextServer(func(ctx context.Context) error {
-		mux := http.NewServeMux()
-
-		profileHandlers := map[string]http.HandlerFunc{
-			"index":        pprof.Index,
-			"cmdline":      pprof.Cmdline,
-			"profile":      pprof.Profile,
-			"symbol":       pprof.Symbol,
-			"heap":         pprof.Handler("heap").ServeHTTP,
-			"goroutine":    pprof.Handler("goroutine").ServeHTTP,
-			"threadcreate": pprof.Handler("threadcreate").ServeHTTP,
-			"block":        pprof.Handler("block").ServeHTTP,
-			"trace":        pprof.Trace,
-			"mutex":        pprof.Handler("mutex").ServeHTTP,
-		}
-
-		for _, profile := range config.Profiles {
-			if handler, exists := profileHandlers[profile]; exists {
-				if profile == "mutex" {
-					runtime.SetMutexProfileFraction(2)
-				}
-				mux.HandleFunc("/debug/pprof/"+profile, handler)
-			}
-		}
-
-		pprofSrv := &http.Server{
-			Addr:              config.Addr,
-			Handler:           mux,
-			ReadHeaderTimeout: 5 * time.Second,
-		}
-
-		go func() {
-			<-ctx.Done()
-			pprofSrv.Close()
-		}()
-
-		return pprofSrv.ListenAndServe()
-	})
 }
