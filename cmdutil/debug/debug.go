@@ -41,10 +41,9 @@ func New(l logrus.FieldLogger, port int) *Server {
 
 // Server wraps a gops server for easy use with oklog/group.
 type Server struct {
-	logger      logrus.FieldLogger
-	addr        string
-	done        chan struct{}
-	pprofServer *http.Server
+	logger logrus.FieldLogger
+	addr   string
+	done   chan struct{}
 }
 
 // Run starts the debug server.
@@ -65,14 +64,6 @@ func (s *Server) Run() error {
 		return err
 	}
 
-	if s.pprofServer != nil {
-		go func() {
-			if err := s.pprofServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-				s.logger.WithError(err).Error("pprof server error")
-			}
-		}()
-	}
-
 	<-s.done
 	return nil
 }
@@ -84,14 +75,6 @@ func (s *Server) Stop(_ error) {
 	agent.Close()
 
 	close(s.done)
-
-	if s.pprofServer != nil {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		if err := s.pprofServer.Shutdown(ctx); err != nil {
-			s.logger.WithError(err).Error("Error shutting down pprof server")
-		}
-	}
 }
 
 // PProfServer wraps a pprof server.
