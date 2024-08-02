@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"net/http"
 	"runtime"
-	"strings"
 	"time"
 
 	"github.com/google/gops/agent"
@@ -131,10 +130,9 @@ func NewPProfServer(config ProfileConfig, l logrus.FieldLogger) *PProfServer {
 // It implements oklog group's runFn.
 func (s *PProfServer) Run() error {
 	s.logger.WithFields(logrus.Fields{
-		"at":       "binding",
-		"service":  "pprof",
-		"addr":     s.addr,
-		"profiles": strings.Join(s.getProfileNames(), ","),
+		"at":      "binding",
+		"service": "pprof",
+		"addr":    s.addr,
 	}).Info()
 
 	if s.pprofServer != nil {
@@ -161,13 +159,4 @@ func (s *PProfServer) Stop(_ error) {
 		}
 	}
 	close(s.done)
-}
-
-// getProfileNames returns the list of profile names configured.
-func (s *PProfServer) getProfileNames() []string {
-	var profiles []string
-	for profile := range s.profileConfig.ProfileHandlers {
-		profiles = append(profiles, profile)
-	}
-	return profiles
 }
