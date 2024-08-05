@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/http/pprof"
 	"runtime"
 	"time"
 
@@ -82,17 +83,18 @@ type PProfServer struct {
 	addr          string
 	done          chan struct{}
 	pprofServer   *http.Server
-	profileConfig ProfileConfig
+	profileConfig PProfServerConfig
 }
 
 // ProfileConfig holds the configuration for the pprof server.
-type ProfileConfig struct {
-	Addr            string
-	ProfileHandlers map[string]http.HandlerFunc
+type PProfServerConfig struct {
+	Addr                 string
+	ProfileNames         []string
+	MutexProfileFraction int
 }
 
 // NewPProfServer sets up a pprof server with configurable profiling types and returns a PProfServer instance.
-func NewPProfServer(config ProfileConfig, l logrus.FieldLogger) *PProfServer {
+func NewPProfServer(config PProfServerConfig, l logrus.FieldLogger) *PProfServer {
 	if config.Addr == "" {
 		config.Addr = "127.0.0.1:9998" // Default port
 	}
@@ -101,13 +103,14 @@ func NewPProfServer(config ProfileConfig, l logrus.FieldLogger) *PProfServer {
 	mux := http.NewServeMux()
 
 	// Iterate over the handlers and add them to the mux.
-	for profile, handler := range config.ProfileHandlers {
-		if handler != nil {
-			if profile == "mutex" {
-				runtime.SetMutexProfileFraction(2)
+	for _, profile := range config.ProfileNames {
+		if profile == "mutex" {
+			if config.MutexProfileFraction == 0 {
+				config.MutexProfileFraction = 2 // Use default value of 2 if not set
 			}
-			mux.HandleFunc("/debug/pprof/"+profile, handler)
+			runtime.SetMutexProfileFraction(config.MutexProfileFraction)
 		}
+		mux.Handle("/debug/pprof/"+profile, pprof.Handler(profile))
 	}
 
 	httpServer := &http.Server{
@@ -136,11 +139,9 @@ func (s *PProfServer) Run() error {
 	}).Info()
 
 	if s.pprofServer != nil {
-		go func() {
-			if err := s.pprofServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-				s.logger.WithError(err).Error("pprof server error")
-			}
-		}()
+		if err := s.pprofServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			return err
+		}
 	}
 
 	<-s.done
