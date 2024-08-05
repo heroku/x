@@ -79,19 +79,20 @@ func (s *Server) Stop(_ error) {
 
 // PProfServer wraps a pprof server.
 type PProfServer struct {
-	logger        logrus.FieldLogger
-	addr          string
-	done          chan struct{}
-	pprofServer   *http.Server
-	profileConfig PProfServerConfig
+	logger      logrus.FieldLogger
+	addr        string
+	done        chan struct{}
+	pprofServer *http.Server
 }
 
 // ProfileConfig holds the configuration for the pprof server.
 type PProfServerConfig struct {
 	Addr                 string
-	ProfileNames         []string
 	MutexProfileFraction int
 }
+
+// defaultMutexProfileFraction is the default value for MutexProfileFraction
+const defaultMutexProfileFraction = 2
 
 // NewPProfServer sets up a pprof server with configurable profiling types and returns a PProfServer instance.
 func NewPProfServer(config PProfServerConfig, l logrus.FieldLogger) *PProfServer {
@@ -99,32 +100,24 @@ func NewPProfServer(config PProfServerConfig, l logrus.FieldLogger) *PProfServer
 		config.Addr = "127.0.0.1:9998" // Default port
 	}
 
-	// Create a new HTTP mux for handling pprof routes.
-	mux := http.NewServeMux()
-
-	// Iterate over the handlers and add them to the mux.
-	for _, profile := range config.ProfileNames {
-		if profile == "mutex" {
-			if config.MutexProfileFraction == 0 {
-				config.MutexProfileFraction = 2 // Use default value of 2 if not set
-			}
-			runtime.SetMutexProfileFraction(config.MutexProfileFraction)
-		}
-		mux.Handle("/debug/pprof/"+profile, pprof.Handler(profile))
+	// Use a local variable for the mutex profile fraction
+	mpf := defaultMutexProfileFraction
+	if config.MutexProfileFraction != 0 {
+		mpf = config.MutexProfileFraction
 	}
+	runtime.SetMutexProfileFraction(mpf)
 
 	httpServer := &http.Server{
 		Addr:              config.Addr,
-		Handler:           mux,
+		Handler:           http.HandlerFunc(pprof.Index),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
 	return &PProfServer{
-		logger:        l,
-		addr:          config.Addr,
-		done:          make(chan struct{}),
-		pprofServer:   httpServer,
-		profileConfig: config,
+		logger:      l,
+		addr:        config.Addr,
+		done:        make(chan struct{}),
+		pprofServer: httpServer,
 	}
 }
 
