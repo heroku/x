@@ -15,7 +15,12 @@
 package debug
 
 import (
+	"context"
 	"fmt"
+	"net/http"
+	"net/http/pprof"
+	"runtime"
+	"time"
 
 	"github.com/google/gops/agent"
 	"github.com/sirupsen/logrus"
@@ -69,5 +74,85 @@ func (s *Server) Run() error {
 func (s *Server) Stop(_ error) {
 	agent.Close()
 
+	close(s.done)
+}
+
+// PProfServer wraps a pprof server.
+type PProfServer struct {
+	logger      logrus.FieldLogger
+	addr        string
+	done        chan struct{}
+	pprofServer *http.Server
+}
+
+// ProfileConfig holds the configuration for the pprof server.
+type PProfServerConfig struct {
+	Addr                 string
+	MutexProfileFraction int
+}
+
+// defaultMutexProfileFraction is the default value for MutexProfileFraction
+const defaultMutexProfileFraction = 2
+
+// NewPProfServer sets up a pprof server with configurable profiling types and returns a PProfServer instance.
+func NewPProfServer(config PProfServerConfig, l logrus.FieldLogger) *PProfServer {
+	if config.Addr == "" {
+		config.Addr = "127.0.0.1:9998" // Default port
+	}
+
+	// Use a local variable for the mutex profile fraction
+	mpf := defaultMutexProfileFraction
+	if config.MutexProfileFraction != 0 {
+		mpf = config.MutexProfileFraction
+	}
+	runtime.SetMutexProfileFraction(mpf)
+
+	httpServer := &http.Server{
+		Addr:              config.Addr,
+		Handler:           http.HandlerFunc(pprof.Index),
+		ReadHeaderTimeout: 5 * time.Second,
+	}
+
+	return &PProfServer{
+		logger:      l,
+		addr:        config.Addr,
+		done:        make(chan struct{}),
+		pprofServer: httpServer,
+	}
+}
+
+// Run starts the pprof server.
+//
+// It implements oklog group's runFn.
+func (s *PProfServer) Run() error {
+	if s.pprofServer == nil {
+		return fmt.Errorf("pprofServer is nil")
+	}
+
+	s.logger.WithFields(logrus.Fields{
+		"at":      "binding",
+		"service": "pprof",
+		"addr":    s.addr,
+	}).Info()
+
+	if err := s.pprofServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		return err
+	}
+
+	<-s.done
+	return nil
+}
+
+// Stop shuts down the pprof server.
+//
+// It implements oklog group's interruptFn.
+func (s *PProfServer) Stop(_ error) {
+	if s.pprofServer != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := s.pprofServer.Shutdown(ctx); err != nil {
+			s.logger.WithError(err).Error("Error shutting down pprof server")
+		}
+	}
 	close(s.done)
 }
