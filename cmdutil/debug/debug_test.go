@@ -63,49 +63,36 @@ func TestNewPProfServer(t *testing.T) {
 			}
 			runtime.SetMutexProfileFraction(tt.expectedMutexFraction) // Reset to the expected value
 
-			// Perform HTTP GET requests to ensure the server is running and all handlers respond correctly
-			profiles := []string{"", "heap", "goroutine", "threadcreate", "block", "mutex"}
-			for _, profile := range profiles {
-				url := "http://" + server.addr + "/debug/pprof/" + profile
-				resp, err := http.Get(url)
-				if err != nil {
-					t.Errorf("http.Get(%s) error = %v", url, err)
-				}
-				if resp.StatusCode != http.StatusOK {
-					t.Errorf("http.Get(%s) status = %v, want %v", url, resp.StatusCode, http.StatusOK)
-				}
+			urls := []string{
+				"http://" + server.addr + "/debug/pprof/",
+				"http://" + server.addr + "/debug/pprof/heap",
+				"http://" + server.addr + "/debug/pprof/goroutine",
+				"http://" + server.addr + "/debug/pprof/threadcreate",
+				"http://" + server.addr + "/debug/pprof/block",
+				"http://" + server.addr + "/debug/pprof/mutex",
 			}
 
-			// urls := []string{
-			// 	"http://" + server.addr + "/debug/pprof/",
-			// 	"http://" + server.addr + "/debug/pprof/heap",
-			// 	"http://" + server.addr + "/debug/pprof/goroutine",
-			// 	"http://" + server.addr + "/debug/pprof/threadcreate",
-			// 	"http://" + server.addr + "/debug/pprof/block",
-			// 	"http://" + server.addr + "/debug/pprof/mutex",
-			// }
+			// Perform HTTP GET requests to ensure the server is running and all handlers respond correctly
+			client := &http.Client{}
+			for _, url := range urls {
+				t.Run("GET "+url, func(t *testing.T) {
+					req, err := http.NewRequest("GET", url, nil)
+					if err != nil {
+						t.Errorf("http.NewRequest(%s) error = %v", url, err)
+					}
 
-			// // Perform HTTP GET requests to ensure the server is running and all handlers respond correctly
-			// client := &http.Client{}
-			// for _, url := range urls {
-			// 	t.Run("GET "+url, func(t *testing.T) {
-			// 		req, err := http.NewRequest("GET", url, nil)
-			// 		if err != nil {
-			// 			t.Errorf("http.NewRequest(%s) error = %v", url, err)
-			// 		}
+					resp, err := client.Do(req)
+					if err != nil {
+						t.Errorf("http.Client.Do() error = %v", err)
+					}
 
-			// 		resp, err := client.Do(req)
-			// 		if err != nil {
-			// 			t.Errorf("http.Client.Do() error = %v", err)
-			// 		}
+					if resp.StatusCode != http.StatusOK {
+						t.Errorf("http.Client.Do() status = %v, want %v", resp.StatusCode, http.StatusOK)
+					}
 
-			// 		if resp.StatusCode != http.StatusOK {
-			// 			t.Errorf("http.Client.Do() status = %v, want %v", resp.StatusCode, http.StatusOK)
-			// 		}
-
-			// 		resp.Body.Close()
-			// 	})
-			// }
+					resp.Body.Close()
+				})
+			}
 
 			// Stop the server
 			server.Stop(nil)
