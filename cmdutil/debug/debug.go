@@ -125,16 +125,18 @@ func NewPProfServer(config PProfServerConfig, l logrus.FieldLogger) *PProfServer
 //
 // It implements oklog group's runFn.
 func (s *PProfServer) Run() error {
+	if s.pprofServer == nil {
+		return fmt.Errorf("pprofServer is nil")
+	}
+
 	s.logger.WithFields(logrus.Fields{
 		"at":      "binding",
 		"service": "pprof",
 		"addr":    s.addr,
 	}).Info()
 
-	if s.pprofServer != nil {
-		if err := s.pprofServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			return err
-		}
+	if err := s.pprofServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		return err
 	}
 
 	<-s.done
