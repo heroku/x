@@ -11,36 +11,34 @@ import (
 
 func TestNewPProfServer(t *testing.T) {
 	logger := logrus.New()
+	defaultMutexProfileFraction := 2
 
 	tests := []struct {
 		name                  string
-		config                PProfServerConfig
 		expectedAddr          string
 		expectedMutexFraction int
+		port                  int
+		mutexProfileFraction  int
 	}{
 		{
-			name:                  "DefaultAddr",
-			config:                PProfServerConfig{},
+			name:                  "test port as 9998 and mpf as 2",
 			expectedAddr:          "127.0.0.1:9998",
+			port:                  9998,
+			mutexProfileFraction:  defaultMutexProfileFraction,
 			expectedMutexFraction: defaultMutexProfileFraction,
 		},
 		{
-			name:                  "CustomAddr",
-			config:                PProfServerConfig{Addr: "127.0.0.1:9090"},
-			expectedAddr:          "127.0.0.1:9090",
-			expectedMutexFraction: defaultMutexProfileFraction,
-		},
-		{
-			name:                  "CustomMutexProfileFraction",
-			config:                PProfServerConfig{MutexProfileFraction: 5},
-			expectedAddr:          "127.0.0.1:9998",
-			expectedMutexFraction: 5,
+			name:                  "test port as 9997 and mpf as 4",
+			expectedAddr:          "127.0.0.1:9997",
+			port:                  9997,
+			mutexProfileFraction:  4,
+			expectedMutexFraction: 4,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			server := NewPProfServer(tt.config, logger)
+			server := NewPProfServer(logger, tt.port, tt.mutexProfileFraction)
 
 			// Check server address
 			if server.addr != tt.expectedAddr {

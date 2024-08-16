@@ -85,37 +85,19 @@ type PProfServer struct {
 	pprofServer *http.Server
 }
 
-// ProfileConfig holds the configuration for the pprof server.
-type PProfServerConfig struct {
-	Addr                 string
-	MutexProfileFraction int
-}
-
-// defaultMutexProfileFraction is the default value for MutexProfileFraction
-const defaultMutexProfileFraction = 2
-
 // NewPProfServer sets up a pprof server with configurable profiling types and returns a PProfServer instance.
-func NewPProfServer(config PProfServerConfig, l logrus.FieldLogger) *PProfServer {
-	if config.Addr == "" {
-		config.Addr = "127.0.0.1:9998" // Default port
-	}
-
-	// Use a local variable for the mutex profile fraction
-	mpf := defaultMutexProfileFraction
-	if config.MutexProfileFraction != 0 {
-		mpf = config.MutexProfileFraction
-	}
-	runtime.SetMutexProfileFraction(mpf)
+func NewPProfServer(l logrus.FieldLogger, port int, mutexProfileFraction int) *PProfServer {
+	runtime.SetMutexProfileFraction(mutexProfileFraction)
 
 	httpServer := &http.Server{
-		Addr:              config.Addr,
+		Addr:              fmt.Sprintf("127.0.0.1:%d", port),
 		Handler:           http.HandlerFunc(pprof.Index),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
 	return &PProfServer{
 		logger:      l,
-		addr:        config.Addr,
+		addr:        httpServer.Addr,
 		done:        make(chan struct{}),
 		pprofServer: httpServer,
 	}

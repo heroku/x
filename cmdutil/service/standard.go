@@ -74,6 +74,9 @@ func New(appConfig interface{}, ofs ...OptionFunc) *Standard {
 	}
 
 	s.Add(debug.New(logger, sc.Debug.Port))
+	if sc.Debug.EnablePprofDebugging {
+		s.Add(debug.NewPProfServer(logger, sc.Debug.PprofPort, sc.Debug.MutexProfileFraction))
+	}
 	s.Add(signals.NewServer(logger, syscall.SIGINT, syscall.SIGTERM))
 
 	// only setup an exporter if indicated && the AgentAddress is set
