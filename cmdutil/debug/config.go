@@ -7,7 +7,7 @@ type Config struct {
 }
 
 type PProfConfig struct {
-	PProfPort            int  `env:"PPROF_DEBUG_PORT,default=9998"`
+	PProfPort            int  `env:"DEBUG_PPROF_PORT,default=9998"`
 	EnablePProfDebugging bool `env:"DEBUG_PPROF_ENABLE,default=false"`
 
 	// Mutex Profiling is not enabled by default
@@ -20,12 +20,12 @@ type PProfConfig struct {
 	// This controls the frequency of heap allocation sampling.
 	// It defines the number of bytes allocated between samples.
 	// Default is actual default value of MemProfileRate
-	MemProfileRate int `env:"DBEUG_MEM_PROFILE_RATE,default=524288"`
+	MemProfileRate int `env:"DBEUG_PPROF_MEM_PROFILE_RATE,default=524288"`
 
 	// Block Profiling is not enabled default
 	EnableBlockProfiling bool `env:"DEBUG_PPROF_BLOCK_PROFILE_ENABLE,default=false"`
 
 	// This controls how much blocking time in nano seconds we need to consider.
 	// Default 10 indicates, we consider all 10 ns blocking events .
-	BlockProfileRate int `env:"DBEUG_BLOCK_PROFILE_RATE,default=10"`
+	BlockProfileRate int `env:"DBEUG_PPROF_BLOCK_PROFILE_RATE,default=10"`
 }
