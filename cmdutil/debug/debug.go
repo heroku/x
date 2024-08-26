@@ -16,10 +16,12 @@ package debug
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/pprof"
 	"runtime"
+	"sync"
 	"time"
 
 	"github.com/google/gops/agent"
@@ -31,12 +33,16 @@ import (
 // Connect to the debug server with gops:
 //
 //	gops stack localhost:PORT
-func New(l logrus.FieldLogger, port int) *Server {
-	return &Server{
+func New(l logrus.FieldLogger, config Config) *Server {
+	server := &Server{
 		logger: l,
-		addr:   fmt.Sprintf("127.0.0.1:%d", port),
+		addr:   fmt.Sprintf("127.0.0.1:%d", config.Port),
 		done:   make(chan struct{}),
 	}
+	if config.Enabled {
+		server.pprof = NewPProfServer(l, &config.PProf)
+	}
+	return server
 }
 
 // Server wraps a gops server for easy use with oklog/group.
@@ -44,12 +50,51 @@ type Server struct {
 	logger logrus.FieldLogger
 	addr   string
 	done   chan struct{}
+	pprof  *PProfServer
+}
+
+// Run starts the debug server.
+//
+// It implements oklog group's runFn and pprof.
+func (s *Server) Run() error {
+
+	var wg sync.WaitGroup
+	gopsErrChan := make(chan error, 1)
+	pprofErrChan := make(chan error, 1)
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		gopsErrChan <- s.RunGOPS()
+	}()
+
+	if s.pprof != nil {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			pprofErrChan <- s.pprof.Run()
+		}()
+	}
+
+	wg.Wait()
+	gopsErr := <-gopsErrChan
+	pprofErr := <-pprofErrChan
+	var err error
+	if gopsErr != nil {
+		err = fmt.Errorf("gops error: %w", gopsErr)
+	}
+	if pprofErr != nil {
+		errPProf := fmt.Errorf("pprof error: %w", pprofErr)
+		err = errors.Join(err, errPProf)
+	}
+
+	return err
 }
 
 // Run starts the debug server.
 //
 // It implements oklog group's runFn.
-func (s *Server) Run() error {
+func (s *Server) RunGOPS() error {
 	s.logger.WithFields(logrus.Fields{
 		"at":      "binding",
 		"service": "debug",
@@ -70,11 +115,15 @@ func (s *Server) Run() error {
 
 // Stop shuts down the debug server.
 //
-// It implements oklog group's interruptFn.
+// It implements oklog group's interruptFn and pprof stop.
 func (s *Server) Stop(_ error) {
 	agent.Close()
 
 	close(s.done)
+
+	if s.pprof != nil {
+		s.pprof.Stop(nil)
+	}
 }
 
 // PProfServer wraps a pprof server.

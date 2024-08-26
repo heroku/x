@@ -73,10 +73,7 @@ func New(appConfig interface{}, ofs ...OptionFunc) *Standard {
 		s.Add(cmdutil.NewContextServer(l2met.Run))
 	}
 
-	s.Add(debug.New(logger, sc.Debug.Port))
-	if sc.Debug.Enabled {
-		s.Add(debug.NewPProfServer(logger, &sc.Debug.PProf))
-	}
+	s.Add(debug.New(logger, sc.Debug))
 	s.Add(signals.NewServer(logger, syscall.SIGINT, syscall.SIGTERM))
 
 	// only setup an exporter if indicated && the AgentAddress is set
