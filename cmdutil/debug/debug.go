@@ -78,7 +78,11 @@ func (s *Server) Run() error {
 
 	wg.Wait()
 	gopsErr := <-gopsErrChan
-	pprofErr := <-pprofErrChan
+	var pprofErr error
+	if s.pprof != nil {
+		pprofErr = <-pprofErrChan
+	}
+
 	var err error
 	if gopsErr != nil {
 		err = fmt.Errorf("gops error: %w", gopsErr)
