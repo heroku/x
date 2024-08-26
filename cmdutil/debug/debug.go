@@ -86,7 +86,7 @@ type PProfServer struct {
 }
 
 // NewPProfServer sets up a pprof server with configurable profiling types and returns a PProfServer instance.
-func NewPProfServer(l logrus.FieldLogger, pprofConfig *PProfConfig) *PProfServer {
+func NewPProfServer(l logrus.FieldLogger, pprofConfig *PProf) *PProfServer {
 
 	runtime.MemProfileRate = pprofConfig.MemProfileRate
 
@@ -99,7 +99,7 @@ func NewPProfServer(l logrus.FieldLogger, pprofConfig *PProfConfig) *PProfServer
 	}
 
 	httpServer := &http.Server{
-		Addr:              fmt.Sprintf("127.0.0.1:%d", pprofConfig.PProfPort),
+		Addr:              fmt.Sprintf("127.0.0.1:%d", pprofConfig.Port),
 		Handler:           http.HandlerFunc(pprof.Index),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
@@ -126,7 +126,6 @@ func (s *PProfServer) Run() error {
 		"addr":    s.addr,
 	}).Info()
 
-	// runtime.MemProfileRecord
 	if err := s.pprofServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		return err
 	}

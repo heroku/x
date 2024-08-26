@@ -74,8 +74,8 @@ func New(appConfig interface{}, ofs ...OptionFunc) *Standard {
 	}
 
 	s.Add(debug.New(logger, sc.Debug.Port))
-	if sc.Debug.EnablePProfDebugging {
-		s.Add(debug.NewPProfServer(logger, &sc.Debug.PProfConfig))
+	if sc.Debug.Enabled {
+		s.Add(debug.NewPProfServer(logger, &sc.Debug.PProf))
 	}
 	s.Add(signals.NewServer(logger, syscall.SIGINT, syscall.SIGTERM))
 

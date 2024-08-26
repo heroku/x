@@ -15,26 +15,26 @@ func TestNewPProfServer(t *testing.T) {
 	tests := []struct {
 		name                   string
 		expectedAddr           string
-		pprofConfig            *PProfConfig
+		pprofConfig            *PProf
 		expectedMemProfileRate int
 	}{
 		{
 			name:         "test port as 9998 and mpf as 2",
 			expectedAddr: "127.0.0.1:9998",
-			pprofConfig: &PProfConfig{
-				PProfPort:            9998,
-				EnablePProfDebugging: true,
-				MemProfileRate:       524288,
+			pprofConfig: &PProf{
+				Port:           9998,
+				Enabled:        true,
+				MemProfileRate: 524288,
 			},
 			expectedMemProfileRate: 524288,
 		},
 		{
 			name:         "test port as 9997 and mpf as 4",
 			expectedAddr: "127.0.0.1:9997",
-			pprofConfig: &PProfConfig{
-				PProfPort:            9997,
-				EnablePProfDebugging: true,
-				MemProfileRate:       524287,
+			pprofConfig: &PProf{
+				Port:           9997,
+				Enabled:        true,
+				MemProfileRate: 524287,
 			},
 			expectedMemProfileRate: 524287,
 		},
