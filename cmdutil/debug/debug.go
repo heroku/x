@@ -15,14 +15,8 @@
 package debug
 
 import (
-	"context"
-	"errors"
 	"fmt"
-	"net/http"
-	"net/http/pprof"
 	"runtime"
-	"sync"
-	"time"
 
 	"github.com/google/gops/agent"
 	"github.com/sirupsen/logrus"
@@ -40,7 +34,16 @@ func New(l logrus.FieldLogger, config Config) *Server {
 		done:   make(chan struct{}),
 	}
 	if config.Enabled {
-		server.pprof = NewPProfServer(l, &config.PProf)
+		pprofConfig := config.PProf
+		runtime.MemProfileRate = pprofConfig.MemProfileRate
+
+		if pprofConfig.EnableMutexProfiling {
+			runtime.SetMutexProfileFraction(pprofConfig.MutexProfileFraction)
+		}
+
+		if pprofConfig.EnableBlockProfiling {
+			runtime.SetBlockProfileRate(pprofConfig.BlockProfileRate)
+		}
 	}
 	return server
 }
@@ -50,55 +53,12 @@ type Server struct {
 	logger logrus.FieldLogger
 	addr   string
 	done   chan struct{}
-	pprof  *PProfServer
-}
-
-// Run starts the debug server.
-//
-// It implements oklog group's runFn and pprof.
-func (s *Server) Run() error {
-
-	var wg sync.WaitGroup
-	gopsErrChan := make(chan error, 1)
-	pprofErrChan := make(chan error, 1)
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		gopsErrChan <- s.RunGOPS()
-	}()
-
-	if s.pprof != nil {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			pprofErrChan <- s.pprof.Run()
-		}()
-	}
-
-	wg.Wait()
-	gopsErr := <-gopsErrChan
-	var pprofErr error
-	if s.pprof != nil {
-		pprofErr = <-pprofErrChan
-	}
-
-	var err error
-	if gopsErr != nil {
-		err = fmt.Errorf("gops error: %w", gopsErr)
-	}
-	if pprofErr != nil {
-		errPProf := fmt.Errorf("pprof error: %w", pprofErr)
-		err = errors.Join(err, errPProf)
-	}
-
-	return err
 }
 
 // Run starts the debug server.
 //
 // It implements oklog group's runFn.
-func (s *Server) RunGOPS() error {
+func (s *Server) Run() error {
 	s.logger.WithFields(logrus.Fields{
 		"at":      "binding",
 		"service": "debug",
@@ -123,80 +83,5 @@ func (s *Server) RunGOPS() error {
 func (s *Server) Stop(_ error) {
 	agent.Close()
 
-	close(s.done)
-
-	if s.pprof != nil {
-		s.pprof.Stop(nil)
-	}
-}
-
-// PProfServer wraps a pprof server.
-type PProfServer struct {
-	logger      logrus.FieldLogger
-	addr        string
-	done        chan struct{}
-	pprofServer *http.Server
-}
-
-// NewPProfServer sets up a pprof server with configurable profiling types and returns a PProfServer instance.
-func NewPProfServer(l logrus.FieldLogger, pprofConfig *PProf) *PProfServer {
-
-	runtime.MemProfileRate = pprofConfig.MemProfileRate
-
-	if pprofConfig.EnableMutexProfiling {
-		runtime.SetMutexProfileFraction(pprofConfig.MutexProfileFraction)
-	}
-
-	if pprofConfig.EnableBlockProfiling {
-		runtime.SetBlockProfileRate(pprofConfig.BlockProfileRate)
-	}
-
-	httpServer := &http.Server{
-		Addr:              fmt.Sprintf("127.0.0.1:%d", pprofConfig.Port),
-		Handler:           http.HandlerFunc(pprof.Index),
-		ReadHeaderTimeout: 5 * time.Second,
-	}
-
-	return &PProfServer{
-		logger:      l,
-		addr:        httpServer.Addr,
-		done:        make(chan struct{}),
-		pprofServer: httpServer,
-	}
-}
-
-// Run starts the pprof server.
-//
-// It implements oklog group's runFn.
-func (s *PProfServer) Run() error {
-	if s.pprofServer == nil {
-		return fmt.Errorf("pprofServer is nil")
-	}
-
-	s.logger.WithFields(logrus.Fields{
-		"at":      "binding",
-		"service": "pprof",
-		"addr":    s.addr,
-	}).Info()
-
-	if err := s.pprofServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		return err
-	}
-
-	<-s.done
-	return nil
-}
-
-// Stop shuts down the pprof server.
-//
-// It implements oklog group's interruptFn.
-func (s *PProfServer) Stop(_ error) {
-	if s.pprofServer != nil {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		if err := s.pprofServer.Shutdown(ctx); err != nil {
-			s.logger.WithError(err).Error("Error shutting down pprof server")
-		}
-	}
 	close(s.done)
 }

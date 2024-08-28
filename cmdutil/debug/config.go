@@ -7,7 +7,6 @@ type Config struct {
 }
 
 type PProf struct {
-	Port int `env:"DEBUG_PPROF_PORT,default=9998"`
 
 	// This controls how much of fraction of mutexes we need to consider for profiling.
 	MutexProfileFraction int `env:"DBEUG_PPROF_MUTEX_PROFILE_FRACTION,default=2"`
