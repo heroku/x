@@ -33,6 +33,8 @@ import (
 // Connect to the debug server with gops:
 //
 //	gops stack localhost:PORT
+//
+// Connect to the pprof server with pprof.port when pprof enabled
 func New(l logrus.FieldLogger, config Config) *Server {
 	server := &Server{
 		logger: l,
@@ -166,8 +168,6 @@ func NewPProfServer(l logrus.FieldLogger, pprofConfig *PProf) *PProfServer {
 }
 
 // Run starts the pprof server.
-//
-// It implements oklog group's runFn.
 func (s *PProfServer) Run() error {
 	if s.pprofServer == nil {
 		return fmt.Errorf("pprofServer is nil")
@@ -188,8 +188,6 @@ func (s *PProfServer) Run() error {
 }
 
 // Stop shuts down the pprof server.
-//
-// It implements oklog group's interruptFn.
 func (s *PProfServer) Stop(_ error) {
 	if s.pprofServer != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
