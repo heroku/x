@@ -61,29 +61,30 @@ type Server struct {
 func (s *Server) Run() error {
 
 	var wg sync.WaitGroup
-	gopsErrChan := make(chan error, 1)
-	pprofErrChan := make(chan error, 1)
+	var gopsErr error
+	var pprofErr error
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		gopsErrChan <- s.RunGOPS()
+		gopsErr = s.RunGOPS()
+		if gopsErr != nil {
+			s.logger.WithError(gopsErr).Error("gops server failed")
+		}
 	}()
 
 	if s.pprof != nil {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			pprofErrChan <- s.pprof.Run()
+			pprofErr = s.pprof.Run()
+			if pprofErr != nil {
+				s.pprof.logger.WithError(gopsErr).Error("pprof server failed")
+			}
 		}()
 	}
 
 	wg.Wait()
-	gopsErr := <-gopsErrChan
-	var pprofErr error
-	if s.pprof != nil {
-		pprofErr = <-pprofErrChan
-	}
 
 	var err error
 	if gopsErr != nil {
