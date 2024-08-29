@@ -79,7 +79,7 @@ func (s *Server) Run() error {
 			defer wg.Done()
 			pprofErr = s.pprof.Run()
 			if pprofErr != nil {
-				s.pprof.logger.WithError(gopsErr).Error("pprof server failed")
+				s.pprof.logger.WithError(pprofErr).Error("pprof server failed")
 			}
 		}()
 	}
