@@ -16,10 +16,12 @@ package debug
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/pprof"
 	"runtime"
+	"sync"
 	"time"
 
 	"github.com/google/gops/agent"
@@ -31,12 +33,18 @@ import (
 // Connect to the debug server with gops:
 //
 //	gops stack localhost:PORT
-func New(l logrus.FieldLogger, port int) *Server {
-	return &Server{
+//
+// Connect to the pprof server with pprof.port when pprof enabled
+func New(l logrus.FieldLogger, config Config) *Server {
+	server := &Server{
 		logger: l,
-		addr:   fmt.Sprintf("127.0.0.1:%d", port),
+		addr:   fmt.Sprintf("127.0.0.1:%d", config.Port),
 		done:   make(chan struct{}),
 	}
+	if config.Enabled {
+		server.pprof = NewPProfServer(l, &config.PProf)
+	}
+	return server
 }
 
 // Server wraps a gops server for easy use with oklog/group.
@@ -44,12 +52,56 @@ type Server struct {
 	logger logrus.FieldLogger
 	addr   string
 	done   chan struct{}
+	pprof  *PProfServer
+}
+
+// Run starts the debug server.
+//
+// It implements oklog group's runFn and pprof.
+func (s *Server) Run() error {
+
+	var wg sync.WaitGroup
+	var gopsErr error
+	var pprofErr error
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		gopsErr = s.RunGOPS()
+		if gopsErr != nil {
+			s.logger.WithError(gopsErr).Error("gops server failed")
+		}
+	}()
+
+	if s.pprof != nil {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			pprofErr = s.pprof.Run()
+			if pprofErr != nil {
+				s.pprof.logger.WithError(pprofErr).Error("pprof server failed")
+			}
+		}()
+	}
+
+	wg.Wait()
+
+	var err error
+	if gopsErr != nil {
+		err = fmt.Errorf("gops error: %w", gopsErr)
+	}
+	if pprofErr != nil {
+		errPProf := fmt.Errorf("pprof error: %w", pprofErr)
+		err = errors.Join(err, errPProf)
+	}
+
+	return err
 }
 
 // Run starts the debug server.
 //
 // It implements oklog group's runFn.
-func (s *Server) Run() error {
+func (s *Server) RunGOPS() error {
 	s.logger.WithFields(logrus.Fields{
 		"at":      "binding",
 		"service": "debug",
@@ -70,11 +122,15 @@ func (s *Server) Run() error {
 
 // Stop shuts down the debug server.
 //
-// It implements oklog group's interruptFn.
+// It implements oklog group's interruptFn and pprof stop.
 func (s *Server) Stop(_ error) {
 	agent.Close()
 
 	close(s.done)
+
+	if s.pprof != nil {
+		s.pprof.Stop(nil)
+	}
 }
 
 // PProfServer wraps a pprof server.
@@ -85,45 +141,34 @@ type PProfServer struct {
 	pprofServer *http.Server
 }
 
-// ProfileConfig holds the configuration for the pprof server.
-type PProfServerConfig struct {
-	Addr                 string
-	MutexProfileFraction int
-}
-
-// defaultMutexProfileFraction is the default value for MutexProfileFraction
-const defaultMutexProfileFraction = 2
-
 // NewPProfServer sets up a pprof server with configurable profiling types and returns a PProfServer instance.
-func NewPProfServer(config PProfServerConfig, l logrus.FieldLogger) *PProfServer {
-	if config.Addr == "" {
-		config.Addr = "127.0.0.1:9998" // Default port
+func NewPProfServer(l logrus.FieldLogger, pprofConfig *PProf) *PProfServer {
+
+	runtime.MemProfileRate = pprofConfig.MemProfileRate
+
+	if pprofConfig.EnableMutexProfiling {
+		runtime.SetMutexProfileFraction(pprofConfig.MutexProfileFraction)
 	}
 
-	// Use a local variable for the mutex profile fraction
-	mpf := defaultMutexProfileFraction
-	if config.MutexProfileFraction != 0 {
-		mpf = config.MutexProfileFraction
+	if pprofConfig.EnableBlockProfiling {
+		runtime.SetBlockProfileRate(pprofConfig.BlockProfileRate)
 	}
-	runtime.SetMutexProfileFraction(mpf)
 
 	httpServer := &http.Server{
-		Addr:              config.Addr,
+		Addr:              fmt.Sprintf("127.0.0.1:%d", pprofConfig.Port),
 		Handler:           http.HandlerFunc(pprof.Index),
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
 	return &PProfServer{
 		logger:      l,
-		addr:        config.Addr,
+		addr:        httpServer.Addr,
 		done:        make(chan struct{}),
 		pprofServer: httpServer,
 	}
 }
 
 // Run starts the pprof server.
-//
-// It implements oklog group's runFn.
 func (s *PProfServer) Run() error {
 	if s.pprofServer == nil {
 		return fmt.Errorf("pprofServer is nil")
@@ -144,8 +189,6 @@ func (s *PProfServer) Run() error {
 }
 
 // Stop shuts down the pprof server.
-//
-// It implements oklog group's interruptFn.
 func (s *PProfServer) Stop(_ error) {
 	if s.pprofServer != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

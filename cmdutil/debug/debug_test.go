@@ -13,38 +13,44 @@ func TestNewPProfServer(t *testing.T) {
 	logger := logrus.New()
 
 	tests := []struct {
-		name                  string
-		config                PProfServerConfig
-		expectedAddr          string
-		expectedMutexFraction int
+		name                   string
+		expectedAddr           string
+		pprofConfig            *PProf
+		expectedMemProfileRate int
 	}{
 		{
-			name:                  "DefaultAddr",
-			config:                PProfServerConfig{},
-			expectedAddr:          "127.0.0.1:9998",
-			expectedMutexFraction: defaultMutexProfileFraction,
+			name:         "test port as 9998 and mpf as 2",
+			expectedAddr: "127.0.0.1:9998",
+			pprofConfig: &PProf{
+				Port:           9998,
+				Enabled:        true,
+				MemProfileRate: 524288,
+			},
+			expectedMemProfileRate: 524288,
 		},
 		{
-			name:                  "CustomAddr",
-			config:                PProfServerConfig{Addr: "127.0.0.1:9090"},
-			expectedAddr:          "127.0.0.1:9090",
-			expectedMutexFraction: defaultMutexProfileFraction,
-		},
-		{
-			name:                  "CustomMutexProfileFraction",
-			config:                PProfServerConfig{MutexProfileFraction: 5},
-			expectedAddr:          "127.0.0.1:9998",
-			expectedMutexFraction: 5,
+			name:         "test port as 9997 and mpf as 4",
+			expectedAddr: "127.0.0.1:9997",
+			pprofConfig: &PProf{
+				Port:           9997,
+				Enabled:        true,
+				MemProfileRate: 524287,
+			},
+			expectedMemProfileRate: 524287,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			server := NewPProfServer(tt.config, logger)
+			server := NewPProfServer(logger, tt.pprofConfig)
 
 			// Check server address
 			if server.addr != tt.expectedAddr {
 				t.Errorf("NewPProfServer() addr = %v, want %v", server.addr, tt.expectedAddr)
+			}
+
+			if runtime.MemProfileRate != tt.expectedMemProfileRate {
+				t.Errorf("MemProfileRate expected  %v, got  %v", tt.expectedMemProfileRate, runtime.MemProfileRate)
 			}
 
 			// Start the server
@@ -56,12 +62,6 @@ func TestNewPProfServer(t *testing.T) {
 
 			// Give the server a moment to start
 			time.Sleep(100 * time.Millisecond)
-
-			// Check mutex profile fraction
-			if got := runtime.SetMutexProfileFraction(0); got != tt.expectedMutexFraction {
-				t.Errorf("runtime.SetMutexProfileFraction() = %v, want %v", got, tt.expectedMutexFraction)
-			}
-			runtime.SetMutexProfileFraction(tt.expectedMutexFraction) // Reset to the expected value
 
 			// Perform HTTP GET request to the root path
 			url := "http://" + server.addr + "/debug/pprof/"
