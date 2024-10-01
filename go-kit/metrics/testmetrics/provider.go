@@ -171,7 +171,7 @@ func (p *Provider) CheckNoCounter(name string, labelValues ...string) {
 }
 
 // CheckCounterExists checks that there is registered counter with the name
-// provided and value is greater than 0.
+// provided and value is not 0.
 func (p *Provider) CheckCounterExists(name string, labelValues ...string) {
 	p.t.Helper()
 
