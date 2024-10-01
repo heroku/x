@@ -170,6 +170,24 @@ func (p *Provider) CheckNoCounter(name string, labelValues ...string) {
 	}
 }
 
+// CheckCounterExists checks that there is registered counter with the name
+// provided and value is not 0.
+func (p *Provider) CheckCounterExists(name string, labelValues ...string) {
+	p.t.Helper()
+
+	p.Lock()
+	defer p.Unlock()
+
+	k := p.keyFor(name, labelValues...)
+	counter, ok := p.counters[k]
+	if !ok {
+		p.t.Fatalf("a counter named %s was not found", k)
+	}
+	if counter.value == 0 {
+		p.t.Fatalf("counter %s value is 0", k)
+	}
+}
+
 // CheckObservationsMinMax checks that there is a histogram
 // with the name and that the values all fall within the min/max range.
 func (p *Provider) CheckObservationsMinMax(name string, min, max float64, labelValues ...string) {
