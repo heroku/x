@@ -147,7 +147,8 @@ type roundTripper struct {
 func (rt *roundTripper) init() {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc(fmt.Sprintf("/issuers/%s/.well-known/openid-configuration", rt.issuer.spaceID), func(w http.ResponseWriter, r *http.Request) {
+	basePath := fmt.Sprintf("/issuers/%s/.well-known", rt.issuer.spaceID)
+	mux.HandleFunc(basePath+"/openid-configuration", func(w http.ResponseWriter, r *http.Request) {
 		if !strings.EqualFold(r.Method, http.MethodGet) {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
@@ -169,7 +170,7 @@ func (rt *roundTripper) init() {
 			`}`))
 	})
 
-	mux.HandleFunc(fmt.Sprintf("/issuers/%s/.well-known/jwks.json", rt.issuer.spaceID), func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc(basePath+"/jwks.json", func(w http.ResponseWriter, r *http.Request) {
 		if !strings.EqualFold(r.Method, http.MethodGet) {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 			return
