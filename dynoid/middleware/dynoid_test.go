@@ -16,7 +16,7 @@ import (
 var noOp = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
 
 func TestAuthorize(t *testing.T) {
-	handler := middleware.Authorize(dynoidtest.Audience, dynoid.AllowHerokuHost(dynoidtest.IssuerHost))(noOp)
+	handler := middleware.Authorize("heroku", dynoid.AllowHerokuHost(dynoidtest.IssuerHost))(noOp)
 
 	ctx, generate := newTokenGenerator(t)
 
