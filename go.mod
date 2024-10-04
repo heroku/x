@@ -50,7 +50,7 @@ require (
 	google.golang.org/grpc v1.59.0
 	google.golang.org/grpc/examples v0.0.0-20210916203835-567da6b86340
 	google.golang.org/protobuf v1.33.0
-	gopkg.in/square/go-jose.v2 v2.5.1
+	gopkg.in/go-jose/go-jose.v2 v2.6.3
 )
 
 require (
@@ -77,4 +77,5 @@ require (
 	google.golang.org/genproto v0.0.0-20231012201019-e917dd12ba7a // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20231016165738-49dd2c1f3d0b // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231016165738-49dd2c1f3d0b // indirect
+	gopkg.in/square/go-jose.v2 v2.5.1 // indirect
 )
