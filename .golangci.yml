@@ -8,19 +8,18 @@ linters:
   enable:
     - misspell
     - goimports
-    - golint
+    - revive
     - stylecheck
     - unconvert
     - dupl
     - gosec
-    - scopelint
+    - copyloopvar
     - nakedret
     - gochecknoinits
     - goconst
     - gocritic
     - gocyclo
     - lll
-    - maligned
     - prealloc
     - unparam
     - errcheck
@@ -30,7 +29,7 @@ issues:
     - path: _test\.go
       linters:
         - goconst # Don't run on test files because they may often repeate the same string
-        - scopelint # Otherwise you need tc := tc. This isn't actually a problem unless tests are being run in parallel.
+        - copyloopvar # Otherwise you need tc := tc. This isn't actually a problem unless tests are being run in parallel.
         - lll # Don't do line length checks in test code.
         - dupl # Sometimes we duplicate a bunch in tests for the sake of clarity.
     - path: nacl/secretbox
@@ -48,6 +47,22 @@ issues:
     - path: testing/mustcert/example_test.go
       linters:
         - gosec # Don't run gosec, it's insecure because it's a test
+    - path: hmiddleware/basicauth/grpc_test.go
+      linters:
+        - gosec # Don't run gosec, it's insecure because it's a test
+        - staticcheck
+    - path: cmdutil/service/standard.go
+      linters:
+        - copyloopvar
+    - path: testing/testenv/testenv.go
+      linters:
+        - revive
+    - linters: 
+      - gosec 
+      text: "G115"  
+    - linters: 
+      - revive
+      text: "unused-parameter: "
 
 linters-settings:
   misspell:
@@ -62,5 +77,3 @@ linters-settings:
   lll:
     # max line length, lines longer will be reported. Default is 120.
     line-length: 130
-  maligned:
-    suggest-new: true
