@@ -2,6 +2,8 @@ package otel
 
 import (
 	"context"
+	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/go-kit/kit/metrics"
@@ -171,10 +173,13 @@ func (p *Provider) NewHistogram(name string, buckets int) metrics.Histogram {
 	if buckets <= 0 {
 		buckets = defaultExponentialHistogramMaxSize
 	}
+
+	var buckets32 int32
+	_, _ = fmt.Sscan(strconv.Itoa(buckets), &buckets32)
 	stream := sdk.Stream{
 		Name: prefixName(p.cfg.prefix, name),
 		Aggregation: sdk.AggregationBase2ExponentialHistogram{
-			MaxSize:  int32(buckets),
+			MaxSize:  buckets32,
 			MaxScale: defaultExponentialHistogramMaxScale,
 		},
 	}
