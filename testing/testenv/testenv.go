@@ -36,7 +36,7 @@ func NewRedisPool(t testing.TB) *redis.Pool {
 
 // OpenDatabase returns a database connection for testing the provided service.
 // When the close func is called any modified data will be rolled back.
-func OpenDatabase(t *testing.T, dbname string) (tx *sql.Tx, close func()) {
+func OpenDatabase(t *testing.T, dbname string) (tx *sql.Tx, closeFn func()) {
 	t.Helper()
 
 	dbURL, err := getenv(
@@ -57,14 +57,15 @@ func OpenDatabase(t *testing.T, dbname string) (tx *sql.Tx, close func()) {
 		t.Fatal(err)
 	}
 
-	close = func() {
+	closeFn = func() {
 		if err := tx.Rollback(); err != nil {
 			t.Fatal("unexpected error", err)
 		}
+
 		db.Close()
 	}
 
-	return tx, close
+	return tx, closeFn
 }
 
 // MustDB returns a *sql.DB for dbname, or panics if the database is
