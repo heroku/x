@@ -33,7 +33,7 @@ func (s *LocalServer) Run() error {
 // Stop gracefully stops the gRPC server.
 //
 // It implements oklog group's interruptFn.
-func (s *LocalServer) Stop(err error) {
+func (s *LocalServer) Stop(error) {
 	s.srv.GracefulStop()
 }
 

@@ -90,7 +90,7 @@ func (s *Subject) MarshalText() ([]byte, error) {
 
 func (s *Subject) UnmarshalText(text []byte) error {
 	if s == nil {
-		*s = Subject{}
+		return fmt.Errorf("cannont unmarshal to nil")
 	}
 
 	sub := string(text)
@@ -162,7 +162,7 @@ func ReadLocalToken(ctx context.Context, audience string) (*Token, error) {
 		return nil, fmt.Errorf("failed to read token (%w)", err)
 	}
 
-	verifier := NewWithCallback(audience, func(issuer string) error { return nil })
+	verifier := NewWithCallback(audience, func(string) error { return nil })
 
 	return verifier.Verify(ctx, rawToken)
 }

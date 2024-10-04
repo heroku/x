@@ -14,7 +14,7 @@ func ExampleWithHTTPServerHook() {
 	}
 	svc := service.New(&cfg)
 
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = io.WriteString(w, cfg.Hello)
 	})
 

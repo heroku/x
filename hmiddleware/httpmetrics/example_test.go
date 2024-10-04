@@ -23,13 +23,13 @@ func Example() {
 
 	// Metrics will be collected around http OK statuses
 	// For all requests and for /foo requests
-	r.Get("/foo", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	r.Get("/foo", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
 
 	// Metrics will be collected around http Bad Request statuses
 	// For all requests and for /bar requests
-	r.Get("/bar", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	r.Get("/bar", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 	}))
 

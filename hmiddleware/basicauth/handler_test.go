@@ -16,7 +16,7 @@ func TestAuthenticate(t *testing.T) {
 	checker := NewChecker([]Credential{
 		{Username: "username", Password: "password"},
 	})
-	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	h := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 	s := httptest.NewServer(checker.Authenticate(metricsProvider)(h))
@@ -44,7 +44,7 @@ func TestAuthenticateWithUnknownUsername(t *testing.T) {
 	checker := NewChecker([]Credential{
 		{Username: "username", Password: "password"},
 	})
-	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	h := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 	s := httptest.NewServer(checker.Authenticate(metricsProvider)(h))
@@ -72,7 +72,7 @@ func TestAuthenticateWithInvalidPassword(t *testing.T) {
 	checker := NewChecker([]Credential{
 		{Username: "username", Password: "password"},
 	})
-	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	h := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 	s := httptest.NewServer(checker.Authenticate(metricsProvider)(h))

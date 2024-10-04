@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-func TestHLLCounterWith(t *testing.T) {
+func TestHLLCounterWith(*testing.T) {
 	c := NewHLLCounter("foo").With("bar", "baz")
 	c.Insert([]byte("foo"))
 }
@@ -19,8 +19,7 @@ func TestHLLCounterEstimate(t *testing.T) {
 	c := NewHLLCounter("foo")
 	c.Insert([]byte("foo"))
 
-	val := c.Estimate()
-	if val != 1 {
+	if val := c.Estimate(); val != 1 {
 		t.Errorf("got %d, want 1", val)
 	}
 }
@@ -29,13 +28,11 @@ func TestHLLCounterEstimateReset(t *testing.T) {
 	c := NewHLLCounter("foo")
 	c.Insert([]byte("foo"))
 
-	val := c.EstimateReset()
-	if val != 1 {
+	if val := c.EstimateReset(); val != 1 {
 		t.Errorf("got %d, want 1", val)
 	}
 
-	val = c.Estimate()
-	if val != 0 {
+	if val := c.Estimate(); val != 0 {
 		t.Errorf("got %d, want 0", val)
 	}
 }

@@ -19,7 +19,7 @@ func TestUnaryServerInterceptor(t *testing.T) {
 	p := mockProvider{Provider: testmetrics.NewProvider(t)}
 	usi := NewUnaryServerInterceptor(&p, false)
 	handler := func(resp interface{}, err error) grpc.UnaryHandler {
-		return func(ctx context.Context, req interface{}) (interface{}, error) {
+		return func(context.Context, interface{}) (interface{}, error) {
 			return resp, err
 		}
 	}
@@ -66,7 +66,7 @@ func TestStreamServerInterceptor(t *testing.T) {
 	p := mockProvider{Provider: testmetrics.NewProvider(t)}
 	ssi := NewStreamServerInterceptor(&p, false)
 	handler := func(err error) grpc.StreamHandler {
-		return func(srv interface{}, stream grpc.ServerStream) error {
+		return func(_ interface{}, stream grpc.ServerStream) error {
 			if err == nil {
 				if err := stream.SendMsg("ping"); err != nil {
 					t.Fatal("unexpected error", err)
@@ -90,7 +90,7 @@ func TestStreamServerInterceptor(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = ssi(nil, &testServerStream{}, info, func(srv interface{}, stream grpc.ServerStream) error {
+	err = ssi(nil, &testServerStream{}, info, func(interface{}, grpc.ServerStream) error {
 		p.CheckGauge("grpc.server.stream.clients", 1, serviceKey, "hello", methodKey, "stream-updates")
 		return nil
 	})
@@ -130,7 +130,7 @@ func TestUnaryServerWithExplicitHistogramsInterceptor(t *testing.T) {
 
 	usi := NewUnaryServerInterceptor(&p, true)
 	handler := func(resp interface{}, err error) grpc.UnaryHandler {
-		return func(ctx context.Context, req interface{}) (interface{}, error) {
+		return func(context.Context, interface{}) (interface{}, error) {
 			return resp, err
 		}
 	}
@@ -189,7 +189,7 @@ func TestStreamServerWithExplicitHistogramsInterceptor(t *testing.T) {
 	p := mockProvider{Provider: testmetrics.NewProvider(t)}
 	ssi := NewStreamServerInterceptor(&p, true)
 	handler := func(err error) grpc.StreamHandler {
-		return func(srv interface{}, stream grpc.ServerStream) error {
+		return func(_ interface{}, stream grpc.ServerStream) error {
 			if err == nil {
 				if err := stream.SendMsg("ping"); err != nil {
 					t.Fatal("unexpected error", err)
@@ -213,7 +213,7 @@ func TestStreamServerWithExplicitHistogramsInterceptor(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = ssi(nil, &testServerStream{}, info, func(srv interface{}, stream grpc.ServerStream) error {
+	err = ssi(nil, &testServerStream{}, info, func(interface{}, grpc.ServerStream) error {
 		p.CheckGauge("grpc.server.stream.clients", 1, serviceKey, "hello", methodKey, "stream-updates")
 		return nil
 	})
@@ -252,11 +252,11 @@ type testServerStream struct {
 	grpc.ServerStream
 }
 
-func (*testServerStream) SendMsg(m interface{}) error {
+func (*testServerStream) SendMsg(interface{}) error {
 	return nil
 }
 
-func (*testServerStream) RecvMsg(m interface{}) error {
+func (*testServerStream) RecvMsg(interface{}) error {
 	return nil
 }
 

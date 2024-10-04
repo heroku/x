@@ -17,7 +17,7 @@ import (
 
 func TestH2CContextE2E(t *testing.T) {
 	handle11resp := "http 1.1 requested"
-	handle11 := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handle11 := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		fmt.Fprint(w, handle11resp)
 	})
 

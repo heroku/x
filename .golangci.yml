@@ -1,6 +1,5 @@
 # See https://github.com/golangci/golangci-lint#config-file
 run:
-  deadline: 2m #Default
   issues-exit-code: 1 #Default
   tests: true #Default
 
@@ -8,19 +7,18 @@ linters:
   enable:
     - misspell
     - goimports
-    - golint
+    - revive
     - stylecheck
     - unconvert
     - dupl
     - gosec
-    - scopelint
+    - exportloopref
     - nakedret
     - gochecknoinits
     - goconst
     - gocritic
     - gocyclo
     - lll
-    - maligned
     - prealloc
     - unparam
     - errcheck
@@ -62,5 +60,3 @@ linters-settings:
   lll:
     # max line length, lines longer will be reported. Default is 120.
     line-length: 130
-  maligned:
-    suggest-new: true

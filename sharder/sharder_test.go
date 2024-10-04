@@ -12,7 +12,7 @@ type TestHasher struct {
 	expected uint32
 }
 
-func (f *TestHasher) Hash(key string) uint32 {
+func (f *TestHasher) Hash(string) uint32 {
 	return f.expected
 }
 

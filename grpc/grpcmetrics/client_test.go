@@ -20,7 +20,7 @@ func TestUnaryClientInterceptor(t *testing.T) {
 	r := metricsregistry.New(p)
 	uci := NewUnaryClientInterceptor(r)
 	invoker := func(err error) grpc.UnaryInvoker {
-		return func(_ context.Context, method string, req, reply interface{}, cc *grpc.ClientConn, opts ...grpc.CallOption) error {
+		return func(context.Context, string, interface{}, interface{}, *grpc.ClientConn, ...grpc.CallOption) error {
 			return err
 		}
 	}
@@ -50,7 +50,7 @@ func TestStreamClientInterceptor(t *testing.T) {
 	r := metricsregistry.New(p)
 	sci := NewStreamClientInterceptor(r)
 	streamer := func(err, clientErr error) grpc.Streamer {
-		return func(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, opts ...grpc.CallOption) (grpc.ClientStream, error) {
+		return func(context.Context, *grpc.StreamDesc, *grpc.ClientConn, string, ...grpc.CallOption) (grpc.ClientStream, error) {
 			return &testClientStream{
 				Error: clientErr,
 			}, err
@@ -156,10 +156,10 @@ type testClientStream struct {
 	Error error
 }
 
-func (tcs *testClientStream) SendMsg(m interface{}) error {
+func (tcs *testClientStream) SendMsg(interface{}) error {
 	return tcs.Error
 }
 
-func (tcs *testClientStream) RecvMsg(m interface{}) error {
+func (tcs *testClientStream) RecvMsg(interface{}) error {
 	return tcs.Error
 }

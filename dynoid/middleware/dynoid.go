@@ -114,7 +114,7 @@ func tokenFromHeader(r *http.Request) string {
 
 func internalServerError(error string) func(http.Handler) http.Handler {
 	return func(http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 			http.Error(w, error, http.StatusInternalServerError)
 		})
 	}
