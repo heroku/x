@@ -9,7 +9,7 @@ require (
 	github.com/aws/aws-lambda-go v1.27.0
 	github.com/aws/aws-sdk-go v1.34.0
 	github.com/axiomhq/hyperloglog v0.0.0-20180317131949-fe9507de0228
-	github.com/coreos/go-oidc/v3 v3.2.0
+	github.com/coreos/go-oidc/v3 v3.11.0
 	github.com/dgryski/go-metro v0.0.0-20180109044635-280f6062b5bc // indirect
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-kit/kit v0.9.0
@@ -43,26 +43,27 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v0.42.0
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v0.42.0
 	go.opentelemetry.io/otel/metric v1.27.0
-	golang.org/x/crypto v0.21.0
-	golang.org/x/sync v0.3.0
-	golang.org/x/sys v0.20.0 // indirect
+	golang.org/x/crypto v0.25.0
+	golang.org/x/sync v0.7.0
+	golang.org/x/sys v0.22.0 // indirect
 	golang.org/x/time v0.0.0-20181108054448-85acf8d2951c
 	google.golang.org/grpc v1.59.0
 	google.golang.org/grpc/examples v0.0.0-20210916203835-567da6b86340
 	google.golang.org/protobuf v1.33.0
-	gopkg.in/square/go-jose.v2 v2.5.1
+	gopkg.in/go-jose/go-jose.v2 v2.6.3
 )
 
 require (
 	go.opentelemetry.io/contrib/instrumentation/runtime v0.45.0
 	go.opentelemetry.io/otel/sdk v1.27.0
 	go.opentelemetry.io/otel/sdk/metric v1.27.0
-	golang.org/x/text v0.14.0
+	golang.org/x/text v0.16.0
 )
 
 require (
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.4.1 // indirect
+	github.com/go-jose/go-jose/v4 v4.0.2 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang/groupcache v0.0.0-20190702054246-869f871628b6 // indirect
@@ -70,10 +71,9 @@ require (
 	github.com/konsorten/go-windows-terminal-sequences v1.0.3 // indirect
 	go.opentelemetry.io/otel/trace v1.27.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
-	golang.org/x/net v0.23.0 // indirect
-	golang.org/x/oauth2 v0.12.0 // indirect
+	golang.org/x/net v0.27.0 // indirect
+	golang.org/x/oauth2 v0.21.0 // indirect
 	google.golang.org/api v0.7.0 // indirect
-	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20231012201019-e917dd12ba7a // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20231016165738-49dd2c1f3d0b // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231016165738-49dd2c1f3d0b // indirect
