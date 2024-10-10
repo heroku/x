@@ -21,7 +21,7 @@ func TestLoggingUnaryPanicHandler_NoPanic(t *testing.T) {
 		testErr  = errors.New("test error")
 	)
 
-	uh := func(ctx context.Context, req interface{}) (interface{}, error) {
+	uh := func(context.Context, interface{}) (interface{}, error) {
 		uhCalled = true
 		return res, testErr
 	}
@@ -55,7 +55,7 @@ func TestLoggingUnaryPanicHandler_Panic(t *testing.T) {
 		testErr  = errors.New("test error")
 	)
 
-	uh := func(ctx context.Context, req interface{}) (interface{}, error) {
+	uh := func(context.Context, interface{}) (interface{}, error) {
 		uhCalled = true
 		if uhCalled {
 			panic("BOOM")
@@ -86,7 +86,7 @@ func TestLoggingStreamPanicHandler_NoPanic(t *testing.T) {
 		testErr  = errors.New("test error")
 	)
 
-	sh := func(srv interface{}, stream grpc.ServerStream) error {
+	sh := func(interface{}, grpc.ServerStream) error {
 		shCalled = true
 		return testErr
 	}
@@ -115,7 +115,7 @@ func TestLoggingStreamPanicHandler_Panic(t *testing.T) {
 		testErr  = errors.New("test error")
 	)
 
-	sh := func(srv interface{}, stream grpc.ServerStream) error {
+	sh := func(interface{}, grpc.ServerStream) error {
 		shCalled = true
 		if shCalled {
 			panic("BOOM")

@@ -13,7 +13,7 @@ import (
 func TestRequestID(t *testing.T) {
 	gotRequestID := false
 
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		_, gotRequestID = hcontext.RequestIDFromContext(r.Context())
 	})
 

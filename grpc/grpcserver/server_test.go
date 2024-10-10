@@ -30,8 +30,7 @@ func ExampleLocal() {
 
 	c := healthpb.NewHealthClient(localsrv.Conn())
 
-	//TODO: SA1019: grpc.FailFast is deprecated: use WaitForReady.  (staticcheck)
-	resp, err := c.Check(context.Background(), &healthpb.HealthCheckRequest{}, grpc.FailFast(true)) //nolint:staticcheck
+	resp, err := c.Check(context.Background(), &healthpb.HealthCheckRequest{}, grpc.WaitForReady(false))
 	if err != nil {
 		fmt.Printf("Error = %v", err)
 		return

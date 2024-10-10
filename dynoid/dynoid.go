@@ -180,7 +180,7 @@ func ReadLocalToken(ctx context.Context, audience string) (*Token, error) {
 		return nil, fmt.Errorf("failed to read token (%w)", err)
 	}
 
-	verifier := NewWithCallback(audience, func(issuer string) error { return nil })
+	verifier := NewWithCallback(audience, func(string) error { return nil })
 
 	return verifier.Verify(ctx, rawToken)
 }

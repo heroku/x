@@ -16,8 +16,7 @@ import (
 func TestNewServer(t *testing.T) {
 	p := testmetrics.NewProvider(t)
 
-	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	})
+	next := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
 
 	r := httptest.NewRequest("GET", "http://example.org/foo/bar", nil)
 	w := httptest.NewRecorder()
@@ -33,8 +32,7 @@ func TestNewServer(t *testing.T) {
 func TestMiddleware(t *testing.T) {
 	p := testmetrics.NewProvider(t)
 
-	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	})
+	next := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
 
 	r := httptest.NewRequest("GET", "http://example.org/foo/bar", nil)
 	w := httptest.NewRecorder()
@@ -50,7 +48,7 @@ func TestMiddleware(t *testing.T) {
 func TestResponseStatus(t *testing.T) {
 	p := testmetrics.NewProvider(t)
 
-	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	next := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(502)
 	})
 
@@ -68,8 +66,7 @@ func TestResponseStatus(t *testing.T) {
 func TestChi(t *testing.T) {
 	p := testmetrics.NewProvider(t)
 
-	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	})
+	next := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
 
 	r := httptest.NewRequest("GET", "http://example.org/foo/bar", nil)
 

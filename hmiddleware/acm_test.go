@@ -8,7 +8,7 @@ import (
 )
 
 func TestACMEValidationMiddleware(t *testing.T) {
-	app := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	app := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
 
@@ -18,7 +18,7 @@ func TestACMEValidationMiddleware(t *testing.T) {
 	defer server.Close()
 
 	client := &http.Client{
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+		CheckRedirect: func(*http.Request, []*http.Request) error {
 			return http.ErrUseLastResponse
 		},
 	}

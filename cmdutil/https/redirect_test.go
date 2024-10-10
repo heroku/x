@@ -12,7 +12,7 @@ func TestRedirectHandler(t *testing.T) {
 	server := httptest.NewServer(RedirectHandler(nil))
 	defer server.Close()
 	client := &http.Client{
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+		CheckRedirect: func(*http.Request, []*http.Request) error {
 			return http.ErrUseLastResponse
 		},
 	}

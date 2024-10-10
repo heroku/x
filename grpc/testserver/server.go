@@ -7,6 +7,8 @@ import (
 	"log"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"github.com/heroku/x/grpc/grpcserver"
 )
@@ -54,8 +56,7 @@ func (t *GRPCTestServer) Start() error {
 
 // Close closes the client connection, and stops the server from listening.
 func (t *GRPCTestServer) Close() error {
-	//TODO: SA1019: grpc.ErrClientConnClosing is deprecated: this error should not be relied upon by users; use the status code of Canceled instead.  (staticcheck)
-	if err := t.Conn.Close(); err != nil && err != grpc.ErrClientConnClosing { //nolint:staticcheck
+	if err := t.Conn.Close(); err != nil && status.Code(err) != codes.Canceled { //nolint:staticcheck
 		log.Printf("GRPCTestServer failed to close client conn: %s", err)
 	}
 

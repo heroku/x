@@ -15,6 +15,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/status"
 
 	"github.com/heroku/x/go-kit/metrics"
 	"github.com/heroku/x/grpc/grpcmetrics"
@@ -225,13 +226,11 @@ func WithPeerValidator(f func(*x509.Certificate) bool) ServerOption {
 func validatePeer(ctx context.Context, f func(*x509.Certificate) bool) error {
 	cert, ok := getPeerCertFromContext(ctx)
 	if !ok {
-		// TODO: SA1019: grpc.Errorf is deprecated: use status.Errorf instead.  (staticcheck)
-		return grpc.Errorf(codes.Unauthenticated, "unauthenticated") //nolint:staticcheck
+		return status.Errorf(codes.Unauthenticated, "unauthenticated")
 	}
 
 	if !f(cert) {
-		// TODO: SA1019: grpc.Errorf is deprecated: use status.Errorf instead.  (staticcheck)
-		return grpc.Errorf(codes.PermissionDenied, "forbidden") //nolint:staticcheck
+		return status.Errorf(codes.PermissionDenied, "forbidden")
 	}
 
 	return nil

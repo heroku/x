@@ -13,7 +13,7 @@ import (
 	"github.com/heroku/x/dynoid/middleware"
 )
 
-var noOp = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
+var noOp = http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
 
 func TestAuthorize(t *testing.T) {
 	handler := middleware.Authorize("heroku", dynoid.AllowHerokuHost(dynoidtest.IssuerHost))(noOp)

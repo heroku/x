@@ -47,7 +47,7 @@ type GRPCCredentials struct {
 
 // GetRequestMetadata maps the given credentials to the appropriate request
 // headers.
-func (c GRPCCredentials) GetRequestMetadata(ctx context.Context, in ...string) (map[string]string, error) {
+func (c GRPCCredentials) GetRequestMetadata(context.Context, ...string) (map[string]string, error) {
 	return map[string]string{
 		"authorization": basicAuth(c.Username, c.Password),
 	}, nil

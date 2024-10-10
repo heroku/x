@@ -5,8 +5,8 @@ import (
 	"errors"
 	"testing"
 
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 func TestCode(t *testing.T) {
@@ -17,8 +17,7 @@ func TestCode(t *testing.T) {
 		{nil, "ok"},
 		{context.Canceled, "canceled"},
 		{errors.New("custom"), "unknown"},
-		//TODO: SA1019: grpc.Errorf is deprecated: use status.Errorf instead.  (staticcheck)
-		{grpc.Errorf(codes.InvalidArgument, ""), "invalid-argument"}, //nolint:staticcheck
+		{status.Errorf(codes.InvalidArgument, ""), "invalid-argument"},
 	} {
 		got := code(tt.err)
 		if got != tt.want {

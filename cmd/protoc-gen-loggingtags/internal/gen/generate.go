@@ -21,14 +21,6 @@ var tmpl = `
 
 package {{.PackageName}}
 
-import (
-	"time"
-
-	"github.com/golang/protobuf/ptypes"
-	dpb "github.com/golang/protobuf/ptypes/duration"
-	tspb "github.com/golang/protobuf/ptypes/timestamp"
-)
-
 {{- range .Messages}}
 // LoggingTags returns loggable fields as key-value pairs.
 func (r *{{.Name}}) LoggingTags() map[string]interface{} {
@@ -38,9 +30,9 @@ func (r *{{.Name}}) LoggingTags() map[string]interface{} {
     return map[string]interface{}{
 {{- range .Fields}}
   {{- if eq .TypeName ".google.protobuf.Timestamp"}}
-        "{{.Name}}": loggingTagsTimestamp(r.{{.CamelName}}),
+        "{{.Name}}": r.{{.CamelName}}.AsTime(),
   {{- else if eq .TypeName ".google.protobuf.Duration"}}
-        "{{.Name}}": loggingTagsDuration(r.{{.CamelName}}),
+        "{{.Name}}": r.{{.CamelName}}.AsDuration(),
   {{- else}}
         "{{.Name}}": r.{{.CamelName}},
   {{- end}}
@@ -48,16 +40,6 @@ func (r *{{.Name}}) LoggingTags() map[string]interface{} {
     }
 }
 {{- end}}
-
-func loggingTagsTimestamp(ts *tspb.Timestamp) time.Time {
-	t, _ := ptypes.Timestamp(ts)
-	return t
-}
-
-func loggingTagsDuration(dur *dpb.Duration) time.Duration {
-	d, _ := ptypes.Duration(dur)
-	return d
-}
 `
 
 type templateData struct {

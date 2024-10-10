@@ -86,7 +86,7 @@ type testHistogram struct {
 	observations []float64
 }
 
-func (h *testHistogram) With(lvs ...string) metrics.Histogram {
+func (h *testHistogram) With(...string) metrics.Histogram {
 	return h
 }
 

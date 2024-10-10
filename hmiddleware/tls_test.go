@@ -13,7 +13,7 @@ import (
 )
 
 func TestEnsureTLS(t *testing.T) {
-	h := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	h := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, "everything is okay :)", http.StatusOK)
 	})
 

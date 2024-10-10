@@ -1,8 +1,8 @@
 package grpcserver
 
 import (
+	"context"
 	"net"
-	"time"
 
 	"github.com/hydrogen18/memlistener"
 	"google.golang.org/grpc"
@@ -33,15 +33,14 @@ func (s *LocalServer) Run() error {
 // Stop gracefully stops the gRPC server.
 //
 // It implements oklog group's interruptFn.
-func (s *LocalServer) Stop(err error) {
+func (s *LocalServer) Stop(error) {
 	s.srv.GracefulStop()
 }
 
 // Conn returns a client connection to the in-process server.
 func (s *LocalServer) Conn(opts ...grpc.DialOption) *grpc.ClientConn {
 	defaultOptions := []grpc.DialOption{
-		// TODO: SA1019: grpc.WithDialer is deprecated: use WithContextDialer instead  (staticcheck)
-		grpc.WithDialer(func(addr string, timeout time.Duration) (net.Conn, error) { //nolint:staticcheck
+		grpc.WithContextDialer(func(context.Context, string) (net.Conn, error) {
 			return s.ln.Dial("mem", "")
 		}),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
