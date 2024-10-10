@@ -90,7 +90,7 @@ func (s *Subject) MarshalText() ([]byte, error) {
 
 func (s *Subject) UnmarshalText(text []byte) error {
 	if s == nil {
-		return fmt.Errorf("cannont unmarshal to nil")
+		return fmt.Errorf("cannot unmarshal to nil")
 	}
 
 	sub := string(text)
