@@ -89,7 +89,7 @@ func GenerateIDToken(t *testing.T, audience string, opts ...dynoidtest.IssuerOpt
 		t.Fatal(err)
 	}
 
-	token, err := iss.GenerateIDToken("heroku")
+	token, err := iss.GenerateIDToken(audience)
 	if err != nil {
 		t.Fatal(err)
 	}
