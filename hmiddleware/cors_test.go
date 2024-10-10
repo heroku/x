@@ -20,7 +20,7 @@ func TestCORSHeaders(t *testing.T) {
 	req.Header.Add("Access-Control-Request-Headers", "Content-Type")
 	req.Header.Add("Access-Control-Request-Headers", "Accept")
 
-	CORS(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})).ServeHTTP(resp, req)
+	CORS(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})).ServeHTTP(resp, req)
 
 	aes := func(what, a, b string) {
 		if a != b {
@@ -51,7 +51,7 @@ func TestCORSShortCircuitOnOptions(t *testing.T) {
 	resp := httptest.NewRecorder()
 	req := httptest.NewRequest("OPTIONS", "/some-url", nil)
 
-	CORS(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	CORS(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 	})).ServeHTTP(resp, req)
 

@@ -120,16 +120,12 @@ var (
 func Legacy(config *tls.Config) {
 	config.CipherSuites = LegacyCiphers
 	config.MinVersion = tls.VersionTLS10
-	//nolint: staticcheck
-	config.PreferServerCipherSuites = true
 }
 
 // Default modifies config with safe defaults for standard compatibility.
 func Default(config *tls.Config) {
 	config.CipherSuites = DefaultCiphers
 	config.MinVersion = tls.VersionTLS11
-	//nolint: staticcheck
-	config.PreferServerCipherSuites = true
 }
 
 // DefaultCommonRuntime modifies config with safe defaults for standard compatibility.
@@ -138,32 +134,24 @@ func Default(config *tls.Config) {
 func DefaultCommonRuntime(config *tls.Config) {
 	config.CipherSuites = DefaultCiphers
 	config.MinVersion = tls.VersionTLS10
-	//nolint: staticcheck
-	config.PreferServerCipherSuites = true
 }
 
 // Modern modifies config with safe defaults for modern browser compatibility.
 func Modern(config *tls.Config) {
 	config.CipherSuites = ModernCiphers
 	config.MinVersion = tls.VersionTLS12
-	//nolint: staticcheck
-	config.PreferServerCipherSuites = true
 }
 
 // Strict modifies config with safe defaults for compliance compatibility.
 func Strict(config *tls.Config) {
 	config.CipherSuites = StrictCiphers
 	config.MinVersion = tls.VersionTLS13
-	//nolint: staticcheck
-	config.PreferServerCipherSuites = true
 }
 
 // SFAllowed modifies config for compliance with the salesforce policy.
 func SFAllowed(config *tls.Config) {
 	config.CipherSuites = SFCiphers
 	config.MinVersion = tls.VersionTLS12
-	//nolint: staticcheck
-	config.PreferServerCipherSuites = true
 }
 
 // New returns a TLS configuration tuned for performance and security based on

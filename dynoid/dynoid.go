@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"os"
 	"path"
@@ -90,7 +91,7 @@ func (s *Subject) MarshalText() ([]byte, error) {
 
 func (s *Subject) UnmarshalText(text []byte) error {
 	if s == nil {
-		*s = Subject{}
+		return fmt.Errorf("cannot unmarshal to a nil pointer")
 	}
 
 	sub := string(text)
@@ -142,11 +143,28 @@ func LocalTokenPath(audience string) string {
 	return fmt.Sprintf("/etc/heroku/dyno-id/%s/token", audience)
 }
 
+type osReader struct{}
+
+func (*osReader) Open(name string) (fs.File, error) {
+	return os.Open(name)
+}
+
+func (*osReader) ReadFile(name string) ([]byte, error) {
+	return os.ReadFile(name)
+}
+
+// DefaultFS is used by [ReadLocal] and [ReadLocalToken] to retrieve tokens.
+//
+// By default they are retrieved via [os.Open] and [os.ReadFile].
+//
+// This is useful when testing code that uses DynoID.
+var DefaultFS fs.ReadFileFS = &osReader{}
+
 // ReadLocal reads the local machines token for the given audience
 //
 // Suitable for passing as a bearer token
 func ReadLocal(audience string) (string, error) {
-	rawToken, err := os.ReadFile(LocalTokenPath(audience))
+	rawToken, err := DefaultFS.ReadFile(LocalTokenPath(audience))
 	if err != nil {
 		return "", err
 	}
@@ -162,7 +180,7 @@ func ReadLocalToken(ctx context.Context, audience string) (*Token, error) {
 		return nil, fmt.Errorf("failed to read token (%w)", err)
 	}
 
-	verifier := NewWithCallback(audience, func(issuer string) error { return nil })
+	verifier := NewWithCallback(audience, func(string) error { return nil })
 
 	return verifier.Verify(ctx, rawToken)
 }

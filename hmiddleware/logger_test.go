@@ -15,7 +15,7 @@ import (
 func TestPreRequestLogger(t *testing.T) {
 	logger, hook := testlog.New()
 
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, err := w.Write([]byte("ok"))
 		if err != nil {
@@ -41,7 +41,7 @@ func TestPreRequestLogger(t *testing.T) {
 func TestPreRequestLoggerDoesNotDoubleWrapTheResponseWriter(t *testing.T) {
 	logger, hook := testlog.New()
 
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		ww, ok := w.(middleware.WrapResponseWriter)
 		if !ok {
 			t.Error("wanted the responseWriter to be a WrapResponseWriter")
@@ -77,7 +77,7 @@ func TestPreRequestLoggerDoesNotDoubleWrapTheResponseWriter(t *testing.T) {
 func TestPostRequestLogger(t *testing.T) {
 	logger, hook := testlog.New()
 
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, err := w.Write([]byte("ok"))
 		if err != nil {
@@ -103,7 +103,7 @@ func TestPostRequestLogger(t *testing.T) {
 func TestPostRequestLoggerDoesNotDoubleWrapTheResponseWriter(t *testing.T) {
 	logger, hook := testlog.New()
 
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		ww, ok := w.(middleware.WrapResponseWriter)
 		if !ok {
 			t.Error("wanted the responseWriter to be a WrapResponseWriter")
@@ -212,7 +212,7 @@ func TestRobotAllLogger(t *testing.T) {
 	logger, hook := testlog.New()
 	defer hook.Reset()
 
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, err := w.Write([]byte("ok"))
 		if err != nil {

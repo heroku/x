@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // ErrorToCode determines the gRPC error code for an error, accounting for
@@ -21,7 +21,6 @@ func ErrorToCode(err error) codes.Code {
 	case context.DeadlineExceeded:
 		return codes.DeadlineExceeded
 	default:
-		//TODO: SA1019: grpc.Code is deprecated: use status.Code instead.  (staticcheck)
-		return grpc.Code(err) //nolint:staticcheck
+		return status.Code(err)
 	}
 }

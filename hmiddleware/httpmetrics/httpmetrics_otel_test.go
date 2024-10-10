@@ -16,8 +16,7 @@ import (
 func TestOTELMiddleware(t *testing.T) {
 	p := testmetrics.NewProvider(t)
 
-	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	})
+	next := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
 
 	r := httptest.NewRequest("GET", "http://example.org/foo/bar", nil)
 	w := httptest.NewRecorder()
@@ -31,7 +30,7 @@ func TestOTELMiddleware(t *testing.T) {
 func TestOTELResponseStatus(t *testing.T) {
 	p := testmetrics.NewProvider(t)
 
-	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	next := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(502)
 	})
 
@@ -47,8 +46,7 @@ func TestOTELResponseStatus(t *testing.T) {
 func TestOTELChi(t *testing.T) {
 	p := testmetrics.NewProvider(t)
 
-	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	})
+	next := http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
 
 	r := httptest.NewRequest("GET", "http://example.org/foo/bar", nil)
 

@@ -35,11 +35,11 @@ type testHealthWatchClient struct {
 func (hwc *testHealthWatchClient) Recv() (*healthpb.HealthCheckResponse, error) {
 	return &healthpb.HealthCheckResponse{Status: healthpb.HealthCheckResponse_SERVING}, nil
 }
-func (hwc *testHealthWatchClient) RecvMsg(m interface{}) error {
+func (hwc *testHealthWatchClient) RecvMsg(interface{}) error {
 	return nil
 }
 
-func (hwc *testHealthWatchClient) SendMsg(m interface{}) error {
+func (hwc *testHealthWatchClient) SendMsg(interface{}) error {
 	return nil
 }
 
@@ -72,7 +72,7 @@ func (c *testHealthClient) NumChecks() int {
 	return c.checks
 }
 
-func (c *testHealthClient) Check(ctx context.Context, in *healthpb.HealthCheckRequest, opts ...grpc.CallOption) (*healthpb.HealthCheckResponse, error) {
+func (c *testHealthClient) Check(context.Context, *healthpb.HealthCheckRequest, ...grpc.CallOption) (*healthpb.HealthCheckResponse, error) {
 	c.Lock()
 	defer c.Unlock()
 
@@ -86,7 +86,7 @@ func (c *testHealthClient) Check(ctx context.Context, in *healthpb.HealthCheckRe
 	return &healthpb.HealthCheckResponse{Status: status}, nil
 }
 
-func (c *testHealthClient) Watch(ctx context.Context, in *healthpb.HealthCheckRequest, opts ...grpc.CallOption) (healthpb.Health_WatchClient, error) {
+func (c *testHealthClient) Watch(context.Context, *healthpb.HealthCheckRequest, ...grpc.CallOption) (healthpb.Health_WatchClient, error) {
 	return &testHealthWatchClient{}, nil
 }
 

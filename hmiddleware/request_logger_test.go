@@ -129,7 +129,7 @@ func TestTagsNoMiddleware(t *testing.T) {
 }
 
 func TestTagsPanic(t *testing.T) {
-	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler := http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 		tags.Extract(r.Context()).Set("foo", "bar")
 		panic("ohno!")
 	})

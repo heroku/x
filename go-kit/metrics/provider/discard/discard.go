@@ -53,9 +53,9 @@ func (discardProvider) Flush() error { return nil }
 type discardCardinalityCounter struct{}
 
 // With implements CardinalityCounter.
-func (d discardCardinalityCounter) With(labelValues ...string) xmetrics.CardinalityCounter {
+func (d discardCardinalityCounter) With(...string) xmetrics.CardinalityCounter {
 	return d
 }
 
 // Insert implements CardinalityCounter.
-func (d discardCardinalityCounter) Insert(x []byte) {}
+func (d discardCardinalityCounter) Insert([]byte) {}

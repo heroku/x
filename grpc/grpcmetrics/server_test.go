@@ -16,7 +16,7 @@ func TestUnaryServerInterceptor(t *testing.T) {
 	p := testmetrics.NewProvider(t)
 	usi := NewUnaryServerInterceptor(p)
 	handler := func(resp interface{}, err error) grpc.UnaryHandler {
-		return func(ctx context.Context, req interface{}) (interface{}, error) {
+		return func(context.Context, interface{}) (interface{}, error) {
 			return resp, err
 		}
 	}
@@ -54,7 +54,7 @@ func TestStreamServerInterceptor(t *testing.T) {
 	p := testmetrics.NewProvider(t)
 	ssi := NewStreamServerInterceptor(p)
 	handler := func(err error) grpc.StreamHandler {
-		return func(srv interface{}, stream grpc.ServerStream) error {
+		return func(_ interface{}, stream grpc.ServerStream) error {
 			if err == nil {
 				if err := stream.SendMsg("ping"); err != nil {
 					t.Fatal("unexpected error", err)
@@ -78,7 +78,7 @@ func TestStreamServerInterceptor(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = ssi(nil, &testServerStream{}, info, func(srv interface{}, stream grpc.ServerStream) error {
+	err = ssi(nil, &testServerStream{}, info, func(interface{}, grpc.ServerStream) error {
 		p.CheckGauge("grpc.server.hello.stream-updates.stream.clients", 1)
 		return nil
 	})
@@ -151,10 +151,10 @@ type testServerStream struct {
 	grpc.ServerStream
 }
 
-func (*testServerStream) SendMsg(m interface{}) error {
+func (*testServerStream) SendMsg(interface{}) error {
 	return nil
 }
 
-func (*testServerStream) RecvMsg(m interface{}) error {
+func (*testServerStream) RecvMsg(interface{}) error {
 	return nil
 }

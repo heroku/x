@@ -158,12 +158,10 @@ func ExampleServerFunc() {
 func ExampleServerFuncs() {
 	var a Server = ServerFuncs{
 		RunFunc: func() error {
-			fmt.Println("A")
-			return nil
+			_, err := fmt.Println("A")
+			return err
 		},
-		StopFunc: func(err error) {
-
-		},
+		StopFunc: func(error) {},
 	}
 	var g run.Group
 	g.Add(a.Run, a.Stop)

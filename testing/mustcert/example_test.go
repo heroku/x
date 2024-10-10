@@ -16,7 +16,7 @@ func Example() {
 	clientCert := Leaf("client", ca)
 
 	// Create the TLS Test Server
-	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		if _, err := w.Write([]byte("hello, world!")); err != nil {
 			fmt.Println(err)
 		}
