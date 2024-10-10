@@ -4,7 +4,7 @@ on: [ push ]
 
 jobs:
   ci:
-    runs-on: [ ubuntu-latest ]
+    runs-on: [ sfdc-hk-ubuntu-latest ]
     strategy:
       matrix:
         target: [ test, lint ]
