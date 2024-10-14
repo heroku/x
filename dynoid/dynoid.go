@@ -78,6 +78,10 @@ type Subject struct {
 }
 
 func (s *Subject) LogValue() slog.Value {
+	if s == nil {
+		return (&Subject{}).LogValue()
+	}
+
 	return slog.GroupValue(
 		slog.String("app_id", s.AppID),
 		slog.String("app_name", s.AppName),
@@ -128,6 +132,10 @@ type Token struct {
 }
 
 func (t *Token) LogValue() slog.Value {
+	if t == nil {
+		return (&Token{}).LogValue()
+	}
+
 	return slog.GroupValue(
 		slog.String("space_id", t.SpaceID),
 		slog.Any("subject", t.Subject),
