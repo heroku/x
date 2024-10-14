@@ -233,7 +233,7 @@ func NewWithCallback(clientID string, callback IssuerCallback) *Verifier {
 // against the IssuerCallback
 func (v *Verifier) Verify(ctx context.Context, rawIDToken string) (*Token, error) {
 	if v == nil {
-		*v = *New("")
+		return New("").Verify(ctx, rawIDToken)
 	}
 
 	if v.IssuerCallback == nil {

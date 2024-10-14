@@ -103,8 +103,23 @@ func (f tokenOptFunc) apply(i *jwt.RegisteredClaims) error {
 
 // WithSubject allows the Subject to be different than the default
 func WithSubject(s *dynoid.Subject) TokenOpt {
-	return tokenOptFunc(func(c *jwt.RegisteredClaims) error {
-		c.Subject = s.String()
+	return tokenOptFunc(func(rc *jwt.RegisteredClaims) error {
+		rc.Subject = s.String()
+		return nil
+	})
+}
+
+// WithSubjectFunc allows the Subject to be different than the default based
+// on the audience being generated.
+func WithSubjectFunc(fn func(audience string, subject *dynoid.Subject) *dynoid.Subject) TokenOpt {
+	return tokenOptFunc(func(rc *jwt.RegisteredClaims) error {
+		sub := &dynoid.Subject{}
+		if err := sub.UnmarshalText([]byte(rc.Subject)); err != nil {
+			return fmt.Errorf("error parsing generated subject (%w)", err)
+		}
+
+		rc.Subject = fn(rc.Audience[0], sub).String()
+
 		return nil
 	})
 }

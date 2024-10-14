@@ -52,18 +52,31 @@ func Authorize(audience string, callback dynoid.IssuerCallback) func(http.Handle
 // AuthorizeSameSpace restricts access to tokens from the same space/issuer for
 // the given audience.
 func AuthorizeSameSpace(audience string) func(http.Handler) http.Handler {
-	token, err := dynoid.ReadLocalToken(context.Background(), audience)
-	if err != nil {
-		return internalServerError("failed to load dyno-id")
+	var token *dynoid.Token
+	return func(next http.Handler) http.Handler {
+		serverError := internalServerError("failed to load dyno-id")(next)
+		authorize := Authorize(audience, func(issuer string) error {
+			if issuer != token.IDToken.Issuer {
+				return &dynoid.UntrustedIssuerError{Issuer: issuer}
+			}
+
+			return nil
+		})(next)
+
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			var err error
+			if token == nil {
+				token, err = dynoid.ReadLocalToken(r.Context(), audience)
+				if err != nil {
+					serverError.ServeHTTP(w, r)
+					return
+				}
+			}
+
+			authorize.ServeHTTP(w, r)
+		})
 	}
 
-	return Authorize(audience, func(issuer string) error {
-		if issuer != token.IDToken.Issuer {
-			return &dynoid.UntrustedIssuerError{Issuer: issuer}
-		}
-
-		return nil
-	})
 }
 
 // AuthorizeSpace populates the dyno identity and blocks any requests that
