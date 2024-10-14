@@ -43,7 +43,7 @@ func TestMiddlewareWithSameSpace(t *testing.T) {
 	withStack := newStack(cfg.Middleware(), middleware.AuthorizeSameSpace(testAudience)).Use
 
 	mux := http.NewServeMux()
-	mux.Handle("/", withStack(func(w http.ResponseWriter, r *http.Request) {
+	mux.Handle("/", withStack(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	}))
 	mux.Handle("/token", cfg.Handler())
