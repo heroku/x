@@ -48,6 +48,15 @@ func (f issuerOptFunc) apply(i *Issuer) error {
 	return f(i)
 }
 
+// WithKey allows you to set the issuers private key. Useful for leveraging
+// test middleware.
+func WithKey(key *rsa.PrivateKey) IssuerOpt {
+	return issuerOptFunc(func(i *Issuer) error {
+		i.key = key
+		return nil
+	})
+}
+
 // WithSpaceID allows a spaceID to be supplied instead of using the default
 func WithSpaceID(spaceID string) IssuerOpt {
 	return issuerOptFunc(func(i *Issuer) error {
