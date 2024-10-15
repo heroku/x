@@ -1,10 +1,18 @@
+> [!IMPORTANT]
+> DynoID is currently a [Heroku Labs][labs] feature and is not enabled by default for all spaces.
+
 # DynoID
 
-DynoID is a feature of [Heroku Private Spaces][spaces] that leverages [OpenID Connect][oidc] to tokens for each dyno on boot that it can use to authenticate and verify their identity to other services.
+DynoID is a feature of [Heroku Private Spaces][spaces] that leverages [OpenID Connect][oidc] to mint tokens for each dyno on boot that it can use to authenticate and verify their identity to other services.
+
+## Audiences
+
+All dynos are get an `heroku` audience token by default. Additional audiences can be minted by setting the `HEROKU_DYNO_ID_AUDIENCES` config var to a comma separated list of audiences.
 
 
-[spaces]: https://www.heroku.com/private-spaces
+[spaces]: https://devcenter.heroku.com/articles/private-spaces
 [oidc]: https://openid.net/developers/how-connect-works/
+[labs]: https://devcenter.heroku.com/categories/labs
 
 <!-- gomarkdoc:embed:start -->
 
