@@ -78,3 +78,10 @@ proto: $(TOOLS_BIN)/protoc $(TOOLS_BIN)/protoc-gen-go | $(TOOLS_BIN) ## Regenera
 		--go_out=paths=source_relative:. \
 		--loggingtags_out=. \
 		./cmd/protoc-gen-loggingtags/internal/test/*.proto
+
+$(GOPATH)/bin/gomarkdoc:
+	go install github.com/princjef/gomarkdoc/cmd/gomarkdoc@latest
+
+.PHONY: docs
+docs: $(GOPATH)/bin/gomarkdoc ## Generate docs using gomarkdoc
+	$< --header="" -o ./dynoid/README.md -e ./dynoid/...
