@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -9,13 +8,6 @@ import (
 	"strings"
 
 	"github.com/heroku/x/dynoid"
-)
-
-type ctxKeyDynoID int
-
-const (
-	DynoIDKey ctxKeyDynoID = iota
-	DynoIDErrKey
 )
 
 var (
@@ -40,7 +32,7 @@ func Authorize(audience string, callback dynoid.IssuerCallback) func(http.Handle
 
 	return func(next http.Handler) http.Handler {
 		return populate(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if _, err := FromContext(r.Context()); err != nil {
+			if _, err := dynoid.FromContext(r.Context()); err != nil {
 				w.WriteHeader(http.StatusForbidden)
 				fmt.Fprint(w, http.StatusText(http.StatusForbidden))
 				return
@@ -84,21 +76,6 @@ func AuthorizeSpacesWithIssuer(audience, issuer string, spaces ...string) func(h
 	return Authorize(audience, dynoid.AllowHerokuSpace(issuer, spaces...))
 }
 
-// AddToContext adds the Token to the given context
-func AddToContext(ctx context.Context, token *dynoid.Token, err error) context.Context {
-	ctx = context.WithValue(ctx, DynoIDKey, token)
-	ctx = context.WithValue(ctx, DynoIDErrKey, err)
-	return ctx
-}
-
-// FromContext fetches the Token from the context
-func FromContext(ctx context.Context) (*dynoid.Token, error) {
-	token, _ := ctx.Value(DynoIDKey).(*dynoid.Token)
-	err, _ := ctx.Value(DynoIDErrKey).(error)
-
-	return token, err
-}
-
 func populateDynoID(audience string, callback dynoid.IssuerCallback) func(*http.Request) *http.Request {
 	verifier := dynoid.NewWithCallback(audience, callback)
 
@@ -107,12 +84,15 @@ func populateDynoID(audience string, callback dynoid.IssuerCallback) func(*http.
 
 		rawToken := tokenFromHeader(r)
 		if rawToken == "" {
-			return r.WithContext(AddToContext(ctx, nil, ErrTokenMissing))
+			return r.WithContext(dynoid.ContextWithError(ctx, ErrTokenMissing))
 		}
 
 		token, err := verifier.Verify(r.Context(), rawToken)
+		if err != nil {
+			return r.WithContext(dynoid.ContextWithError(ctx, err))
+		}
 
-		return r.WithContext(AddToContext(ctx, token, err))
+		return r.WithContext(dynoid.ContextWithToken(ctx, token))
 	}
 }
 

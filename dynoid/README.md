@@ -27,11 +27,13 @@ import "github.com/heroku/x/dynoid"
 ## Index
 
 - [Variables](<#variables>)
+- [func ContextWithError\(ctx context.Context, err error\) context.Context](<#ContextWithError>)
+- [func ContextWithToken\(ctx context.Context, t \*Token\) context.Context](<#ContextWithToken>)
 - [func LocalTokenPath\(audience string\) string](<#LocalTokenPath>)
 - [func ReadLocal\(audience string\) \(string, error\)](<#ReadLocal>)
 - [type IssuerCallback](<#IssuerCallback>)
-  - [func AllowHerokuHost\(host string\) IssuerCallback](<#AllowHerokuHost>)
-  - [func AllowHerokuSpace\(host string, spaceIDs ...string\) IssuerCallback](<#AllowHerokuSpace>)
+  - [func AllowHerokuHost\(issuerHost string\) IssuerCallback](<#AllowHerokuHost>)
+  - [func AllowHerokuSpace\(issuerHost string, spaceIDs ...string\) IssuerCallback](<#AllowHerokuSpace>)
 - [type MalformedTokenError](<#MalformedTokenError>)
   - [func \(e \*MalformedTokenError\) Error\(\) string](<#MalformedTokenError.Error>)
   - [func \(e \*MalformedTokenError\) Unwrap\(\) error](<#MalformedTokenError.Unwrap>)
@@ -41,13 +43,14 @@ import "github.com/heroku/x/dynoid"
   - [func \(s \*Subject\) String\(\) string](<#Subject.String>)
   - [func \(s \*Subject\) UnmarshalText\(text \[\]byte\) error](<#Subject.UnmarshalText>)
 - [type Token](<#Token>)
+  - [func FromContext\(ctx context.Context\) \(\*Token, error\)](<#FromContext>)
   - [func ReadLocalToken\(ctx context.Context, audience string\) \(\*Token, error\)](<#ReadLocalToken>)
   - [func \(t \*Token\) LogValue\(\) slog.Value](<#Token.LogValue>)
 - [type UntrustedIssuerError](<#UntrustedIssuerError>)
   - [func \(e \*UntrustedIssuerError\) Error\(\) string](<#UntrustedIssuerError.Error>)
 - [type Verifier](<#Verifier>)
-  - [func New\(clientID string\) \*Verifier](<#New>)
-  - [func NewWithCallback\(clientID string, callback IssuerCallback\) \*Verifier](<#NewWithCallback>)
+  - [func New\(audience string\) \*Verifier](<#New>)
+  - [func NewWithCallback\(audience string, callback IssuerCallback\) \*Verifier](<#NewWithCallback>)
   - [func \(v \*Verifier\) Verify\(ctx context.Context, rawIDToken string\) \(\*Token, error\)](<#Verifier.Verify>)
 
 
@@ -62,6 +65,32 @@ This is useful when testing code that uses DynoID.
 ```go
 var DefaultFS fs.ReadFileFS = &osReader{}
 ```
+
+<a name="ErrTokenNotSet"></a>
+
+```go
+var (
+    ErrTokenNotSet = errors.New("token not set") // returned when neither a token nor an error is set
+)
+```
+
+<a name="ContextWithError"></a>
+## func [ContextWithError](<https://github.com/heroku/x/blob/master/dynoid/context.go#L31>)
+
+```go
+func ContextWithError(ctx context.Context, err error) context.Context
+```
+
+ContextWithError adds the given error to the Context to be retrieved later by calling FromContext
+
+<a name="ContextWithToken"></a>
+## func [ContextWithToken](<https://github.com/heroku/x/blob/master/dynoid/context.go#L25>)
+
+```go
+func ContextWithToken(ctx context.Context, t *Token) context.Context
+```
+
+ContextWithToken adds the given Token to the Context to be retrieved later by calling FromContext
 
 <a name="LocalTokenPath"></a>
 ## func [LocalTokenPath](<https://github.com/heroku/x/blob/master/dynoid/dynoid.go#L146>)
@@ -96,7 +125,7 @@ type IssuerCallback func(issuer string) error
 ### func [AllowHerokuHost](<https://github.com/heroku/x/blob/master/dynoid/dynoid.go#L63>)
 
 ```go
-func AllowHerokuHost(host string) IssuerCallback
+func AllowHerokuHost(issuerHost string) IssuerCallback
 ```
 
 AllowHerokuHost verifies that the issuer is from Heroku for the given host domain
@@ -105,7 +134,7 @@ AllowHerokuHost verifies that the issuer is from Heroku for the given host domai
 ### func [AllowHerokuSpace](<https://github.com/heroku/x/blob/master/dynoid/dynoid.go#L198>)
 
 ```go
-func AllowHerokuSpace(host string, spaceIDs ...string) IssuerCallback
+func AllowHerokuSpace(issuerHost string, spaceIDs ...string) IssuerCallback
 ```
 
 AllowHerokuSpace verifies that the issuer is from Heroku for the given host and space id.
@@ -201,6 +230,15 @@ type Token struct {
 }
 ```
 
+<a name="FromContext"></a>
+### func [FromContext](<https://github.com/heroku/x/blob/master/dynoid/context.go#L36>)
+
+```go
+func FromContext(ctx context.Context) (*Token, error)
+```
+
+FromContext returns the Token or error associated with the given Context
+
 <a name="ReadLocalToken"></a>
 ### func [ReadLocalToken](<https://github.com/heroku/x/blob/master/dynoid/dynoid.go#L185>)
 
@@ -255,7 +293,7 @@ type Verifier struct {
 ### func [New](<https://github.com/heroku/x/blob/master/dynoid/dynoid.go#L225>)
 
 ```go
-func New(clientID string) *Verifier
+func New(audience string) *Verifier
 ```
 
 Instantiate a new Verifier without an IssuerCallback set.
@@ -266,7 +304,7 @@ The IssuerCallback must be set before calling Verify or an error will be returne
 ### func [NewWithCallback](<https://github.com/heroku/x/blob/master/dynoid/dynoid.go#L234>)
 
 ```go
-func NewWithCallback(clientID string, callback IssuerCallback) *Verifier
+func NewWithCallback(audience string, callback IssuerCallback) *Verifier
 ```
 
 Instantiate a new Verifier with the IssuerCallback set.
@@ -582,12 +620,10 @@ import "github.com/heroku/x/dynoid/middleware"
 ## Index
 
 - [Variables](<#variables>)
-- [func AddToContext\(ctx context.Context, token \*dynoid.Token, err error\) context.Context](<#AddToContext>)
 - [func Authorize\(audience string, callback dynoid.IssuerCallback\) func\(http.Handler\) http.Handler](<#Authorize>)
 - [func AuthorizeSameSpace\(audience string\) func\(http.Handler\) http.Handler](<#AuthorizeSameSpace>)
 - [func AuthorizeSpaces\(audience string, spaces ...string\) func\(http.Handler\) http.Handler](<#AuthorizeSpaces>)
 - [func AuthorizeSpacesWithIssuer\(audience, issuer string, spaces ...string\) func\(http.Handler\) http.Handler](<#AuthorizeSpacesWithIssuer>)
-- [func FromContext\(ctx context.Context\) \(\*dynoid.Token, error\)](<#FromContext>)
 - [func Populate\(audience string, callback dynoid.IssuerCallback\) func\(http.Handler\) http.Handler](<#Populate>)
 
 
@@ -601,17 +637,8 @@ var (
 )
 ```
 
-<a name="AddToContext"></a>
-## func [AddToContext](<https://github.com/heroku/x/blob/master/dynoid/middleware/dynoid.go#L88>)
-
-```go
-func AddToContext(ctx context.Context, token *dynoid.Token, err error) context.Context
-```
-
-AddToContext adds the Token to the given context
-
 <a name="Authorize"></a>
-## func [Authorize](<https://github.com/heroku/x/blob/master/dynoid/middleware/dynoid.go#L38>)
+## func [Authorize](<https://github.com/heroku/x/blob/master/dynoid/middleware/dynoid.go#L30>)
 
 ```go
 func Authorize(audience string, callback dynoid.IssuerCallback) func(http.Handler) http.Handler
@@ -620,7 +647,7 @@ func Authorize(audience string, callback dynoid.IssuerCallback) func(http.Handle
 Authorize populates the dyno identity blocks requests where the callback fails.
 
 <a name="AuthorizeSameSpace"></a>
-## func [AuthorizeSameSpace](<https://github.com/heroku/x/blob/master/dynoid/middleware/dynoid.go#L56>)
+## func [AuthorizeSameSpace](<https://github.com/heroku/x/blob/master/dynoid/middleware/dynoid.go#L48>)
 
 ```go
 func AuthorizeSameSpace(audience string) func(http.Handler) http.Handler
@@ -629,7 +656,7 @@ func AuthorizeSameSpace(audience string) func(http.Handler) http.Handler
 AuthorizeSameSpace restricts access to tokens from the same space/issuer for the given audience.
 
 <a name="AuthorizeSpaces"></a>
-## func [AuthorizeSpaces](<https://github.com/heroku/x/blob/master/dynoid/middleware/dynoid.go#L70>)
+## func [AuthorizeSpaces](<https://github.com/heroku/x/blob/master/dynoid/middleware/dynoid.go#L62>)
 
 ```go
 func AuthorizeSpaces(audience string, spaces ...string) func(http.Handler) http.Handler
@@ -638,7 +665,7 @@ func AuthorizeSpaces(audience string, spaces ...string) func(http.Handler) http.
 AuthorizeSpaces populates the dyno identity and blocks any requests that aren't from one of the given spaces.
 
 <a name="AuthorizeSpacesWithIssuer"></a>
-## func [AuthorizeSpacesWithIssuer](<https://github.com/heroku/x/blob/master/dynoid/middleware/dynoid.go#L83>)
+## func [AuthorizeSpacesWithIssuer](<https://github.com/heroku/x/blob/master/dynoid/middleware/dynoid.go#L75>)
 
 ```go
 func AuthorizeSpacesWithIssuer(audience, issuer string, spaces ...string) func(http.Handler) http.Handler
@@ -646,17 +673,8 @@ func AuthorizeSpacesWithIssuer(audience, issuer string, spaces ...string) func(h
 
 AuthorizeSpacesWithIssuer populates the dyno identity and blocks any requests that aren't from one of the given spaces and issuer.
 
-<a name="FromContext"></a>
-## func [FromContext](<https://github.com/heroku/x/blob/master/dynoid/middleware/dynoid.go#L95>)
-
-```go
-func FromContext(ctx context.Context) (*dynoid.Token, error)
-```
-
-FromContext fetches the Token from the context
-
 <a name="Populate"></a>
-## func [Populate](<https://github.com/heroku/x/blob/master/dynoid/middleware/dynoid.go#L27>)
+## func [Populate](<https://github.com/heroku/x/blob/master/dynoid/middleware/dynoid.go#L19>)
 
 ```go
 func Populate(audience string, callback dynoid.IssuerCallback) func(http.Handler) http.Handler

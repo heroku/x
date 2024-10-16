@@ -60,9 +60,9 @@ type IssuerCallback func(issuer string) error
 
 // AllowHerokuHost verifies that the issuer is from Heroku for the given host
 // domain
-func AllowHerokuHost(host string) IssuerCallback {
+func AllowHerokuHost(issuerHost string) IssuerCallback {
 	return func(issuer string) error {
-		if !strings.HasPrefix(issuer, fmt.Sprintf("https://oidc.%v/", host)) {
+		if !strings.HasPrefix(issuer, fmt.Sprintf("https://oidc.%v/", issuerHost)) {
 			return &UntrustedIssuerError{Issuer: issuer}
 		}
 
@@ -195,10 +195,10 @@ func ReadLocalToken(ctx context.Context, audience string) (*Token, error) {
 
 // AllowHerokuSpace verifies that the issuer is from Heroku for the given host
 // and space id.
-func AllowHerokuSpace(host string, spaceIDs ...string) IssuerCallback {
+func AllowHerokuSpace(issuerHost string, spaceIDs ...string) IssuerCallback {
 	return func(issuer string) error {
 		for _, id := range spaceIDs {
-			if iss := fmt.Sprintf("https://oidc.%s/spaces/%s", host, id); iss == issuer {
+			if iss := fmt.Sprintf("https://oidc.%s/spaces/%s", issuerHost, id); iss == issuer {
 				return nil
 			}
 		}
@@ -222,17 +222,17 @@ type Verifier struct {
 //
 // The IssuerCallback must be set before calling Verify or an error will be
 // returned.
-func New(clientID string) *Verifier {
+func New(audience string) *Verifier {
 	return &Verifier{
-		config:    &oidc.Config{ClientID: clientID},
+		config:    &oidc.Config{ClientID: audience},
 		mu:        &sync.RWMutex{},
 		providers: make(map[string]*oidc.Provider),
 	}
 }
 
 // Instantiate a new Verifier with the IssuerCallback set.
-func NewWithCallback(clientID string, callback IssuerCallback) *Verifier {
-	v := New(clientID)
+func NewWithCallback(audience string, callback IssuerCallback) *Verifier {
+	v := New(audience)
 	v.IssuerCallback = callback
 	return v
 }
