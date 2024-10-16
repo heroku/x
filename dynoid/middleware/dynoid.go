@@ -11,6 +11,7 @@ import (
 )
 
 var (
+	// returned when the `Authorization` header does not contain a Bearer token
 	ErrTokenMissing = errors.New("token not found")
 )
 
@@ -106,7 +107,7 @@ func tokenFromHeader(r *http.Request) string {
 
 func callbackHandler(audience string, fn func(*dynoid.Token) dynoid.IssuerCallback) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
-		serverError := internalServerError("failed to load dyno-id")(next)
+		serverError := internalServerError("failed to load dyno-id")
 
 		var authedNext http.Handler
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -128,10 +129,8 @@ func callbackHandler(audience string, fn func(*dynoid.Token) dynoid.IssuerCallba
 	}
 }
 
-func internalServerError(error string) func(http.Handler) http.Handler {
-	return func(http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			http.Error(w, error, http.StatusInternalServerError)
-		})
-	}
+func internalServerError(error string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, error, http.StatusInternalServerError)
+	})
 }

@@ -58,9 +58,9 @@ func WithKey(key *rsa.PrivateKey) IssuerOpt {
 
 // WithIssuerHost allows an issuer host to be supplied instead of using the
 // default
-func WithIssuerHost(host string) IssuerOpt {
+func WithIssuerHost(issuerHost string) IssuerOpt {
 	return issuerOptFunc(func(i *Issuer) error {
-		i.host = host
+		i.host = issuerHost
 		return nil
 	})
 }
@@ -142,11 +142,11 @@ func WithSubjectFunc(fn func(audience string, subject *dynoid.Subject) *dynoid.S
 }
 
 // GenerateIDToken returns a new signed token as a string
-func (iss *Issuer) GenerateIDToken(clientID string, opts ...TokenOpt) (string, error) {
+func (iss *Issuer) GenerateIDToken(audience string, opts ...TokenOpt) (string, error) {
 	now := time.Now()
 
 	claims := &jwt.RegisteredClaims{
-		Audience:  jwt.ClaimStrings([]string{clientID}),
+		Audience:  jwt.ClaimStrings([]string{audience}),
 		ExpiresAt: jwt.NewNumericDate(now.Add(5 * time.Minute)),
 		IssuedAt:  jwt.NewNumericDate(now),
 		Issuer:    fmt.Sprintf("https://oidc.%s/spaces/%s", iss.host, iss.spaceID),

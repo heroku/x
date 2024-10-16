@@ -339,10 +339,10 @@ dynoidtest provides helper functions for testing code that uses DynoID
 - [type Issuer](<#Issuer>)
   - [func New\(opts ...IssuerOpt\) \(\*Issuer, error\)](<#New>)
   - [func NewWithContext\(ctx context.Context, opts ...IssuerOpt\) \(context.Context, \*Issuer, error\)](<#NewWithContext>)
-  - [func \(iss \*Issuer\) GenerateIDToken\(clientID string, opts ...TokenOpt\) \(string, error\)](<#Issuer.GenerateIDToken>)
+  - [func \(iss \*Issuer\) GenerateIDToken\(audience string, opts ...TokenOpt\) \(string, error\)](<#Issuer.GenerateIDToken>)
   - [func \(iss \*Issuer\) HTTPClient\(\) \*http.Client](<#Issuer.HTTPClient>)
 - [type IssuerOpt](<#IssuerOpt>)
-  - [func WithIssuerHost\(host string\) IssuerOpt](<#WithIssuerHost>)
+  - [func WithIssuerHost\(issuerHost string\) IssuerOpt](<#WithIssuerHost>)
   - [func WithKey\(key \*rsa.PrivateKey\) IssuerOpt](<#WithKey>)
   - [func WithSpaceID\(spaceID string\) IssuerOpt](<#WithSpaceID>)
   - [func WithTokenOpts\(opts ...TokenOpt\) IssuerOpt](<#WithTokenOpts>)
@@ -472,7 +472,7 @@ Create a new Issuer with the supplied opts applied inheriting from the provided 
 ### func \(\*Issuer\) [GenerateIDToken](<https://github.com/heroku/x/blob/master/dynoid/dynoidtest/dynoidtest.go#L145>)
 
 ```go
-func (iss *Issuer) GenerateIDToken(clientID string, opts ...TokenOpt) (string, error)
+func (iss *Issuer) GenerateIDToken(audience string, opts ...TokenOpt) (string, error)
 ```
 
 GenerateIDToken returns a new signed token as a string
@@ -501,7 +501,7 @@ type IssuerOpt interface {
 ### func [WithIssuerHost](<https://github.com/heroku/x/blob/master/dynoid/dynoidtest/dynoidtest.go#L61>)
 
 ```go
-func WithIssuerHost(host string) IssuerOpt
+func WithIssuerHost(issuerHost string) IssuerOpt
 ```
 
 WithIssuerHost allows an issuer host to be supplied instead of using the default
@@ -633,12 +633,13 @@ import "github.com/heroku/x/dynoid/middleware"
 
 ```go
 var (
+    // returned when the `Authorization` header does not contain a Bearer token
     ErrTokenMissing = errors.New("token not found")
 )
 ```
 
 <a name="Authorize"></a>
-## func [Authorize](<https://github.com/heroku/x/blob/master/dynoid/middleware/dynoid.go#L30>)
+## func [Authorize](<https://github.com/heroku/x/blob/master/dynoid/middleware/dynoid.go#L31>)
 
 ```go
 func Authorize(audience string, callback dynoid.IssuerCallback) func(http.Handler) http.Handler
@@ -647,7 +648,7 @@ func Authorize(audience string, callback dynoid.IssuerCallback) func(http.Handle
 Authorize populates the dyno identity blocks requests where the callback fails.
 
 <a name="AuthorizeSameSpace"></a>
-## func [AuthorizeSameSpace](<https://github.com/heroku/x/blob/master/dynoid/middleware/dynoid.go#L48>)
+## func [AuthorizeSameSpace](<https://github.com/heroku/x/blob/master/dynoid/middleware/dynoid.go#L49>)
 
 ```go
 func AuthorizeSameSpace(audience string) func(http.Handler) http.Handler
@@ -656,7 +657,7 @@ func AuthorizeSameSpace(audience string) func(http.Handler) http.Handler
 AuthorizeSameSpace restricts access to tokens from the same space/issuer for the given audience.
 
 <a name="AuthorizeSpaces"></a>
-## func [AuthorizeSpaces](<https://github.com/heroku/x/blob/master/dynoid/middleware/dynoid.go#L62>)
+## func [AuthorizeSpaces](<https://github.com/heroku/x/blob/master/dynoid/middleware/dynoid.go#L63>)
 
 ```go
 func AuthorizeSpaces(audience string, spaces ...string) func(http.Handler) http.Handler
@@ -665,7 +666,7 @@ func AuthorizeSpaces(audience string, spaces ...string) func(http.Handler) http.
 AuthorizeSpaces populates the dyno identity and blocks any requests that aren't from one of the given spaces.
 
 <a name="AuthorizeSpacesWithIssuer"></a>
-## func [AuthorizeSpacesWithIssuer](<https://github.com/heroku/x/blob/master/dynoid/middleware/dynoid.go#L75>)
+## func [AuthorizeSpacesWithIssuer](<https://github.com/heroku/x/blob/master/dynoid/middleware/dynoid.go#L76>)
 
 ```go
 func AuthorizeSpacesWithIssuer(audience, issuer string, spaces ...string) func(http.Handler) http.Handler
@@ -674,7 +675,7 @@ func AuthorizeSpacesWithIssuer(audience, issuer string, spaces ...string) func(h
 AuthorizeSpacesWithIssuer populates the dyno identity and blocks any requests that aren't from one of the given spaces and issuer.
 
 <a name="Populate"></a>
-## func [Populate](<https://github.com/heroku/x/blob/master/dynoid/middleware/dynoid.go#L19>)
+## func [Populate](<https://github.com/heroku/x/blob/master/dynoid/middleware/dynoid.go#L20>)
 
 ```go
 func Populate(audience string, callback dynoid.IssuerCallback) func(http.Handler) http.Handler
