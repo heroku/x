@@ -304,6 +304,7 @@ dynoidtest provides helper functions for testing code that uses DynoID
   - [func \(iss \*Issuer\) GenerateIDToken\(clientID string, opts ...TokenOpt\) \(string, error\)](<#Issuer.GenerateIDToken>)
   - [func \(iss \*Issuer\) HTTPClient\(\) \*http.Client](<#Issuer.HTTPClient>)
 - [type IssuerOpt](<#IssuerOpt>)
+  - [func WithIssuerHost\(host string\) IssuerOpt](<#WithIssuerHost>)
   - [func WithKey\(key \*rsa.PrivateKey\) IssuerOpt](<#WithKey>)
   - [func WithSpaceID\(spaceID string\) IssuerOpt](<#WithSpaceID>)
   - [func WithTokenOpts\(opts ...TokenOpt\) IssuerOpt](<#WithTokenOpts>)
@@ -319,17 +320,15 @@ dynoidtest provides helper functions for testing code that uses DynoID
 
 ## Constants
 
-<a name="IssuerHost"></a>
+<a name="DefaultIssuerHost"></a>
 
 ```go
 const (
-    // IssuerHost is the host used by the dynoidtest.Issuer
-    IssuerHost = "heroku.local"
-
-    DefaultSpaceID = "test"                                 // space id used when one is not provided
-    DefaultAppID   = "00000000-0000-0000-0000-000000000001" // app id used when one is not provided
-    DefaultAppName = "sushi"                                // app name used when one is not provided
-    DefaultDyno    = "web.1"                                // dyno used when one is not provided
+    DefaultIssuerHost = "heroku.local"                         // issuer host used when one is not provided
+    DefaultSpaceID    = "test"                                 // space id used when one is not provided
+    DefaultAppID      = "00000000-0000-0000-0000-000000000001" // app id used when one is not provided
+    DefaultAppName    = "sushi"                                // app name used when one is not provided
+    DefaultDyno       = "web.1"                                // dyno used when one is not provided
 )
 ```
 
@@ -403,7 +402,7 @@ func (f *FS) ReadFile(name string) ([]byte, error)
 
 
 <a name="Issuer"></a>
-## type [Issuer](<https://github.com/heroku/x/blob/master/dynoid/dynoidtest/dynoidtest.go#L34-L38>)
+## type [Issuer](<https://github.com/heroku/x/blob/master/dynoid/dynoidtest/dynoidtest.go#L32-L37>)
 
 Issuer generates test tokens and provides a client for verifying them.
 
@@ -414,7 +413,7 @@ type Issuer struct {
 ```
 
 <a name="New"></a>
-### func [New](<https://github.com/heroku/x/blob/master/dynoid/dynoidtest/dynoidtest.go#L78>)
+### func [New](<https://github.com/heroku/x/blob/master/dynoid/dynoidtest/dynoidtest.go#L86>)
 
 ```go
 func New(opts ...IssuerOpt) (*Issuer, error)
@@ -423,7 +422,7 @@ func New(opts ...IssuerOpt) (*Issuer, error)
 Create a new Issuer with the supplied opts applied
 
 <a name="NewWithContext"></a>
-### func [NewWithContext](<https://github.com/heroku/x/blob/master/dynoid/dynoidtest/dynoidtest.go#L84>)
+### func [NewWithContext](<https://github.com/heroku/x/blob/master/dynoid/dynoidtest/dynoidtest.go#L92>)
 
 ```go
 func NewWithContext(ctx context.Context, opts ...IssuerOpt) (context.Context, *Issuer, error)
@@ -432,7 +431,7 @@ func NewWithContext(ctx context.Context, opts ...IssuerOpt) (context.Context, *I
 Create a new Issuer with the supplied opts applied inheriting from the provided context
 
 <a name="Issuer.GenerateIDToken"></a>
-### func \(\*Issuer\) [GenerateIDToken](<https://github.com/heroku/x/blob/master/dynoid/dynoidtest/dynoidtest.go#L137>)
+### func \(\*Issuer\) [GenerateIDToken](<https://github.com/heroku/x/blob/master/dynoid/dynoidtest/dynoidtest.go#L145>)
 
 ```go
 func (iss *Issuer) GenerateIDToken(clientID string, opts ...TokenOpt) (string, error)
@@ -441,7 +440,7 @@ func (iss *Issuer) GenerateIDToken(clientID string, opts ...TokenOpt) (string, e
 GenerateIDToken returns a new signed token as a string
 
 <a name="Issuer.HTTPClient"></a>
-### func \(\*Issuer\) [HTTPClient](<https://github.com/heroku/x/blob/master/dynoid/dynoidtest/dynoidtest.go#L161>)
+### func \(\*Issuer\) [HTTPClient](<https://github.com/heroku/x/blob/master/dynoid/dynoidtest/dynoidtest.go#L169>)
 
 ```go
 func (iss *Issuer) HTTPClient() *http.Client
@@ -450,7 +449,7 @@ func (iss *Issuer) HTTPClient() *http.Client
 HTTPClient returns a client that leverages the Issuer to validate tokens.
 
 <a name="IssuerOpt"></a>
-## type [IssuerOpt](<https://github.com/heroku/x/blob/master/dynoid/dynoidtest/dynoidtest.go#L41-L43>)
+## type [IssuerOpt](<https://github.com/heroku/x/blob/master/dynoid/dynoidtest/dynoidtest.go#L40-L42>)
 
 IssuerOpt allows the behavior of the issuer to be modified.
 
@@ -460,17 +459,26 @@ type IssuerOpt interface {
 }
 ```
 
+<a name="WithIssuerHost"></a>
+### func [WithIssuerHost](<https://github.com/heroku/x/blob/master/dynoid/dynoidtest/dynoidtest.go#L61>)
+
+```go
+func WithIssuerHost(host string) IssuerOpt
+```
+
+WithIssuerHost allows an issuer host to be supplied instead of using the default
+
 <a name="WithKey"></a>
-### func [WithKey](<https://github.com/heroku/x/blob/master/dynoid/dynoidtest/dynoidtest.go#L53>)
+### func [WithKey](<https://github.com/heroku/x/blob/master/dynoid/dynoidtest/dynoidtest.go#L52>)
 
 ```go
 func WithKey(key *rsa.PrivateKey) IssuerOpt
 ```
 
-WithKey allows you to set the issuers private key. Useful for leveraging test middleware.
+WithKey allows you to set the issuer's private key. Useful for leveraging test middleware.
 
 <a name="WithSpaceID"></a>
-### func [WithSpaceID](<https://github.com/heroku/x/blob/master/dynoid/dynoidtest/dynoidtest.go#L61>)
+### func [WithSpaceID](<https://github.com/heroku/x/blob/master/dynoid/dynoidtest/dynoidtest.go#L69>)
 
 ```go
 func WithSpaceID(spaceID string) IssuerOpt
@@ -479,7 +487,7 @@ func WithSpaceID(spaceID string) IssuerOpt
 WithSpaceID allows a spaceID to be supplied instead of using the default
 
 <a name="WithTokenOpts"></a>
-### func [WithTokenOpts](<https://github.com/heroku/x/blob/master/dynoid/dynoidtest/dynoidtest.go#L70>)
+### func [WithTokenOpts](<https://github.com/heroku/x/blob/master/dynoid/dynoidtest/dynoidtest.go#L78>)
 
 ```go
 func WithTokenOpts(opts ...TokenOpt) IssuerOpt
@@ -537,7 +545,7 @@ func (c *LocalConfiguration) Middleware() func(http.Handler) http.Handler
 The Middleware should be inserted in the middleware stack before any functions that use dynoid are called.
 
 <a name="TokenOpt"></a>
-## type [TokenOpt](<https://github.com/heroku/x/blob/master/dynoid/dynoidtest/dynoidtest.go#L103-L105>)
+## type [TokenOpt](<https://github.com/heroku/x/blob/master/dynoid/dynoidtest/dynoidtest.go#L111-L113>)
 
 A TokenOpt modifies the way a token is minted
 
@@ -548,7 +556,7 @@ type TokenOpt interface {
 ```
 
 <a name="WithSubject"></a>
-### func [WithSubject](<https://github.com/heroku/x/blob/master/dynoid/dynoidtest/dynoidtest.go#L114>)
+### func [WithSubject](<https://github.com/heroku/x/blob/master/dynoid/dynoidtest/dynoidtest.go#L122>)
 
 ```go
 func WithSubject(s *dynoid.Subject) TokenOpt
@@ -557,7 +565,7 @@ func WithSubject(s *dynoid.Subject) TokenOpt
 WithSubject allows the Subject to be different than the default
 
 <a name="WithSubjectFunc"></a>
-### func [WithSubjectFunc](<https://github.com/heroku/x/blob/master/dynoid/dynoidtest/dynoidtest.go#L123>)
+### func [WithSubjectFunc](<https://github.com/heroku/x/blob/master/dynoid/dynoidtest/dynoidtest.go#L131>)
 
 ```go
 func WithSubjectFunc(fn func(audience string, subject *dynoid.Subject) *dynoid.Subject) TokenOpt
@@ -577,7 +585,8 @@ import "github.com/heroku/x/dynoid/middleware"
 - [func AddToContext\(ctx context.Context, token \*dynoid.Token, err error\) context.Context](<#AddToContext>)
 - [func Authorize\(audience string, callback dynoid.IssuerCallback\) func\(http.Handler\) http.Handler](<#Authorize>)
 - [func AuthorizeSameSpace\(audience string\) func\(http.Handler\) http.Handler](<#AuthorizeSameSpace>)
-- [func AuthorizeSpaces\(audience, host string, spaces ...string\) func\(http.Handler\) http.Handler](<#AuthorizeSpaces>)
+- [func AuthorizeSpaces\(audience string, spaces ...string\) func\(http.Handler\) http.Handler](<#AuthorizeSpaces>)
+- [func AuthorizeSpacesWithIssuer\(audience, issuer string, spaces ...string\) func\(http.Handler\) http.Handler](<#AuthorizeSpacesWithIssuer>)
 - [func FromContext\(ctx context.Context\) \(\*dynoid.Token, error\)](<#FromContext>)
 - [func Populate\(audience string, callback dynoid.IssuerCallback\) func\(http.Handler\) http.Handler](<#Populate>)
 
@@ -593,7 +602,7 @@ var (
 ```
 
 <a name="AddToContext"></a>
-## func [AddToContext](<https://github.com/heroku/x/blob/master/dynoid/middleware/dynoid.go#L89>)
+## func [AddToContext](<https://github.com/heroku/x/blob/master/dynoid/middleware/dynoid.go#L88>)
 
 ```go
 func AddToContext(ctx context.Context, token *dynoid.Token, err error) context.Context
@@ -602,7 +611,7 @@ func AddToContext(ctx context.Context, token *dynoid.Token, err error) context.C
 AddToContext adds the Token to the given context
 
 <a name="Authorize"></a>
-## func [Authorize](<https://github.com/heroku/x/blob/master/dynoid/middleware/dynoid.go#L36>)
+## func [Authorize](<https://github.com/heroku/x/blob/master/dynoid/middleware/dynoid.go#L38>)
 
 ```go
 func Authorize(audience string, callback dynoid.IssuerCallback) func(http.Handler) http.Handler
@@ -611,7 +620,7 @@ func Authorize(audience string, callback dynoid.IssuerCallback) func(http.Handle
 Authorize populates the dyno identity blocks requests where the callback fails.
 
 <a name="AuthorizeSameSpace"></a>
-## func [AuthorizeSameSpace](<https://github.com/heroku/x/blob/master/dynoid/middleware/dynoid.go#L54>)
+## func [AuthorizeSameSpace](<https://github.com/heroku/x/blob/master/dynoid/middleware/dynoid.go#L56>)
 
 ```go
 func AuthorizeSameSpace(audience string) func(http.Handler) http.Handler
@@ -620,16 +629,25 @@ func AuthorizeSameSpace(audience string) func(http.Handler) http.Handler
 AuthorizeSameSpace restricts access to tokens from the same space/issuer for the given audience.
 
 <a name="AuthorizeSpaces"></a>
-## func [AuthorizeSpaces](<https://github.com/heroku/x/blob/master/dynoid/middleware/dynoid.go#L84>)
+## func [AuthorizeSpaces](<https://github.com/heroku/x/blob/master/dynoid/middleware/dynoid.go#L70>)
 
 ```go
-func AuthorizeSpaces(audience, host string, spaces ...string) func(http.Handler) http.Handler
+func AuthorizeSpaces(audience string, spaces ...string) func(http.Handler) http.Handler
 ```
 
-AuthorizeSpace populates the dyno identity and blocks any requests that aren't from one of the given spaces.
+AuthorizeSpaces populates the dyno identity and blocks any requests that aren't from one of the given spaces.
+
+<a name="AuthorizeSpacesWithIssuer"></a>
+## func [AuthorizeSpacesWithIssuer](<https://github.com/heroku/x/blob/master/dynoid/middleware/dynoid.go#L83>)
+
+```go
+func AuthorizeSpacesWithIssuer(audience, issuer string, spaces ...string) func(http.Handler) http.Handler
+```
+
+AuthorizeSpacesWithIssuer populates the dyno identity and blocks any requests that aren't from one of the given spaces and issuer.
 
 <a name="FromContext"></a>
-## func [FromContext](<https://github.com/heroku/x/blob/master/dynoid/middleware/dynoid.go#L96>)
+## func [FromContext](<https://github.com/heroku/x/blob/master/dynoid/middleware/dynoid.go#L95>)
 
 ```go
 func FromContext(ctx context.Context) (*dynoid.Token, error)
@@ -638,7 +656,7 @@ func FromContext(ctx context.Context) (*dynoid.Token, error)
 FromContext fetches the Token from the context
 
 <a name="Populate"></a>
-## func [Populate](<https://github.com/heroku/x/blob/master/dynoid/middleware/dynoid.go#L25>)
+## func [Populate](<https://github.com/heroku/x/blob/master/dynoid/middleware/dynoid.go#L27>)
 
 ```go
 func Populate(audience string, callback dynoid.IssuerCallback) func(http.Handler) http.Handler
