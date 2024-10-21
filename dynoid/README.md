@@ -15,7 +15,7 @@ The [dynoid](<#dynoid>) package provides all of the functions needed to verify a
 
 ### Direct Verification
 
-In the case that you want to verify a token outside of an [http.Handler][handler] you can leverage the [Verifier](<#Verifier>) directly:
+In the case that you want to verify a token outside of an [http.Handler][handler] you can leverage the [Verifier](<#Verifier>) directly.
 
 
 ## Testing and Local Development
@@ -302,35 +302,6 @@ type Verifier struct {
 }
 ```
 
-<a name="New"></a>
-### func [New](<https://github.com/heroku/x/blob/master/dynoid/dynoid.go#L225>)
-
-```go
-func New(audience string) *Verifier
-```
-
-Instantiate a new Verifier without an IssuerCallback set.
-
-The IssuerCallback must be set before calling Verify or an error will be returned.
-
-<a name="NewWithCallback"></a>
-### func [NewWithCallback](<https://github.com/heroku/x/blob/master/dynoid/dynoid.go#L234>)
-
-```go
-func NewWithCallback(audience string, callback IssuerCallback) *Verifier
-```
-
-Instantiate a new Verifier with the IssuerCallback set.
-
-<a name="Verifier.Verify"></a>
-### func \(\*Verifier\) [Verify](<https://github.com/heroku/x/blob/master/dynoid/dynoid.go#L242>)
-
-```go
-func (v *Verifier) Verify(ctx context.Context, rawIDToken string) (*Token, error)
-```
-
-Verify validates the given token with the OIDC provider and validates it against the IssuerCallback
-
 <details><summary>Example</summary>
 <p>
 
@@ -340,6 +311,7 @@ Verify validates the given token with the OIDC provider and validates it against
 package main
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/heroku/x/dynoid"
@@ -348,9 +320,17 @@ import (
 
 const AUDIENCE = "testing"
 
-func main() {
-	ctx, token := internal.GenerateToken(AUDIENCE)
+var (
+	ctx   context.Context
+	token string
+)
 
+func init() {
+	// Normally a token would be passed in, but for testing we'll generate one
+	ctx, token = internal.GenerateToken(AUDIENCE)
+}
+
+func main() {
 	verifier := dynoid.New(AUDIENCE)
 	verifier.IssuerCallback = func(issuer string) error {
 		if issuer != "https://oidc.heroku.local/spaces/test" {
@@ -382,6 +362,35 @@ web.1
 
 </p>
 </details>
+
+<a name="New"></a>
+### func [New](<https://github.com/heroku/x/blob/master/dynoid/dynoid.go#L225>)
+
+```go
+func New(audience string) *Verifier
+```
+
+Instantiate a new Verifier without an IssuerCallback set.
+
+The IssuerCallback must be set before calling Verify or an error will be returned.
+
+<a name="NewWithCallback"></a>
+### func [NewWithCallback](<https://github.com/heroku/x/blob/master/dynoid/dynoid.go#L234>)
+
+```go
+func NewWithCallback(audience string, callback IssuerCallback) *Verifier
+```
+
+Instantiate a new Verifier with the IssuerCallback set.
+
+<a name="Verifier.Verify"></a>
+### func \(\*Verifier\) [Verify](<https://github.com/heroku/x/blob/master/dynoid/dynoid.go#L242>)
+
+```go
+func (v *Verifier) Verify(ctx context.Context, rawIDToken string) (*Token, error)
+```
+
+Verify validates the given token with the OIDC provider and validates it against the IssuerCallback
 
 # dynoidtest
 

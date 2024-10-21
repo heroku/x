@@ -1,6 +1,7 @@
 package dynoid_test
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/heroku/x/dynoid"
@@ -9,9 +10,17 @@ import (
 
 const AUDIENCE = "testing"
 
-func ExampleVerifier_Verify() {
-	ctx, token := internal.GenerateToken(AUDIENCE)
+var (
+	ctx   context.Context
+	token string
+)
 
+func init() {
+	// Normally a token would be passed in, but for testing we'll generate one
+	ctx, token = internal.GenerateToken(AUDIENCE)
+}
+
+func ExampleVerifier() {
 	verifier := dynoid.New(AUDIENCE)
 	verifier.IssuerCallback = func(issuer string) error {
 		if issuer != "https://oidc.heroku.local/spaces/test" {
