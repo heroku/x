@@ -13,7 +13,9 @@ const AUDIENCE = "testing"
 func Example() {
 	authorized := middleware.AuthorizeSameSpace(AUDIENCE)
 	secureHandler := authorized(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		io.WriteString(w, "Hello from a secure endpoint!\n")
+		if _, err := io.WriteString(w, "Hello from a secure endpoint!\n"); err != nil {
+			log.Printf("error writing response (%v)", err)
+		}
 	}))
 
 	http.Handle("/secure", secureHandler)
