@@ -17,6 +17,9 @@ The [dynoid](<#dynoid>) package provides all of the functions needed to verify a
 
 In the case that you want to verify a token outside of an [http.Handler][handler] you can leverage the [Verifier](<#Verifier>) directly.
 
+### HTTP Middleware
+
+The [dynoid/middleware](<#middleware>) package provides several `net/http` middleware that validate incoming requests are authenticated and adds the parsed token to the request context to be used further down the stack.
 
 ## Testing and Local Development
 
@@ -332,13 +335,7 @@ func init() {
 
 func main() {
 	verifier := dynoid.New(AUDIENCE)
-	verifier.IssuerCallback = func(issuer string) error {
-		if issuer != "https://oidc.heroku.local/spaces/test" {
-			return fmt.Errorf("unexpected issuer %q", issuer)
-		}
-
-		return nil
-	}
+	verifier.IssuerCallback = dynoid.AllowHerokuHost("heroku.local") // heroku.com for production
 
 	t, err := verifier.Verify(ctx, token)
 	if err != nil {
@@ -525,6 +522,56 @@ type Issuer struct {
     // contains filtered or unexported fields
 }
 ```
+
+<details><summary>Example</summary>
+<p>
+
+
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/heroku/x/dynoid"
+	"github.com/heroku/x/dynoid/dynoidtest"
+)
+
+const AUDIENCE = "testing"
+
+func main() {
+	ctx, iss, err := dynoidtest.NewWithContext(context.Background())
+	if err != nil {
+		panic(err)
+	}
+
+	if err := dynoidtest.GenerateDefaultFS(iss, AUDIENCE); err != nil {
+		panic(err)
+	}
+
+	token, err := dynoid.ReadLocalToken(ctx, AUDIENCE)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(token.Subject.AppID)
+	fmt.Println(token.Subject.AppName)
+	fmt.Println(token.Subject.Dyno)
+}
+```
+
+#### Output
+
+```
+00000000-0000-0000-0000-000000000001
+sushi
+web.1
+```
+
+</p>
+</details>
 
 <a name="New"></a>
 ### func [New](<https://github.com/heroku/x/blob/master/dynoid/dynoidtest/dynoidtest.go#L86>)

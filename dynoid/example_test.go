@@ -22,13 +22,7 @@ func init() {
 
 func ExampleVerifier() {
 	verifier := dynoid.New(AUDIENCE)
-	verifier.IssuerCallback = func(issuer string) error {
-		if issuer != "https://oidc.heroku.local/spaces/test" {
-			return fmt.Errorf("unexpected issuer %q", issuer)
-		}
-
-		return nil
-	}
+	verifier.IssuerCallback = dynoid.AllowHerokuHost("heroku.local") // heroku.com for production
 
 	t, err := verifier.Verify(ctx, token)
 	if err != nil {
