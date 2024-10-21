@@ -778,6 +778,39 @@ func GenerateToken(audience string) (context.Context, string)
 import "github.com/heroku/x/dynoid/middleware"
 ```
 
+<details><summary>Example</summary>
+<p>
+
+
+
+```go
+package main
+
+import (
+	"io"
+	"log"
+	"net/http"
+
+	"github.com/heroku/x/dynoid/middleware"
+)
+
+const AUDIENCE = "testing"
+
+func main() {
+	authorized := middleware.AuthorizeSameSpace(AUDIENCE)
+	secureHandler := authorized(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		io.WriteString(w, "Hello from a secure endpoint!\n")
+	}))
+
+	http.Handle("/secure", secureHandler)
+
+	log.Fatal(http.ListenAndServe(":8080", nil))
+}
+```
+
+</p>
+</details>
+
 ## Index
 
 - [Variables](<#variables>)
