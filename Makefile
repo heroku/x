@@ -22,7 +22,7 @@ PROTOC_DOWNLOAD_URL = https://github.com/protocolbuffers/protobuf/releases/downl
 # Additive or overridable variables
 override GOTEST_OPT += -timeout 30s
 LINT_RUN_OPTS ?= --fix
-override GOMARKDOC_OPTS += --header=""
+override GOMARKDOC_OPTS += --header="" --repository.url="https://github.com/heroku/x"
 
 .DEFAULT_GOAL := precommit
 
