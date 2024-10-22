@@ -11,7 +11,7 @@ All dynos get a `heroku` audience token by default. Additional audiences can be 
 
 ## To Authenticate Calls to Your Service
 
-The [dynoid](<#dynoid>) package provides all of the functions needed to verify a token issued for an app in an Heroku Space. Additionally there is a [middleware](<#middleware>) package that provides a set of http [handlers][handler] and middleware suitable for use in a web application.
+The [dynoid](<#dynoid>) package provides all of the functions needed to verify a token issued for an app in a Heroku Private Space. Additionally there is a [middleware](<#middleware>) package that provides a set of http [handlers][handler] and middleware suitable for use in a web application.
 
 ### Direct Verification
 
