@@ -7,7 +7,7 @@ DynoID is a feature of [Heroku Private Spaces][spaces] that leverages [OpenID Co
 
 ## Audiences
 
-All dynos are get an `heroku` audience token by default. Additional audiences can be minted by setting the `HEROKU_DYNO_ID_AUDIENCES` config var to a comma separated list of audiences.
+All dynos get a `heroku` audience token by default. Additional audiences can be minted by setting the `HEROKU_DYNO_ID_AUDIENCES` config var to a comma separated list of audiences.
 
 ## To Authenticate Calls to Your Service
 
