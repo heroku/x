@@ -5,11 +5,9 @@ on: [ push ]
 jobs:
   ci:
     runs-on: [ ubuntu-latest ]
-    env:
-      GOMARKDOC_OPTS: -c
     strategy:
       matrix:
-        target: [ test, lint, docs ]
+        target: [ test, lint, verify-docs ]
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-go@v4
