@@ -13,7 +13,7 @@ import (
 func TestVerification(t *testing.T) {
 	ctx, token := GenerateIDToken(t, "heroku")
 
-	verifier := dynoid.NewWithCallback("heroku", dynoid.AllowHerokuHost(dynoidtest.DefaultIssuerHost))
+	verifier := dynoid.NewWithCallback("heroku", dynoid.AllowHerokuHost(dynoidtest.DefaultHerokuHost))
 
 	if _, err := verifier.Verify(ctx, token); err != nil {
 		t.Error(err)

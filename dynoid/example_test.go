@@ -7,13 +7,13 @@ import (
 	"github.com/heroku/x/dynoid/internal"
 )
 
-const AUDIENCE = "testing"
+const Audience = "testing"
 
 func ExampleVerifier() {
 	// Normally a token would be passed in, but for testing we'll generate one
-	ctx, token := internal.GenerateToken(AUDIENCE)
+	ctx, token := internal.GenerateToken(Audience)
 
-	verifier := dynoid.New(AUDIENCE)
+	verifier := dynoid.New(Audience)
 	verifier.IssuerCallback = dynoid.AllowHerokuHost("heroku.local") // heroku.com for production
 
 	t, err := verifier.Verify(ctx, token)

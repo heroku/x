@@ -8,7 +8,7 @@ import (
 	"github.com/heroku/x/dynoid/dynoidtest"
 )
 
-const AUDIENCE = "testing"
+const Audience = "testing"
 
 func ExampleIssuer() {
 	ctx, iss, err := dynoidtest.NewWithContext(context.Background())
@@ -16,11 +16,11 @@ func ExampleIssuer() {
 		panic(err)
 	}
 
-	if err := dynoidtest.GenerateDefaultFS(iss, AUDIENCE); err != nil {
+	if err := dynoidtest.GenerateDefaultFS(iss, Audience); err != nil {
 		panic(err)
 	}
 
-	token, err := dynoid.ReadLocalToken(ctx, AUDIENCE)
+	token, err := dynoid.ReadLocalToken(ctx, Audience)
 	if err != nil {
 		panic(err)
 	}

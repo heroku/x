@@ -8,10 +8,10 @@ import (
 	"github.com/heroku/x/dynoid/middleware"
 )
 
-const AUDIENCE = "testing"
+const Audience = "testing"
 
 func Example() {
-	authorized := middleware.AuthorizeSameSpace(AUDIENCE)
+	authorized := middleware.AuthorizeSameSpace(Audience)
 	secureHandler := authorized(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		if _, err := io.WriteString(w, "Hello from a secure endpoint!\n"); err != nil {
 			log.Printf("error writing response (%v)", err)

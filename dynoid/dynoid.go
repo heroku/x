@@ -60,9 +60,9 @@ type IssuerCallback func(issuer string) error
 
 // AllowHerokuHost verifies that the issuer is from Heroku for the given host
 // domain
-func AllowHerokuHost(issuerHost string) IssuerCallback {
+func AllowHerokuHost(herokuHost string) IssuerCallback {
 	return func(issuer string) error {
-		if !strings.HasPrefix(issuer, fmt.Sprintf("https://oidc.%v/", issuerHost)) {
+		if !strings.HasPrefix(issuer, fmt.Sprintf("https://oidc.%v/", herokuHost)) {
 			return &UntrustedIssuerError{Issuer: issuer}
 		}
 

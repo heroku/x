@@ -48,7 +48,7 @@ import "github.com/heroku/x/dynoid"
 - [func LocalTokenPath\(audience string\) string](<#LocalTokenPath>)
 - [func ReadLocal\(audience string\) \(string, error\)](<#ReadLocal>)
 - [type IssuerCallback](<#IssuerCallback>)
-  - [func AllowHerokuHost\(issuerHost string\) IssuerCallback](<#AllowHerokuHost>)
+  - [func AllowHerokuHost\(herokuHost string\) IssuerCallback](<#AllowHerokuHost>)
   - [func AllowHerokuSpace\(issuerHost string, spaceIDs ...string\) IssuerCallback](<#AllowHerokuSpace>)
 - [type MalformedTokenError](<#MalformedTokenError>)
   - [func \(e \*MalformedTokenError\) Error\(\) string](<#MalformedTokenError.Error>)
@@ -141,7 +141,7 @@ type IssuerCallback func(issuer string) error
 ### func [AllowHerokuHost](<https://github.com/heroku/x/blob/master/dynoid/dynoid.go#L63>)
 
 ```go
-func AllowHerokuHost(issuerHost string) IssuerCallback
+func AllowHerokuHost(herokuHost string) IssuerCallback
 ```
 
 AllowHerokuHost verifies that the issuer is from Heroku for the given host domain
@@ -314,27 +314,19 @@ type Verifier struct {
 package main
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/heroku/x/dynoid"
 	"github.com/heroku/x/dynoid/internal"
 )
 
-const AUDIENCE = "testing"
-
-var (
-	ctx   context.Context
-	token string
-)
-
-func init() {
-	// Normally a token would be passed in, but for testing we'll generate one
-	ctx, token = internal.GenerateToken(AUDIENCE)
-}
+const Audience = "testing"
 
 func main() {
-	verifier := dynoid.New(AUDIENCE)
+	// Normally a token would be passed in, but for testing we'll generate one
+	ctx, token := internal.GenerateToken(Audience)
+
+	verifier := dynoid.New(Audience)
 	verifier.IssuerCallback = dynoid.AllowHerokuHost("heroku.local") // heroku.com for production
 
 	t, err := verifier.Verify(ctx, token)
@@ -413,7 +405,7 @@ dynoidtest provides helper functions for testing code that uses DynoID
   - [func \(iss \*Issuer\) GenerateIDToken\(audience string, opts ...TokenOpt\) \(string, error\)](<#Issuer.GenerateIDToken>)
   - [func \(iss \*Issuer\) HTTPClient\(\) \*http.Client](<#Issuer.HTTPClient>)
 - [type IssuerOpt](<#IssuerOpt>)
-  - [func WithIssuerHost\(issuerHost string\) IssuerOpt](<#WithIssuerHost>)
+  - [func WithHerokuHost\(herokuHost string\) IssuerOpt](<#WithHerokuHost>)
   - [func WithKey\(key \*rsa.PrivateKey\) IssuerOpt](<#WithKey>)
   - [func WithSpaceID\(spaceID string\) IssuerOpt](<#WithSpaceID>)
   - [func WithTokenOpts\(opts ...TokenOpt\) IssuerOpt](<#WithTokenOpts>)
@@ -431,11 +423,11 @@ dynoidtest provides helper functions for testing code that uses DynoID
 
 ## Constants
 
-<a name="DefaultIssuerHost"></a>
+<a name="DefaultHerokuHost"></a>
 
 ```go
 const (
-    DefaultIssuerHost = "heroku.local"                         // issuer host used when one is not provided
+    DefaultHerokuHost = "heroku.local"                         // issuer host used when one is not provided
     DefaultSpaceID    = "test"                                 // space id used when one is not provided
     DefaultAppID      = "00000000-0000-0000-0000-000000000001" // app id used when one is not provided
     DefaultAppName    = "sushi"                                // app name used when one is not provided
@@ -539,7 +531,7 @@ import (
 	"github.com/heroku/x/dynoid/dynoidtest"
 )
 
-const AUDIENCE = "testing"
+const Audience = "testing"
 
 func main() {
 	ctx, iss, err := dynoidtest.NewWithContext(context.Background())
@@ -547,11 +539,11 @@ func main() {
 		panic(err)
 	}
 
-	if err := dynoidtest.GenerateDefaultFS(iss, AUDIENCE); err != nil {
+	if err := dynoidtest.GenerateDefaultFS(iss, Audience); err != nil {
 		panic(err)
 	}
 
-	token, err := dynoid.ReadLocalToken(ctx, AUDIENCE)
+	token, err := dynoid.ReadLocalToken(ctx, Audience)
 	if err != nil {
 		panic(err)
 	}
@@ -620,14 +612,14 @@ type IssuerOpt interface {
 }
 ```
 
-<a name="WithIssuerHost"></a>
-### func [WithIssuerHost](<https://github.com/heroku/x/blob/master/dynoid/dynoidtest/dynoidtest.go#L61>)
+<a name="WithHerokuHost"></a>
+### func [WithHerokuHost](<https://github.com/heroku/x/blob/master/dynoid/dynoidtest/dynoidtest.go#L61>)
 
 ```go
-func WithIssuerHost(issuerHost string) IssuerOpt
+func WithHerokuHost(herokuHost string) IssuerOpt
 ```
 
-WithIssuerHost allows an issuer host to be supplied instead of using the default
+WithHerokuHost allows an issuer host to be supplied instead of using the default
 
 <a name="WithKey"></a>
 ### func [WithKey](<https://github.com/heroku/x/blob/master/dynoid/dynoidtest/dynoidtest.go#L52>)
@@ -794,12 +786,14 @@ import (
 	"github.com/heroku/x/dynoid/middleware"
 )
 
-const AUDIENCE = "testing"
+const Audience = "testing"
 
 func main() {
-	authorized := middleware.AuthorizeSameSpace(AUDIENCE)
+	authorized := middleware.AuthorizeSameSpace(Audience)
 	secureHandler := authorized(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		io.WriteString(w, "Hello from a secure endpoint!\n")
+		if _, err := io.WriteString(w, "Hello from a secure endpoint!\n"); err != nil {
+			log.Printf("error writing response (%v)", err)
+		}
 	}))
 
 	http.Handle("/secure", secureHandler)

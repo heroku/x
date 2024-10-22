@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	DefaultIssuerHost = "heroku.local"                         // issuer host used when one is not provided
+	DefaultHerokuHost = "heroku.local"                         // issuer host used when one is not provided
 	DefaultSpaceID    = "test"                                 // space id used when one is not provided
 	DefaultAppID      = "00000000-0000-0000-0000-000000000001" // app id used when one is not provided
 	DefaultAppName    = "sushi"                                // app name used when one is not provided
@@ -56,11 +56,11 @@ func WithKey(key *rsa.PrivateKey) IssuerOpt {
 	})
 }
 
-// WithIssuerHost allows an issuer host to be supplied instead of using the
+// WithHerokuHost allows an issuer host to be supplied instead of using the
 // default
-func WithIssuerHost(issuerHost string) IssuerOpt {
+func WithHerokuHost(herokuHost string) IssuerOpt {
 	return issuerOptFunc(func(i *Issuer) error {
-		i.host = issuerHost
+		i.host = herokuHost
 		return nil
 	})
 }
@@ -95,7 +95,7 @@ func NewWithContext(ctx context.Context, opts ...IssuerOpt) (context.Context, *I
 		return ctx, nil, err
 	}
 
-	iss := &Issuer{key: key, host: DefaultIssuerHost, spaceID: DefaultSpaceID, tokenOpts: []TokenOpt{}}
+	iss := &Issuer{key: key, host: DefaultHerokuHost, spaceID: DefaultSpaceID, tokenOpts: []TokenOpt{}}
 	for _, o := range opts {
 		if err := o.apply(iss); err != nil {
 			return ctx, nil, err
