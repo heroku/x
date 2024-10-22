@@ -3,7 +3,7 @@
 
 # DynoID
 
-DynoID is a feature of [Heroku Private Spaces][spaces] that leverages [OpenID Connect][oidc] to mint tokens for each dyno on boot that it can use to authenticate and verify their identity to other services.
+DynoID is a feature of [Heroku Private Spaces][spaces] that leverages [OpenID Connect][oidc] to mint tokens for each dyno that it can use to authenticate and verify their identity to other services.
 
 ## Audiences
 
