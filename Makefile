@@ -87,8 +87,3 @@ $(GOPATH)/bin/gomarkdoc:
 docs: $(GOPATH)/bin/gomarkdoc ## Generate docs using gomarkdoc
 	$< $(GOMARKDOC_OPTS) -o ./dynoid/README.md -e ./dynoid/...
 
-.PHONY: verify-docs
-verify-docs: $(GOPATH)/bin/gomarkdoc
-	@cp ./dynoid/README.md ./dynoid/README.md.orig
-	@$< $(GOMARKDOC_OPTS) -o ./dynoid/README.md -e ./dynoid/...
-	@if ! cmp ./dynoid/README.md ./dynoid/README.md.orig; then printf "docs not generated\n" >&2; false; fi
