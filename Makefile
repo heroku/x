@@ -22,6 +22,7 @@ PROTOC_DOWNLOAD_URL = https://github.com/protocolbuffers/protobuf/releases/downl
 # Additive or overridable variables
 override GOTEST_OPT += -timeout 30s
 LINT_RUN_OPTS ?= --fix
+override GOMARKDOC_OPTS += --header=""
 
 .DEFAULT_GOAL := precommit
 
@@ -84,4 +85,4 @@ $(GOPATH)/bin/gomarkdoc:
 
 .PHONY: docs
 docs: $(GOPATH)/bin/gomarkdoc ## Generate docs using gomarkdoc
-	$< --header="" -o ./dynoid/README.md -e ./dynoid/...
+	$< $(GOMARKDOC_OPTS) -o ./dynoid/README.md -e ./dynoid/...
