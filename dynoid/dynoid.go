@@ -195,10 +195,10 @@ func ReadLocalToken(ctx context.Context, audience string) (*Token, error) {
 
 // AllowHerokuSpace verifies that the issuer is from Heroku for the given host
 // and space id.
-func AllowHerokuSpace(issuerHost string, spaceIDs ...string) IssuerCallback {
+func AllowHerokuSpace(herokuHost string, spaceIDs ...string) IssuerCallback {
 	return func(issuer string) error {
 		for _, id := range spaceIDs {
-			if iss := fmt.Sprintf("https://oidc.%s/spaces/%s", issuerHost, id); iss == issuer {
+			if iss := fmt.Sprintf("https://oidc.%s/spaces/%s", herokuHost, id); iss == issuer {
 				return nil
 			}
 		}

@@ -49,7 +49,7 @@ import "github.com/heroku/x/dynoid"
 - [func ReadLocal\(audience string\) \(string, error\)](<#ReadLocal>)
 - [type IssuerCallback](<#IssuerCallback>)
   - [func AllowHerokuHost\(herokuHost string\) IssuerCallback](<#AllowHerokuHost>)
-  - [func AllowHerokuSpace\(issuerHost string, spaceIDs ...string\) IssuerCallback](<#AllowHerokuSpace>)
+  - [func AllowHerokuSpace\(herokuHost string, spaceIDs ...string\) IssuerCallback](<#AllowHerokuSpace>)
 - [type MalformedTokenError](<#MalformedTokenError>)
   - [func \(e \*MalformedTokenError\) Error\(\) string](<#MalformedTokenError.Error>)
   - [func \(e \*MalformedTokenError\) Unwrap\(\) error](<#MalformedTokenError.Unwrap>)
@@ -150,7 +150,7 @@ AllowHerokuHost verifies that the issuer is from Heroku for the given host domai
 ### func [AllowHerokuSpace](<https://github.com/heroku/x/blob/master/dynoid/dynoid.go#L198>)
 
 ```go
-func AllowHerokuSpace(issuerHost string, spaceIDs ...string) IssuerCallback
+func AllowHerokuSpace(herokuHost string, spaceIDs ...string) IssuerCallback
 ```
 
 AllowHerokuSpace verifies that the issuer is from Heroku for the given host and space id.
