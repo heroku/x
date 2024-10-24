@@ -22,6 +22,7 @@ PROTOC_DOWNLOAD_URL = https://github.com/protocolbuffers/protobuf/releases/downl
 # Additive or overridable variables
 override GOTEST_OPT += -timeout 30s
 LINT_RUN_OPTS ?= --fix
+override GOMARKDOC_OPTS += --header="" --repository.url="https://github.com/heroku/x" --repository.path="/" --repository.default-branch="master"
 
 .DEFAULT_GOAL := precommit
 
@@ -78,3 +79,10 @@ proto: $(TOOLS_BIN)/protoc $(TOOLS_BIN)/protoc-gen-go | $(TOOLS_BIN) ## Regenera
 		--go_out=paths=source_relative:. \
 		--loggingtags_out=. \
 		./cmd/protoc-gen-loggingtags/internal/test/*.proto
+
+$(GOPATH)/bin/gomarkdoc:
+	go install github.com/princjef/gomarkdoc/cmd/gomarkdoc@latest
+
+.PHONY: docs
+docs: $(GOPATH)/bin/gomarkdoc ## Generate docs using gomarkdoc
+	$< $(GOMARKDOC_OPTS) -o ./dynoid/README.md -e ./dynoid/...

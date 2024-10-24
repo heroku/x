@@ -1,22 +1,17 @@
 package middleware
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
+	"strings"
 
 	"github.com/heroku/x/dynoid"
 )
 
-type ctxKeyDynoID int
-
-const (
-	DynoIDKey ctxKeyDynoID = iota
-	DynoIDErrKey
-)
-
 var (
+	// returned when the `Authorization` header does not contain a Bearer token
 	ErrTokenMissing = errors.New("token not found")
 )
 
@@ -38,7 +33,7 @@ func Authorize(audience string, callback dynoid.IssuerCallback) func(http.Handle
 
 	return func(next http.Handler) http.Handler {
 		return populate(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if _, err := FromContext(r.Context()); err != nil {
+			if _, err := dynoid.FromContext(r.Context()); err != nil {
 				w.WriteHeader(http.StatusForbidden)
 				fmt.Fprint(w, http.StatusText(http.StatusForbidden))
 				return
@@ -52,39 +47,34 @@ func Authorize(audience string, callback dynoid.IssuerCallback) func(http.Handle
 // AuthorizeSameSpace restricts access to tokens from the same space/issuer for
 // the given audience.
 func AuthorizeSameSpace(audience string) func(http.Handler) http.Handler {
-	token, err := dynoid.ReadLocalToken(context.Background(), audience)
-	if err != nil {
-		return internalServerError("failed to load dyno-id")
-	}
+	return callbackHandler(audience, func(token *dynoid.Token) dynoid.IssuerCallback {
+		return func(issuer string) error {
+			if issuer != token.IDToken.Issuer {
+				return &dynoid.UntrustedIssuerError{Issuer: issuer}
+			}
 
-	return Authorize(audience, func(issuer string) error {
-		if issuer != token.IDToken.Issuer {
-			return &dynoid.UntrustedIssuerError{Issuer: issuer}
+			return nil
 		}
-
-		return nil
 	})
 }
 
-// AuthorizeSpace populates the dyno identity and blocks any requests that
+// AuthorizeSpaces populates the dyno identity and blocks any requests that
 // aren't from one of the given spaces.
-func AuthorizeSpaces(audience, host string, spaces ...string) func(http.Handler) http.Handler {
-	return Authorize(audience, dynoid.AllowHerokuSpace(host, spaces...))
+func AuthorizeSpaces(audience string, spaces ...string) func(http.Handler) http.Handler {
+	return callbackHandler(audience, func(token *dynoid.Token) dynoid.IssuerCallback {
+		u, err := url.Parse(token.IDToken.Issuer)
+		if err != nil {
+			panic(fmt.Sprintf("failed to parse issuer (%v)", err))
+		}
+
+		return dynoid.AllowHerokuSpace(strings.TrimPrefix(u.Hostname(), "oidc."), spaces...)
+	})
 }
 
-// AddToContext adds the Token to the given context
-func AddToContext(ctx context.Context, token *dynoid.Token, err error) context.Context {
-	ctx = context.WithValue(ctx, DynoIDKey, token)
-	ctx = context.WithValue(ctx, DynoIDErrKey, err)
-	return ctx
-}
-
-// FromContext fetches the Token from the context
-func FromContext(ctx context.Context) (*dynoid.Token, error) {
-	token, _ := ctx.Value(DynoIDKey).(*dynoid.Token)
-	err, _ := ctx.Value(DynoIDErrKey).(error)
-
-	return token, err
+// AuthorizeSpacesWithIssuer populates the dyno identity and blocks any
+// requests that aren't from one of the given spaces and issuer.
+func AuthorizeSpacesWithIssuer(audience, issuer string, spaces ...string) func(http.Handler) http.Handler {
+	return Authorize(audience, dynoid.AllowHerokuSpace(issuer, spaces...))
 }
 
 func populateDynoID(audience string, callback dynoid.IssuerCallback) func(*http.Request) *http.Request {
@@ -95,12 +85,15 @@ func populateDynoID(audience string, callback dynoid.IssuerCallback) func(*http.
 
 		rawToken := tokenFromHeader(r)
 		if rawToken == "" {
-			return r.WithContext(AddToContext(ctx, nil, ErrTokenMissing))
+			return r.WithContext(dynoid.ContextWithError(ctx, ErrTokenMissing))
 		}
 
 		token, err := verifier.Verify(r.Context(), rawToken)
+		if err != nil {
+			return r.WithContext(dynoid.ContextWithError(ctx, err))
+		}
 
-		return r.WithContext(AddToContext(ctx, token, err))
+		return r.WithContext(dynoid.ContextWithToken(ctx, token))
 	}
 }
 
@@ -112,10 +105,32 @@ func tokenFromHeader(r *http.Request) string {
 	return ""
 }
 
-func internalServerError(error string) func(http.Handler) http.Handler {
-	return func(http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			http.Error(w, error, http.StatusInternalServerError)
+func callbackHandler(audience string, fn func(*dynoid.Token) dynoid.IssuerCallback) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		serverError := internalServerError("failed to load dyno-id")
+
+		var authedNext http.Handler
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if authedNext != nil {
+				authedNext.ServeHTTP(w, r)
+				return
+			}
+
+			token, err := dynoid.ReadLocalToken(r.Context(), audience)
+			if err != nil {
+				serverError.ServeHTTP(w, r)
+				return
+			}
+
+			authedNext = Authorize(audience, fn(token))(next)
+
+			authedNext.ServeHTTP(w, r)
 		})
 	}
+}
+
+func internalServerError(error string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, error, http.StatusInternalServerError)
+	})
 }

@@ -60,9 +60,9 @@ type IssuerCallback func(issuer string) error
 
 // AllowHerokuHost verifies that the issuer is from Heroku for the given host
 // domain
-func AllowHerokuHost(host string) IssuerCallback {
+func AllowHerokuHost(herokuHost string) IssuerCallback {
 	return func(issuer string) error {
-		if !strings.HasPrefix(issuer, fmt.Sprintf("https://oidc.%v/", host)) {
+		if !strings.HasPrefix(issuer, fmt.Sprintf("https://oidc.%v/", herokuHost)) {
 			return &UntrustedIssuerError{Issuer: issuer}
 		}
 
@@ -78,6 +78,10 @@ type Subject struct {
 }
 
 func (s *Subject) LogValue() slog.Value {
+	if s == nil {
+		return (&Subject{}).LogValue()
+	}
+
 	return slog.GroupValue(
 		slog.String("app_id", s.AppID),
 		slog.String("app_name", s.AppName),
@@ -128,6 +132,10 @@ type Token struct {
 }
 
 func (t *Token) LogValue() slog.Value {
+	if t == nil {
+		return (&Token{}).LogValue()
+	}
+
 	return slog.GroupValue(
 		slog.String("space_id", t.SpaceID),
 		slog.Any("subject", t.Subject),
@@ -187,10 +195,10 @@ func ReadLocalToken(ctx context.Context, audience string) (*Token, error) {
 
 // AllowHerokuSpace verifies that the issuer is from Heroku for the given host
 // and space id.
-func AllowHerokuSpace(host string, spaceIDs ...string) IssuerCallback {
+func AllowHerokuSpace(herokuHost string, spaceIDs ...string) IssuerCallback {
 	return func(issuer string) error {
 		for _, id := range spaceIDs {
-			if iss := fmt.Sprintf("https://oidc.%s/spaces/%s", host, id); iss == issuer {
+			if iss := fmt.Sprintf("https://oidc.%s/spaces/%s", herokuHost, id); iss == issuer {
 				return nil
 			}
 		}
@@ -214,17 +222,17 @@ type Verifier struct {
 //
 // The IssuerCallback must be set before calling Verify or an error will be
 // returned.
-func New(clientID string) *Verifier {
+func New(audience string) *Verifier {
 	return &Verifier{
-		config:    &oidc.Config{ClientID: clientID},
+		config:    &oidc.Config{ClientID: audience},
 		mu:        &sync.RWMutex{},
 		providers: make(map[string]*oidc.Provider),
 	}
 }
 
 // Instantiate a new Verifier with the IssuerCallback set.
-func NewWithCallback(clientID string, callback IssuerCallback) *Verifier {
-	v := New(clientID)
+func NewWithCallback(audience string, callback IssuerCallback) *Verifier {
+	v := New(audience)
 	v.IssuerCallback = callback
 	return v
 }
@@ -233,7 +241,7 @@ func NewWithCallback(clientID string, callback IssuerCallback) *Verifier {
 // against the IssuerCallback
 func (v *Verifier) Verify(ctx context.Context, rawIDToken string) (*Token, error) {
 	if v == nil {
-		*v = *New("")
+		return New("").Verify(ctx, rawIDToken)
 	}
 
 	if v.IssuerCallback == nil {
