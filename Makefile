@@ -86,4 +86,3 @@ $(GOPATH)/bin/gomarkdoc:
 .PHONY: docs
 docs: $(GOPATH)/bin/gomarkdoc ## Generate docs using gomarkdoc
 	$< $(GOMARKDOC_OPTS) -o ./dynoid/README.md -e ./dynoid/...
-
