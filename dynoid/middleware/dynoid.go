@@ -3,6 +3,7 @@ package middleware
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strings"
@@ -61,11 +62,20 @@ func AuthorizeSameSpace(audience string) func(http.Handler) http.Handler {
 // AuthorizeSpaces populates the dyno identity and blocks any requests that
 // aren't from one of the given spaces.
 func AuthorizeSpaces(audience string, spaces ...string) func(http.Handler) http.Handler {
+	slog.Info("authorized spaces called",
+		slog.String("audience", audience),
+		slog.Any("spaces", spaces),
+	)
 	return callbackHandler(audience, func(token *dynoid.Token) dynoid.IssuerCallback {
 		u, err := url.Parse(token.IDToken.Issuer)
 		if err != nil {
 			panic(fmt.Sprintf("failed to parse issuer (%v)", err))
 		}
+		slog.Info("token issuer",
+			slog.Any("token", token), // logs what is defined in the dynoid.Token's LogValue method, currently SpaceID and Subject
+			slog.String("issuer", token.IDToken.Issuer),
+			slog.String("hostname", u.Hostname()),
+		)
 
 		return dynoid.AllowHerokuSpace(strings.TrimPrefix(u.Hostname(), "oidc."), spaces...)
 	})

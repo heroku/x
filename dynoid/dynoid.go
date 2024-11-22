@@ -196,13 +196,24 @@ func ReadLocalToken(ctx context.Context, audience string) (*Token, error) {
 // AllowHerokuSpace verifies that the issuer is from Heroku for the given host
 // and space id.
 func AllowHerokuSpace(herokuHost string, spaceIDs ...string) IssuerCallback {
+	slog.Info("AllowHerokuSpace called",
+		slog.String("herokuHost", herokuHost),
+		slog.Any("spaceIDs", spaceIDs),
+	)
 	return func(issuer string) error {
 		for _, id := range spaceIDs {
-			if iss := fmt.Sprintf("https://oidc.%s/spaces/%s", herokuHost, id); iss == issuer {
+			iss := fmt.Sprintf("https://oidc.%s/spaces/%s", herokuHost, id)
+			slog.Info("comparing issuer to provided host/spaceID",
+				slog.String("iss", iss),
+				slog.String("issuer", issuer),
+			)
+
+			if iss == issuer {
 				return nil
 			}
 		}
 
+		slog.Info("issuer and host/spaceIDs did not match, this is untrusted")
 		return &UntrustedIssuerError{Issuer: issuer}
 	}
 }
