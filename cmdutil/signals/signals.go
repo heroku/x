@@ -5,6 +5,7 @@ import (
 	"context"
 	"os"
 	"os/signal"
+	"time"
 
 	"github.com/sirupsen/logrus"
 
@@ -33,7 +34,7 @@ func notifyContext(ctx context.Context, notified chan os.Signal, signals ...os.S
 // NewServer returns a cmdutil.Server that returns from Run
 // when any of the provided signals are received.
 // Run always returns a nil error.
-func NewServer(logger logrus.FieldLogger, signals ...os.Signal) cmdutil.Server {
+func NewServer(logger logrus.FieldLogger, config Config, signals ...os.Signal) cmdutil.Server {
 	ch := make(chan os.Signal, 1)
 
 	return cmdutil.ServerFuncs{
@@ -43,6 +44,7 @@ func NewServer(logger logrus.FieldLogger, signals ...os.Signal) cmdutil.Server {
 			if sig != nil {
 				logger.Infoln("received signal", sig)
 			}
+			time.Sleep(time.Duration(config.ServerCloseWaitTime) * time.Second)
 			return nil
 		},
 		StopFunc: func(error) {

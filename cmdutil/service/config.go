@@ -8,6 +8,7 @@ import (
 	"github.com/heroku/x/cmdutil/metrics"
 	"github.com/heroku/x/cmdutil/oc"
 	"github.com/heroku/x/cmdutil/rollbar"
+	"github.com/heroku/x/cmdutil/signals"
 	"github.com/heroku/x/cmdutil/svclog"
 )
 
@@ -17,6 +18,7 @@ type standardConfig struct {
 	Logger     svclog.Config
 	Metrics    metrics.Config
 	Rollbar    rollbar.Config
+	Signals    signals.Config
 	OpenCensus oc.Config
 }
 

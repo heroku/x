@@ -25,7 +25,8 @@ func TestWithNotifyCancel(t *testing.T) {
 func TestNewServer(t *testing.T) {
 	logger, _ := testlog.New()
 
-	sv := NewServer(logger, syscall.SIGWINCH)
+	tcConfig := Config{ServerCloseWaitTime: 0}
+	sv := NewServer(logger, tcConfig, syscall.SIGWINCH)
 
 	var (
 		runErr  error
@@ -68,12 +69,66 @@ func TestNewServer(t *testing.T) {
 	sv.Stop(nil)
 }
 
+func TestNewServerWithWait(t *testing.T) {
+	logger, _ := testlog.New()
+
+	tcConfig := Config{ServerCloseWaitTime: 2}
+	sv := NewServer(logger, tcConfig, syscall.SIGWINCH)
+
+	var (
+		runErr  error
+		runDone = make(chan struct{})
+		done    = make(chan struct{})
+	)
+	defer close(done)
+
+	go func() {
+		runErr = sv.Run()
+		close(runDone)
+	}()
+	startTime := time.Now()
+	// We're racing with Run starting and calling signal.Notify, so loop
+	// it until the test is done.
+	go func() {
+		for {
+			select {
+			case <-done:
+				return
+			default:
+			}
+
+			if err := syscall.Kill(syscall.Getpid(), syscall.SIGWINCH); err != nil {
+				t.Error(err)
+			}
+			time.Sleep(time.Millisecond)
+		}
+	}()
+
+	select {
+	case <-runDone:
+		{
+			if time.Since(startTime) < 2*time.Second {
+				t.Fatal("service closed before wait time")
+			}
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("Run took too long")
+	}
+
+	if runErr != nil {
+		t.Fatalf("got Run error %+v, want no error", runErr)
+	}
+
+	sv.Stop(nil)
+}
+
 // Ensure Run returns when Stop is called, even if no signal
 // has been received.
 func TestNewServerNoSignal(t *testing.T) {
 	logger, _ := testlog.New()
 
-	sv := NewServer(logger, syscall.SIGWINCH)
+	tcConfig := Config{ServerCloseWaitTime: 0}
+	sv := NewServer(logger, tcConfig, syscall.SIGWINCH)
 
 	var runErr error
 	done := make(chan struct{})
