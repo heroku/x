@@ -74,7 +74,7 @@ func New(appConfig interface{}, ofs ...OptionFunc) *Standard {
 	}
 
 	s.Add(debug.New(logger, sc.Debug))
-	s.Add(signals.NewServer(logger, syscall.SIGINT, syscall.SIGTERM))
+	s.Add(signals.NewServer(logger, sc.Signals, syscall.SIGINT, syscall.SIGTERM))
 
 	// only setup an exporter if indicated && the AgentAddress is set
 	// this separates the code change saying yes, do tracing from
