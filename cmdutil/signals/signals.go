@@ -44,7 +44,7 @@ func NewServer(logger logrus.FieldLogger, config Config, signals ...os.Signal) c
 			if sig != nil {
 				logger.Infoln("received signal", sig)
 			}
-			time.Sleep(time.Duration(config.ServerCloseWaitTime) * time.Second)
+			time.Sleep(config.SignalsServerStopDelay)
 			return nil
 		},
 		StopFunc: func(error) {

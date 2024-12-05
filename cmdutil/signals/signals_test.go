@@ -25,7 +25,7 @@ func TestWithNotifyCancel(t *testing.T) {
 func TestNewServer(t *testing.T) {
 	logger, _ := testlog.New()
 
-	tcConfig := Config{ServerCloseWaitTime: 0}
+	tcConfig := Config{}
 	sv := NewServer(logger, tcConfig, syscall.SIGWINCH)
 
 	var (
@@ -72,7 +72,7 @@ func TestNewServer(t *testing.T) {
 func TestNewServerWithWait(t *testing.T) {
 	logger, _ := testlog.New()
 
-	tcConfig := Config{ServerCloseWaitTime: 2}
+	tcConfig := Config{SignalsServerStopDelay: 2 * time.Second}
 	sv := NewServer(logger, tcConfig, syscall.SIGWINCH)
 
 	var (
@@ -127,7 +127,7 @@ func TestNewServerWithWait(t *testing.T) {
 func TestNewServerNoSignal(t *testing.T) {
 	logger, _ := testlog.New()
 
-	tcConfig := Config{ServerCloseWaitTime: 0}
+	tcConfig := Config{SignalsServerStopDelay: 0}
 	sv := NewServer(logger, tcConfig, syscall.SIGWINCH)
 
 	var runErr error

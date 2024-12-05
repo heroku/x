@@ -1,6 +1,8 @@
 package signals
 
+import "time"
+
 // Config describes the configurable parameters for Signals server.
 type Config struct {
-	ServerCloseWaitTime int `env:"SERVER_CLOSE_WAIT_TIME,default=0"`
+	SignalsServerStopDelay time.Duration `env:"SIGNALS_SERVER_STOP_DELAY,default=0s"`
 }
