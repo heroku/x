@@ -58,14 +58,17 @@ func (sf ServerFuncs) Stop(err error) {
 
 // NewContextServer that when Run(), calls the given function with a context
 // that is canceled when Stop() is called.
-func NewContextServer(fn func(context.Context) error) Server {
+func NewContextServer(fn func(context.Context) error, stopFunc ...func(error)) Server {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &ServerFuncs{
 		RunFunc: func() error {
 			return fn(ctx)
 		},
-		StopFunc: func(error) {
+		StopFunc: func(err error) {
+			for _, stop := range stopFunc {
+				stop(err)
+			}
 			cancel()
 		},
 	}
