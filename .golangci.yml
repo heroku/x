@@ -31,6 +31,7 @@ issues:
         - scopelint # Otherwise you need tc := tc. This isn't actually a problem unless tests are being run in parallel.
         - lll # Don't do line length checks in test code.
         - dupl # Sometimes we duplicate a bunch in tests for the sake of clarity.
+        - gosec # Don't run gosec, it's insecure because it's a test
     - path: nacl/secretbox
       linters:
         - gosec # Don't run gosec on nacl/secretbox* because we know it uses crypto/md5. TODO: Evaluate if this makes sense.
@@ -43,9 +44,6 @@ issues:
     - path: grpc/
       linters:
         - lll # GRPC code has notoriously long function signatures.
-    - path: testing/mustcert/example_test.go
-      linters:
-        - gosec # Don't run gosec, it's insecure because it's a test
 
 linters-settings:
   misspell:

@@ -21,18 +21,17 @@ import (
 )
 
 const (
-	// IssuerHost is the host used by the dynoidtest.Issuer
-	IssuerHost = "heroku.local"
-
-	DefaultSpaceID = "test"                                 // space id used when one is not provided
-	DefaultAppID   = "00000000-0000-0000-0000-000000000001" // app id used when one is not provided
-	DefaultAppName = "sushi"                                // app name used when one is not provided
-	DefaultDyno    = "web.1"                                // dyno used when one is not provided
+	DefaultHerokuHost = "heroku.local"                         // issuer host used when one is not provided
+	DefaultSpaceID    = "test"                                 // space id used when one is not provided
+	DefaultAppID      = "00000000-0000-0000-0000-000000000001" // app id used when one is not provided
+	DefaultAppName    = "sushi"                                // app name used when one is not provided
+	DefaultDyno       = "web.1"                                // dyno used when one is not provided
 )
 
 // Issuer generates test tokens and provides a client for verifying them.
 type Issuer struct {
 	key       *rsa.PrivateKey
+	host      string
 	spaceID   string
 	tokenOpts []TokenOpt
 }
@@ -46,6 +45,24 @@ type issuerOptFunc func(*Issuer) error
 
 func (f issuerOptFunc) apply(i *Issuer) error {
 	return f(i)
+}
+
+// WithKey allows you to set the issuer's private key. Useful for leveraging
+// test middleware.
+func WithKey(key *rsa.PrivateKey) IssuerOpt {
+	return issuerOptFunc(func(i *Issuer) error {
+		i.key = key
+		return nil
+	})
+}
+
+// WithHerokuHost allows an issuer host to be supplied instead of using the
+// default
+func WithHerokuHost(herokuHost string) IssuerOpt {
+	return issuerOptFunc(func(i *Issuer) error {
+		i.host = herokuHost
+		return nil
+	})
 }
 
 // WithSpaceID allows a spaceID to be supplied instead of using the default
@@ -78,7 +95,7 @@ func NewWithContext(ctx context.Context, opts ...IssuerOpt) (context.Context, *I
 		return ctx, nil, err
 	}
 
-	iss := &Issuer{key: key, spaceID: DefaultSpaceID, tokenOpts: []TokenOpt{}}
+	iss := &Issuer{key: key, host: DefaultHerokuHost, spaceID: DefaultSpaceID, tokenOpts: []TokenOpt{}}
 	for _, o := range opts {
 		if err := o.apply(iss); err != nil {
 			return ctx, nil, err
@@ -103,21 +120,36 @@ func (f tokenOptFunc) apply(i *jwt.RegisteredClaims) error {
 
 // WithSubject allows the Subject to be different than the default
 func WithSubject(s *dynoid.Subject) TokenOpt {
-	return tokenOptFunc(func(c *jwt.RegisteredClaims) error {
-		c.Subject = s.String()
+	return tokenOptFunc(func(rc *jwt.RegisteredClaims) error {
+		rc.Subject = s.String()
+		return nil
+	})
+}
+
+// WithSubjectFunc allows the Subject to be different than the default based
+// on the audience being generated.
+func WithSubjectFunc(fn func(audience string, subject *dynoid.Subject) *dynoid.Subject) TokenOpt {
+	return tokenOptFunc(func(rc *jwt.RegisteredClaims) error {
+		sub := &dynoid.Subject{}
+		if err := sub.UnmarshalText([]byte(rc.Subject)); err != nil {
+			return fmt.Errorf("error parsing generated subject (%w)", err)
+		}
+
+		rc.Subject = fn(rc.Audience[0], sub).String()
+
 		return nil
 	})
 }
 
 // GenerateIDToken returns a new signed token as a string
-func (iss *Issuer) GenerateIDToken(clientID string, opts ...TokenOpt) (string, error) {
+func (iss *Issuer) GenerateIDToken(audience string, opts ...TokenOpt) (string, error) {
 	now := time.Now()
 
 	claims := &jwt.RegisteredClaims{
-		Audience:  jwt.ClaimStrings([]string{clientID}),
+		Audience:  jwt.ClaimStrings([]string{audience}),
 		ExpiresAt: jwt.NewNumericDate(now.Add(5 * time.Minute)),
 		IssuedAt:  jwt.NewNumericDate(now),
-		Issuer:    fmt.Sprintf("https://oidc.heroku.local/issuers/%s", iss.spaceID),
+		Issuer:    fmt.Sprintf("https://oidc.%s/spaces/%s", iss.host, iss.spaceID),
 		Subject:   (&dynoid.Subject{AppID: DefaultAppID, AppName: DefaultAppName, Dyno: DefaultDyno}).String(),
 	}
 
@@ -147,7 +179,7 @@ type roundTripper struct {
 func (rt *roundTripper) init() {
 	mux := http.NewServeMux()
 
-	basePath := fmt.Sprintf("/issuers/%s/.well-known", rt.issuer.spaceID)
+	basePath := fmt.Sprintf("/spaces/%s/.well-known", rt.issuer.spaceID)
 	mux.HandleFunc(basePath+"/openid-configuration", func(w http.ResponseWriter, r *http.Request) {
 		if !strings.EqualFold(r.Method, http.MethodGet) {
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
@@ -160,9 +192,9 @@ func (rt *roundTripper) init() {
 		w.WriteHeader(http.StatusOK)
 
 		_, _ = w.Write([]byte(`{` +
-			fmt.Sprintf(`"issuer":"https://oidc.heroku.local/issuers/%s",`, rt.issuer.spaceID) +
+			fmt.Sprintf(`"issuer":"https://oidc.%s/spaces/%s",`, rt.issuer.host, rt.issuer.spaceID) +
 			`"authorization_endpoint":"/dummy/authorization",` +
-			fmt.Sprintf(`"jwks_uri":"https://oidc.heroku.local/issuers/%s/.well-known/jwks.json",`, rt.issuer.spaceID) +
+			fmt.Sprintf(`"jwks_uri":"https://oidc.%s/spaces/%s/.well-known/jwks.json",`, rt.issuer.host, rt.issuer.spaceID) +
 			`"response_types_supported":["implicit"],` +
 			`"grant_types_supported":["implicit"],` +
 			`"subject_types_supported":["public"],` +
