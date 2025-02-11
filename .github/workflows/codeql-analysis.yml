@@ -9,7 +9,7 @@ on:
 jobs:
   CodeQL-Build:
 
-    runs-on: sfdc-hk-ubuntu-latest
+    runs-on: pub-hk-ubuntu-24.04-ip
 
     steps:
     - name: Checkout repository

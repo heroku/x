@@ -4,7 +4,7 @@ on: [ push ]
 
 jobs:
   ci:
-    runs-on: [ sfdc-hk-ubuntu-latest ]
+    runs-on: pub-hk-ubuntu-24.04-ip
     strategy:
       matrix:
         target: [ test, lint ]
