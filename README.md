@@ -1,6 +1,6 @@
 # x
 
-![CI Testing Status](https://github.com/heroku/x/workflows/ci/badge.svg)&nbsp;[![GoDoc](https://godoc.org/github.com/heroku/x?status.svg)](http://godoc.org/github.com/heroku/x)&nbsp;![Security Code Scanning - action](https://github.com/heroku/x/workflows/Code%20scanning%20-%20action/badge.svg)
+![CI Testing Status](https://github.com/heroku/x/workflows/CI/badge.svg)&nbsp;[![GoDoc](https://godoc.org/github.com/heroku/x?status.svg)](http://godoc.org/github.com/heroku/x)&nbsp;![Security Code Scanning](https://github.com/heroku/x/workflows/Code%20Scanning/badge.svg)
 
 A set of packages for reuse within Heroku Go applications.
 

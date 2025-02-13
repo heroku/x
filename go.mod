@@ -1,6 +1,6 @@
 module github.com/heroku/x
 
-go 1.21
+go 1.21.0
 
 require (
 	contrib.go.opencensus.io/exporter/ocagent v0.6.0
