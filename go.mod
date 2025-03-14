@@ -25,7 +25,7 @@ require (
 	github.com/oklog/run v1.0.0
 	github.com/pkg/errors v0.9.1
 	github.com/rafaeljusto/redigomock v0.0.0-20190202135759-257e089e14a1
-	github.com/sirupsen/logrus v1.6.0
+	github.com/sirupsen/logrus v1.9.3
 	github.com/soveran/redisurl v0.0.0-20180322091936-eb325bc7a4b8
 	github.com/spf13/cobra v0.0.2
 	github.com/unrolled/secure v1.0.1
@@ -61,7 +61,6 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.18.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jmespath/go-jmespath v0.3.0 // indirect
-	github.com/konsorten/go-windows-terminal-sequences v1.0.3 // indirect
 	github.com/rollbar/rollbar-go v1.2.0 // indirect
 	github.com/spf13/pflag v1.0.1 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric v0.42.0 // indirect
