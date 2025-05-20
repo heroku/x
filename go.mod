@@ -8,10 +8,8 @@ require (
 	github.com/aws/aws-lambda-go v1.27.0
 	github.com/aws/aws-sdk-go v1.34.0
 	github.com/axiomhq/hyperloglog v0.0.0-20180317131949-fe9507de0228
-	github.com/coreos/go-oidc/v3 v3.11.0
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-kit/kit v0.9.0
-	github.com/golang-jwt/jwt/v4 v4.5.1
 	github.com/golang/protobuf v1.5.4
 	github.com/gomodule/redigo v1.8.9
 	github.com/google/gops v0.3.22
@@ -45,7 +43,6 @@ require (
 	google.golang.org/grpc v1.59.0
 	google.golang.org/grpc/examples v0.0.0-20210916203835-567da6b86340
 	google.golang.org/protobuf v1.33.0
-	gopkg.in/go-jose/go-jose.v2 v2.6.3
 )
 
 require (
@@ -53,7 +50,6 @@ require (
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.4.1 // indirect
 	github.com/dgryski/go-metro v0.0.0-20180109044635-280f6062b5bc // indirect
-	github.com/go-jose/go-jose/v4 v4.0.2 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
