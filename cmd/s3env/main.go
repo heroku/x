@@ -2,18 +2,19 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3iface"
+	"github.com/pkg/errors"
+
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/joeshaw/envdecode"
 	"github.com/spf13/cobra"
 )
@@ -41,7 +42,10 @@ var (
 	outputJSON  bool
 	s3vars      = make(map[string]string)
 	cfg         config
-	client      s3iface.S3API
+	client      interface {
+		GetObject(context.Context, *s3.GetObjectInput, ...func(*s3.Options)) (*s3.GetObjectOutput, error)
+		PutObject(context.Context, *s3.PutObjectInput, ...func(*s3.Options)) (*s3.PutObjectOutput, error)
+	}
 )
 
 // Root represents the base command when called without any subcommands
@@ -90,20 +94,14 @@ func loadS3Object() {
 		return
 	}
 
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(cfg.Region),
-		Credentials: credentials.NewStaticCredentials(
+	client = s3.NewFromConfig(aws.Config{
+		Region: cfg.Region,
+		Credentials: credentials.NewStaticCredentialsProvider(
 			cfg.AccessID,
 			cfg.SecretKey,
 			"",
 		),
 	})
-	if err != nil {
-		fmt.Printf("s3env: aws error: %s\n", err)
-		return
-	}
-
-	client = s3.New(sess)
 
 	in, err := input()
 	if err != nil {
@@ -158,11 +156,20 @@ func persistVars() error {
 		return fmt.Errorf("encode failed: %s", err)
 	}
 
-	_, err := client.PutObject(&s3.PutObjectInput{
+	sse := s3types.ServerSideEncryption(cfg.ServerSideEncryption)
+	switch sse {
+	case s3types.ServerSideEncryptionAes256,
+		s3types.ServerSideEncryptionAwsFsx,
+		s3types.ServerSideEncryptionAwsKms,
+		s3types.ServerSideEncryptionAwsKmsDsse:
+	default:
+		return fmt.Errorf("unrecognized value for S3ENV_AWS_SERVER_SIDE_ENCRYPTION: %s", cfg.ServerSideEncryption)
+	}
+	_, err := client.PutObject(context.Background(), &s3.PutObjectInput{
 		Bucket:               aws.String(cfg.Bucket),
 		Key:                  aws.String(cfg.Key),
 		Body:                 bytes.NewReader(buf.Bytes()),
-		ServerSideEncryption: aws.String(cfg.ServerSideEncryption),
+		ServerSideEncryption: sse,
 	})
 	if err != nil {
 		return fmt.Errorf("saving to s3 failed with error: %s", err)
@@ -174,14 +181,13 @@ func persistVars() error {
 // STDIN, we'll choose that. Otherwise we'll try to load the s3 object that
 // was configured.
 func input() (io.ReadCloser, error) {
-	out, err := client.GetObject(&s3.GetObjectInput{
+	out, err := client.GetObject(context.Background(), &s3.GetObjectInput{
 		Bucket: aws.String(cfg.Bucket),
 		Key:    aws.String(cfg.Key),
 	})
 	if err != nil {
-		// Cast err to awserr.Error to handle specific error codes.
-		aerr, ok := err.(awserr.Error)
-		if ok && aerr.Code() == s3.ErrCodeNoSuchKey {
+		nsk := &s3types.NoSuchKey{}
+		if errors.As(err, &nsk) {
 			fmt.Fprintf(os.Stderr, "s3env: object not found. using empty config\n")
 			buf := new(bytes.Buffer)
 			buf.Write([]byte("{}"))

@@ -1,12 +1,17 @@
 module github.com/heroku/x
 
-go 1.21.0
+go 1.22
+
+toolchain go1.24.2
 
 require (
 	contrib.go.opencensus.io/exporter/ocagent v0.6.0
 	github.com/armon/go-proxyproto v0.0.0-20190211145416-68259f75880e
 	github.com/aws/aws-lambda-go v1.27.0
-	github.com/aws/aws-sdk-go v1.34.0
+	github.com/aws/aws-sdk-go-v2 v1.36.6
+	github.com/aws/aws-sdk-go-v2/credentials v1.17.71
+	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.44.1
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.84.1
 	github.com/axiomhq/hyperloglog v0.0.0-20180317131949-fe9507de0228
 	github.com/coreos/go-oidc/v3 v3.11.0
 	github.com/go-chi/chi v4.1.2+incompatible
@@ -50,6 +55,16 @@ require (
 
 require (
 	github.com/VividCortex/gohistogram v1.0.0 // indirect
+	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.11 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.37 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.37 // indirect
+	github.com/aws/aws-sdk-go-v2/internal/v4a v1.3.37 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.12.4 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.7.5 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.10.18 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.12.18 // indirect
+	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.18.18 // indirect
+	github.com/aws/smithy-go v1.22.4 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.4.1 // indirect
 	github.com/dgryski/go-metro v0.0.0-20180109044635-280f6062b5bc // indirect
@@ -60,7 +75,6 @@ require (
 	github.com/golang/groupcache v0.0.0-20190702054246-869f871628b6 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.18.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
-	github.com/jmespath/go-jmespath v0.3.0 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.3 // indirect
 	github.com/rollbar/rollbar-go v1.2.0 // indirect
 	github.com/spf13/pflag v1.0.1 // indirect
