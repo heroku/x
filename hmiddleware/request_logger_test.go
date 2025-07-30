@@ -6,12 +6,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	tags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 
 	"github.com/heroku/x/testing/testlog"
 
-	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/sirupsen/logrus"
 )
 

@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 
 	"github.com/heroku/x/go-kit/metrics"
 	"github.com/heroku/x/go-kit/metricsregistry"
