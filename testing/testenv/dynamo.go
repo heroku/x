@@ -3,15 +3,14 @@ package testenv
 import (
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 )
 
 // NewDynamoService configures a local dynamo client connected to DYNAMODB_HOST
 // or localhost:8000, which should be running aws-dynamodb-local.
-func NewDynamoService(t *testing.T) *dynamodb.DynamoDB {
+func NewDynamoService(t *testing.T) *dynamodb.Client {
 	t.Helper()
 
 	host, err := getenv("DYNAMODB_HOST", "localhost")
@@ -19,17 +18,10 @@ func NewDynamoService(t *testing.T) *dynamodb.DynamoDB {
 		t.Skip(err.Error())
 	}
 
-	config := &aws.Config{
-		Credentials: credentials.NewStaticCredentialsFromCreds(credentials.Value{
-			AccessKeyID:     "AKAAAAAAAAABBBBBBBBB",
-			SecretAccessKey: "t+GuXOHmzo1joFaJeu/abcdefghijklmabcdefghi",
-		}),
-		Endpoint: aws.String("http://" + host + ":8000/"),
-		Region:   aws.String("testing"),
+	config := aws.Config{
+		Credentials:  credentials.NewStaticCredentialsProvider("AKAAAAAAAAABBBBBBBBB", "t+GuXOHmzo1joFaJeu/abcdefghijklmabcdefghi", ""),
+		BaseEndpoint: aws.String("http://" + host + ":8000/"),
+		Region:       "testing",
 	}
-	sess, err := session.NewSession(config)
-	if err != nil {
-		t.Fatal("unexpected error", err)
-	}
-	return dynamodb.New(sess)
+	return dynamodb.NewFromConfig(config)
 }
