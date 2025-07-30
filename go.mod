@@ -9,7 +9,7 @@ require (
 	github.com/aws/aws-sdk-go v1.34.0
 	github.com/axiomhq/hyperloglog v0.0.0-20180317131949-fe9507de0228
 	github.com/coreos/go-oidc/v3 v3.11.0
-	github.com/go-chi/chi v4.1.2+incompatible
+	github.com/go-chi/chi/v5 v5.2.2
 	github.com/go-kit/kit v0.9.0
 	github.com/golang-jwt/jwt/v4 v4.5.1
 	github.com/golang/protobuf v1.5.4
