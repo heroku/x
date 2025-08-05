@@ -139,7 +139,6 @@ func TestOTELNestedChiRouters(tt *testing.T) {
 	}
 
 	for _, test := range cases {
-		test := test
 		tt.Run(test.name, func(t *testing.T) {
 			p := testmetrics.NewProvider(t)
 			outer := chi.NewRouter()

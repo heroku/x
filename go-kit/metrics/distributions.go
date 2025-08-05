@@ -39,18 +39,18 @@ type (
 // This standard percentile distribution used here will generate boundaries
 // with the following percentile distribution
 // P(0.001), P(0.01), P(0.05), P(0.1), P(0.25), P(0.5), P(0.75), P(0.9), P(0.95), P(0.99), P(0.999)
-func WithStandardPercentiles(min, max float64) DistributionFunc {
-	return WithPercentileDistribution(min, max, standardPercentiles)
+func WithStandardPercentiles(boundaryMin, boundaryMax float64) DistributionFunc {
+	return WithPercentileDistribution(boundaryMin, boundaryMax, standardPercentiles)
 }
 
 // WithPercentileDistribution will generate boundaries by scaling the values
 // between the min and the max according to supplied percentile distribution
 // pattern.
-func WithPercentileDistribution(min, max float64, pattern []float64) DistributionFunc {
+func WithPercentileDistribution(boundaryMin, boundaryMax float64, pattern []float64) DistributionFunc {
 	return func() []float64 {
 		boundaries := make([]float64, len(pattern))
 
-		s := min + max
+		s := boundaryMin + boundaryMax
 		l := s * pattern[len(pattern)-1]
 
 		for i, p := range pattern {
