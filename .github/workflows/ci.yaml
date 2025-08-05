@@ -17,5 +17,10 @@ jobs:
       with:
         go-version-file: "./go.mod"
         check-latest: true
+    - name: Debug Go version
+      run: |
+        which go
+        go version
+        go env GOROOT GOTOOLCHAIN
     - name: run ${{ matrix.target }}
       run: make ${{ matrix.target }}
