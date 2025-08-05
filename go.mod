@@ -3,7 +3,6 @@ module github.com/heroku/x
 go 1.21.0
 
 require (
-	contrib.go.opencensus.io/exporter/ocagent v0.6.0
 	github.com/armon/go-proxyproto v0.0.0-20190211145416-68259f75880e
 	github.com/aws/aws-lambda-go v1.27.0
 	github.com/aws/aws-sdk-go v1.34.0
@@ -51,7 +50,6 @@ require (
 require (
 	github.com/VividCortex/gohistogram v1.0.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
-	github.com/census-instrumentation/opencensus-proto v0.4.1 // indirect
 	github.com/dgryski/go-metro v0.0.0-20180109044635-280f6062b5bc // indirect
 	github.com/go-jose/go-jose/v4 v4.0.5 // indirect
 	github.com/go-logr/logr v1.4.1 // indirect
@@ -70,7 +68,6 @@ require (
 	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/oauth2 v0.21.0 // indirect
 	golang.org/x/sys v0.29.0 // indirect
-	google.golang.org/api v0.7.0 // indirect
 	google.golang.org/genproto v0.0.0-20231012201019-e917dd12ba7a // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20231016165738-49dd2c1f3d0b // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231016165738-49dd2c1f3d0b // indirect

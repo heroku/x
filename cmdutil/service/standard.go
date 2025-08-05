@@ -11,7 +11,6 @@ import (
 	"github.com/heroku/x/cmdutil"
 	"github.com/heroku/x/cmdutil/debug"
 	"github.com/heroku/x/cmdutil/metrics"
-	"github.com/heroku/x/cmdutil/oc"
 	"github.com/heroku/x/cmdutil/rollbar"
 	"github.com/heroku/x/cmdutil/signals"
 	"github.com/heroku/x/cmdutil/svclog"
@@ -75,20 +74,6 @@ func New(appConfig interface{}, ofs ...OptionFunc) *Standard {
 
 	s.Add(debug.New(logger, sc.Debug))
 	s.Add(signals.NewServer(logger, syscall.SIGINT, syscall.SIGTERM))
-
-	// only setup an exporter if indicated && the AgentAddress is set
-	// this separates the code change saying yes, do tracing from
-	// the operational aspect of deciding where it goes.
-	if o.enableOpenCensusTracing && sc.OpenCensus.AgentAddress != "" {
-		oce, err := oc.NewExporter(
-			sc.OpenCensus.TraceConfig(),
-			sc.OpenCensus.ExporterOptions(s.App)...,
-		)
-		if err != nil {
-			panic(err)
-		}
-		s.Add(oce)
-	}
 
 	return s
 }
