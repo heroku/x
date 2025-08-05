@@ -5,7 +5,7 @@ GOPATH = $(shell go env GOPATH)
 TOOLS_DIR = $(TOP_LEVEL)/.tools
 TOOLS_BIN = $(TOOLS_DIR)/bin
 # Make sure this is in-sync with the version in the circle ci config
-GOLANGCI_LINT_VERSION := v1.55.0
+GOLANGCI_LINT_VERSION := v1.64.8
 PKG_SPEC := ./...
 MOD := -mod=readonly
 GOTEST := go test $(MOD)
