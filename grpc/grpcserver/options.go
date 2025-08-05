@@ -11,7 +11,6 @@ import (
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
 	"github.com/sirupsen/logrus"
-	"go.opencensus.io/plugin/ocgrpc"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -90,14 +89,6 @@ func HighCardInterceptors(unary grpc.UnaryServerInterceptor, stream grpc.StreamS
 	return func(o *options) {
 		o.highCardUnaryInterceptor = unary
 		o.highCardStreamInterceptor = stream
-	}
-}
-
-// WithOCGRPCServerHandler sets the grpc server up with provided ServerHandler
-// as its StatsHandler
-func WithOCGRPCServerHandler(h *ocgrpc.ServerHandler) ServerOption {
-	return func(o *options) {
-		o.grpcOptions = append(o.grpcOptions, grpc.StatsHandler(h))
 	}
 }
 
