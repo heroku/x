@@ -190,12 +190,12 @@ func (p *Provider) CheckCounterExists(name string, labelValues ...string) {
 
 // CheckObservationsMinMax checks that there is a histogram
 // with the name and that the values all fall within the min/max range.
-func (p *Provider) CheckObservationsMinMax(name string, min, max float64, labelValues ...string) {
+func (p *Provider) CheckObservationsMinMax(name string, minValue, maxValue float64, labelValues ...string) {
 	p.t.Helper()
 
 	for _, o := range p.getObservations(name, labelValues...) {
-		if o < min || o > max {
-			p.t.Fatalf("got %f want %f..%f ", o, min, max)
+		if o < minValue || o > maxValue {
+			p.t.Fatalf("got %f want %f..%f ", o, minValue, maxValue)
 		}
 	}
 }

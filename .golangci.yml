@@ -12,7 +12,7 @@ linters:
     - unconvert
     - dupl
     - gosec
-    - exportloopref
+    - copyloopvar
     - nakedret
     - gochecknoinits
     - goconst

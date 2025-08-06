@@ -129,8 +129,8 @@ func callbackHandler(audience string, fn func(*dynoid.Token) dynoid.IssuerCallba
 	}
 }
 
-func internalServerError(error string) http.Handler {
+func internalServerError(err string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		http.Error(w, error, http.StatusInternalServerError)
+		http.Error(w, err, http.StatusInternalServerError)
 	})
 }

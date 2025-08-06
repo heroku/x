@@ -81,7 +81,6 @@ func New(appConfig interface{}, ofs ...OptionFunc) *Standard {
 // Add adds cmdutil.Servers to be managed.
 func (s *Standard) Add(svs ...cmdutil.Server) {
 	for _, sv := range svs {
-		sv := sv
 		runWithPanicReport := func() error {
 			defer metrics.ReportPanic(s.MetricsProvider)
 			defer svclog.ReportPanic(s.Logger)
