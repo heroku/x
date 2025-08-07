@@ -72,6 +72,18 @@ func (c *testHealthClient) NumChecks() int {
 	return c.checks
 }
 
+func (c *testHealthClient) List(context.Context, *healthpb.HealthListRequest, ...grpc.CallOption) (*healthpb.HealthListResponse, error) {
+	return &healthpb.HealthListResponse{
+		Statuses: map[string]*healthpb.HealthCheckResponse{
+			"test": {Status: healthpb.HealthCheckResponse_SERVING},
+		},
+	}, nil
+}
+
+func (c *testHealthClient) Watch(context.Context, *healthpb.HealthCheckRequest, ...grpc.CallOption) (healthpb.Health_WatchClient, error) {
+	return &testHealthWatchClient{}, nil
+}
+
 func (c *testHealthClient) Check(context.Context, *healthpb.HealthCheckRequest, ...grpc.CallOption) (*healthpb.HealthCheckResponse, error) {
 	c.Lock()
 	defer c.Unlock()
@@ -84,10 +96,6 @@ func (c *testHealthClient) Check(context.Context, *healthpb.HealthCheckRequest, 
 	}
 
 	return &healthpb.HealthCheckResponse{Status: status}, nil
-}
-
-func (c *testHealthClient) Watch(context.Context, *healthpb.HealthCheckRequest, ...grpc.CallOption) (healthpb.Health_WatchClient, error) {
-	return &testHealthWatchClient{}, nil
 }
 
 func TestStreamInterceptor(t *testing.T) {
