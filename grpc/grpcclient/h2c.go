@@ -17,7 +17,7 @@ import (
 // listening at the passed in URL, and return a connection for it. This will
 // _not_ register it in the client registry, that is left to the user. By default the call is non-blocking.
 // Use WithBlock for a blocking call. In the blocking case, ctx can be used to cancel or expire the pending connection.
-func DialH2CContext(ctx context.Context, serverURL string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
+func DialH2CContext(_ context.Context, serverURL string, opts ...grpc.DialOption) (*grpc.ClientConn, error) {
 	u, err := url.Parse(serverURL)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error parsing provided URL")
@@ -37,10 +37,13 @@ func DialH2CContext(ctx context.Context, serverURL string, opts ...grpc.DialOpti
 		port = strconv.Itoa(p)
 	}
 
-	conn, err := grpc.DialContext(ctx, net.JoinHostPort(u.Hostname(), port), opts...)
+	conn, err := grpc.NewClient(net.JoinHostPort(u.Hostname(), port), opts...)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error dialing server")
+		return nil, errors.Wrap(err, "Error creating client")
 	}
+
+	conn.Connect()
+
 	return conn, nil
 }
 

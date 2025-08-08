@@ -42,7 +42,6 @@ func TestGRPCPerRPCCredentialBasicAuth(t *testing.T) {
 	conn, err := grpcclient.DialH2CContext(
 		ctx,
 		srv.URL,
-		grpc.WithBlock(),
 		grpc.WithPerRPCCredentials(&GRPCCredentials{Username: "user", Password: "pass"}),
 	)
 	if err != nil {
