@@ -46,6 +46,8 @@ func (s *LocalServer) Conn(opts ...grpc.DialOption) *grpc.ClientConn {
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	}
 
-	conn, _ := grpc.NewClient("", append(defaultOptions, opts...)...)
+	conn, _ := grpc.NewClient("passthrough:///", append(defaultOptions, opts...)...)
+
+	conn.Connect()
 	return conn
 }

@@ -39,8 +39,11 @@ func DialH2CContext(_ context.Context, serverURL string, opts ...grpc.DialOption
 
 	conn, err := grpc.NewClient(net.JoinHostPort(u.Hostname(), port), opts...)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error dialing server")
+		return nil, errors.Wrap(err, "Error creating client")
 	}
+
+	conn.Connect()
+
 	return conn, nil
 }
 
