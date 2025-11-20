@@ -11,7 +11,6 @@ import (
 	"github.com/heroku/x/cmdutil"
 	"github.com/heroku/x/cmdutil/debug"
 	"github.com/heroku/x/cmdutil/metrics"
-	"github.com/heroku/x/cmdutil/rollbar"
 	"github.com/heroku/x/cmdutil/signals"
 	"github.com/heroku/x/cmdutil/svclog"
 	xmetrics "github.com/heroku/x/go-kit/metrics"
@@ -28,7 +27,7 @@ type Standard struct {
 	MetricsProvider xmetrics.Provider
 }
 
-// New Standard Service with logging, rollbar, metrics, debugging, common signal
+// New Standard Service with logging, metrics, debugging, common signal
 // handling, and possibly more.
 //
 // If appConfig is non-nil, envdecode.MustStrictDecode will be called on it
@@ -42,8 +41,6 @@ func New(appConfig interface{}, ofs ...OptionFunc) *Standard {
 	}
 
 	logger := svclog.NewLogger(sc.Logger)
-
-	rollbar.Setup(logger, sc.Rollbar)
 
 	var o options
 	for _, of := range ofs {
@@ -91,8 +88,6 @@ func (s *Standard) Add(svs ...cmdutil.Server) {
 }
 
 // Run runs all standard and Added cmdutil.Servers.
-//
-// If a panic is encountered, it is reported to Rollbar.
 //
 // If the error returned by oklog/run.Run is non-nil, it is logged
 // with s.Logger.Fatal.

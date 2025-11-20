@@ -12,7 +12,6 @@ import (
 	"github.com/heroku/x/cmdutil"
 	"github.com/heroku/x/cmdutil/metrics"
 	"github.com/heroku/x/cmdutil/metrics/otel"
-	"github.com/heroku/x/cmdutil/rollbar"
 	"github.com/heroku/x/cmdutil/svclog"
 	kitmetrics "github.com/heroku/x/go-kit/metrics"
 	"github.com/heroku/x/go-kit/metrics/l2met"
@@ -46,7 +45,7 @@ type Function struct {
 	g run.Group
 }
 
-// New creates a new Function with a configured logger, rollbar agent and metrics provider.
+// New creates a new Function with a configured logger and metrics provider.
 func New(config interface{}) *Function {
 	var fc funcConfig
 	envdecode.MustStrictDecode(&fc)
@@ -60,8 +59,6 @@ func New(config interface{}) *Function {
 		functionKey: fc.Name,
 		stageKey:    fc.Stage,
 	})
-
-	rollbar.Setup(logger, fc.Rollbar)
 
 	f := &Function{
 		App:    fc.Logger.AppName,
@@ -125,7 +122,7 @@ func (f *Function) Add(svs ...cmdutil.Server) {
 func (f *Function) Start(handler interface{}) {
 	defer f.MetricsProvider.Stop()
 
-	// Run logger, rollbar agent and metrics provider in the background.
+	// Run logger and metrics provider in the background.
 	go func() {
 		defer metrics.ReportPanic(f.MetricsProvider)
 		defer svclog.ReportPanic(f.Logger)
@@ -153,5 +150,4 @@ type funcConfig struct {
 	Stage   string `env:"STAGE"`
 	Logger  svclog.Config
 	Metrics metrics.Config
-	Rollbar rollbar.Config
 }

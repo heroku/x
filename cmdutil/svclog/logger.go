@@ -39,7 +39,7 @@ func NewLogger(cfg Config) logrus.FieldLogger {
 	return logger
 }
 
-// ReportPanic attempts to report the panic to rollbar via the logrus.
+// ReportPanic attempts to report the panic to the logger.
 func ReportPanic(logger logrus.FieldLogger) {
 	if p := recover(); p != nil {
 		logger.Panic(p)

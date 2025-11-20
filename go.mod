@@ -17,7 +17,6 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.0
 	github.com/grpc-ecosystem/grpc-gateway v1.16.0
-	github.com/heroku/rollrus v0.2.0
 	github.com/hydrogen18/memlistener v0.0.0-20141126152155-54553eb933fb
 	github.com/joeshaw/envdecode v0.0.0-20180129163420-d5f34bca07f3
 	github.com/lstoll/grpce v1.7.0
@@ -58,7 +57,6 @@ require (
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
 	github.com/jmespath/go-jmespath v0.3.0 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.3 // indirect
-	github.com/rollbar/rollbar-go v1.2.0 // indirect
 	github.com/spf13/pflag v1.0.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/otel/trace v1.36.0 // indirect
