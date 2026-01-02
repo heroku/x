@@ -46,6 +46,24 @@ func TestMarshalUnmarshal(t *testing.T) {
 	}
 }
 
+func TestLocalTokenPath(t *testing.T) {
+	// default audience uses default path
+	if got := dynoid.LocalTokenPath("heroku"); got != "/etc/heroku/dyno_id_token" {
+		t.Fatalf("unexpected path for heroku: %q", got)
+	}
+
+	// non-default audience uses audience-specific path
+	if got := dynoid.LocalTokenPath("other"); got != "/etc/heroku/dyno-id/other/token" {
+		t.Fatalf("unexpected path for other: %q", got)
+	}
+
+	// env var override
+	t.Setenv("OTHER_IDENTITY_TOKEN_FILE", "/custom/path")
+	if got := dynoid.LocalTokenPath("other"); got != "/custom/path" {
+		t.Fatalf("expected env var override, got: %q", got)
+	}
+}
+
 func TestReading(t *testing.T) {
 	oldFS := dynoid.DefaultFS
 	defer func() {

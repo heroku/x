@@ -142,8 +142,15 @@ func (t *Token) LogValue() slog.Value {
 	)
 }
 
-// LocalTokenPath returns the path on disk to the token for the given audience
+// LocalTokenPath returns the path on disk to the token for the given audience.
+//
+// Return {AUDIENCE}_IDENTITY_TOKEN_FILE if env var is set.
 func LocalTokenPath(audience string) string {
+	envVar := strings.ToUpper(audience) + "_IDENTITY_TOKEN_FILE"
+	if p := os.Getenv(envVar); p != "" {
+		return p
+	}
+
 	if audience == defaultAudience {
 		return defaultTokenPath
 	}
