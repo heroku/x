@@ -109,16 +109,18 @@ func ContextWithToken(ctx context.Context, t *Token) context.Context
 ContextWithToken adds the given Token to the Context to be retrieved later by calling FromContext
 
 <a name="LocalTokenPath"></a>
-## func [LocalTokenPath](<https://github.com/heroku/x/blob/master/dynoid/dynoid.go#L146>)
+## func [LocalTokenPath](<https://github.com/heroku/x/blob/master/dynoid/dynoid.go#L148>)
 
 ```go
 func LocalTokenPath(audience string) string
 ```
 
-LocalTokenPath returns the path on disk to the token for the given audience
+LocalTokenPath returns the path on disk to the token for the given audience.
+
+Return \<AUDIENCE\>\_IDENTITY\_TOKEN\_FILE if env var is set.
 
 <a name="ReadLocal"></a>
-## func [ReadLocal](<https://github.com/heroku/x/blob/master/dynoid/dynoid.go#L174>)
+## func [ReadLocal](<https://github.com/heroku/x/blob/master/dynoid/dynoid.go#L181>)
 
 ```go
 func ReadLocal(audience string) (string, error)
@@ -147,7 +149,7 @@ func AllowHerokuHost(herokuHost string) IssuerCallback
 AllowHerokuHost verifies that the issuer is from Heroku for the given host domain
 
 <a name="AllowHerokuSpace"></a>
-### func [AllowHerokuSpace](<https://github.com/heroku/x/blob/master/dynoid/dynoid.go#L198>)
+### func [AllowHerokuSpace](<https://github.com/heroku/x/blob/master/dynoid/dynoid.go#L205>)
 
 ```go
 func AllowHerokuSpace(herokuHost string, spaceIDs ...string) IssuerCallback
@@ -256,7 +258,7 @@ func FromContext(ctx context.Context) (*Token, error)
 FromContext returns the Token or error associated with the given Context
 
 <a name="ReadLocalToken"></a>
-### func [ReadLocalToken](<https://github.com/heroku/x/blob/master/dynoid/dynoid.go#L185>)
+### func [ReadLocalToken](<https://github.com/heroku/x/blob/master/dynoid/dynoid.go#L192>)
 
 ```go
 func ReadLocalToken(ctx context.Context, audience string) (*Token, error)
@@ -294,7 +296,7 @@ func (e *UntrustedIssuerError) Error() string
 
 
 <a name="Verifier"></a>
-## type [Verifier](<https://github.com/heroku/x/blob/master/dynoid/dynoid.go#L212-L219>)
+## type [Verifier](<https://github.com/heroku/x/blob/master/dynoid/dynoid.go#L219-L226>)
 
 A Verifier verifies a raw token with it's oids issuer and uses the IssuerCallback to ensure it's from a trusted source.
 
@@ -353,7 +355,7 @@ web.1
 </details>
 
 <a name="New"></a>
-### func [New](<https://github.com/heroku/x/blob/master/dynoid/dynoid.go#L225>)
+### func [New](<https://github.com/heroku/x/blob/master/dynoid/dynoid.go#L232>)
 
 ```go
 func New(audience string) *Verifier
@@ -364,7 +366,7 @@ Instantiate a new Verifier without an IssuerCallback set.
 The IssuerCallback must be set before calling Verify or an error will be returned.
 
 <a name="NewWithCallback"></a>
-### func [NewWithCallback](<https://github.com/heroku/x/blob/master/dynoid/dynoid.go#L234>)
+### func [NewWithCallback](<https://github.com/heroku/x/blob/master/dynoid/dynoid.go#L241>)
 
 ```go
 func NewWithCallback(audience string, callback IssuerCallback) *Verifier
@@ -373,7 +375,7 @@ func NewWithCallback(audience string, callback IssuerCallback) *Verifier
 Instantiate a new Verifier with the IssuerCallback set.
 
 <a name="Verifier.Verify"></a>
-### func \(\*Verifier\) [Verify](<https://github.com/heroku/x/blob/master/dynoid/dynoid.go#L242>)
+### func \(\*Verifier\) [Verify](<https://github.com/heroku/x/blob/master/dynoid/dynoid.go#L249>)
 
 ```go
 func (v *Verifier) Verify(ctx context.Context, rawIDToken string) (*Token, error)
