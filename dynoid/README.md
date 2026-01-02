@@ -115,9 +115,9 @@ ContextWithToken adds the given Token to the Context to be retrieved later by ca
 func LocalTokenPath(audience string) string
 ```
 
-LocalTokenPath returns the path on disk to the token for the given audience.
+LocalTokenPath returns the path on disk to the token for the given audience
 
-Return \<AUDIENCE\>\_IDENTITY\_TOKEN\_FILE if env var is set.
+Return \<AUDIENCE\>\_IDENTITY\_TOKEN\_FILE if env var is set
 
 <a name="ReadLocal"></a>
 ## func [ReadLocal](<https://github.com/heroku/x/blob/master/dynoid/dynoid.go#L181>)
