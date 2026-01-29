@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/health/grpc_health_v1"
 )
 
@@ -40,7 +40,7 @@ func TestGRPCHandler(t *testing.T) {
 	defer srv.Close()
 
 	conn, err := grpc.NewClient(srv.Listener.Addr().String(), 
-		grpc.WithTransportCredentials(insecure.NewCredentials()))
+		grpc.WithTransportCredentials(credentials.NewTLS(srv.Client().Transport.(*http.Transport).TLSClientConfig)))
 	if err != nil {
 		t.Fatalf("failed to connect: %v", err)
 	}
@@ -76,7 +76,7 @@ func TestWithGRPC(t *testing.T) {
 
 	// Test gRPC
 	conn, err := grpc.NewClient(srv.Listener.Addr().String(), 
-		grpc.WithTransportCredentials(insecure.NewCredentials()))
+		grpc.WithTransportCredentials(credentials.NewTLS(srv.Client().Transport.(*http.Transport).TLSClientConfig)))
 	if err != nil {
 		t.Fatalf("failed to connect: %v", err)
 	}
