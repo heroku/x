@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/heroku/x/testing/testlog"
+	"github.com/heroku/x/testing/testlog/v2"
 )
 
 func TestWithNotifyCancel(t *testing.T) {

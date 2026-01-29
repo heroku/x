@@ -3,12 +3,11 @@ package signals
 
 import (
 	"context"
+	"log/slog"
 	"os"
 	"os/signal"
 
-	"github.com/sirupsen/logrus"
-
-	"github.com/heroku/x/cmdutil"
+	"github.com/heroku/x/cmdutil/v2"
 )
 
 // WithNotifyCancel creates a sub-context from the given context which gets
@@ -33,7 +32,7 @@ func notifyContext(ctx context.Context, notified chan os.Signal, signals ...os.S
 // NewServer returns a cmdutil.Server that returns from Run
 // when any of the provided signals are received.
 // Run always returns a nil error.
-func NewServer(logger logrus.FieldLogger, signals ...os.Signal) cmdutil.Server {
+func NewServer(logger *slog.Logger, signals ...os.Signal) cmdutil.Server {
 	ch := make(chan os.Signal, 1)
 
 	return cmdutil.ServerFuncs{
@@ -41,7 +40,7 @@ func NewServer(logger logrus.FieldLogger, signals ...os.Signal) cmdutil.Server {
 			signal.Notify(ch, signals...)
 			sig := <-ch
 			if sig != nil {
-				logger.Infoln("received signal", sig)
+				logger.Info("received signal", "signal", sig)
 			}
 			return nil
 		},

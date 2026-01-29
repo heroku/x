@@ -1,6 +1,6 @@
 module github.com/heroku/x/cmdutil/v2
 
-go 1.24.0
+go 1.25.1
 
 require (
 	github.com/armon/go-proxyproto v0.0.0-20190211145416-68259f75880e
@@ -33,18 +33,19 @@ require (
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
-	github.com/google/pprof v0.0.0-20260115054156-294ebfa9ad83 // indirect
+	github.com/google/pprof v0.0.0-20260115054156-294ebfa9ad83
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.20.0 // indirect
+	github.com/heroku/x/testing/testlog/v2 v2.0.0
 	github.com/hydrogen18/memlistener v0.0.0-20141126152155-54553eb933fb // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.3 // indirect
 	github.com/lstoll/grpce v1.7.0 // indirect
 	github.com/rollbar/rollbar-go v1.2.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/otel/metric v1.38.0 // indirect
+	go.opentelemetry.io/otel/metric v1.38.0
 	go.opentelemetry.io/otel/trace v1.38.0 // indirect
-	go.opentelemetry.io/proto/otlp v1.2.0 // indirect
+	go.opentelemetry.io/proto/otlp v1.2.0
 	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/sync v0.11.0 // indirect
 	golang.org/x/sys v0.33.0 // indirect
@@ -54,3 +55,5 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240515191416-fc5f0ca64291 // indirect
 	google.golang.org/protobuf v1.34.1 // indirect
 )
+
+replace github.com/heroku/x/testing/testlog/v2 => ../../testing/testlog/v2
