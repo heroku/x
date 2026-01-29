@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 
 	"go.opentelemetry.io/contrib/instrumentation/runtime"
@@ -11,6 +12,7 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
+	"google.golang.org/grpc/credentials"
 )
 
 const (
@@ -53,15 +55,23 @@ func Setup(ctx context.Context, cfg Config, serviceName, serviceNamespace, deplo
 
 	switch cfg.Protocol {
 	case "grpc":
-		exporter, err = otlpmetricgrpc.New(ctx,
+		opts := []otlpmetricgrpc.Option{
 			otlpmetricgrpc.WithEndpoint(cfg.Endpoint.Host),
-			otlpmetricgrpc.WithInsecure(),
-		)
+		}
+		if options.tlsConfig != nil {
+			opts = append(opts, otlpmetricgrpc.WithTLSCredentials(credentials.NewTLS(options.tlsConfig)))
+		}
+		exporter, err = otlpmetricgrpc.New(ctx, opts...)
 	case "http/protobuf":
-		exporter, err = otlpmetrichttp.New(ctx,
+		opts := []otlpmetrichttp.Option{
 			otlpmetrichttp.WithEndpoint(cfg.Endpoint.Host),
-			otlpmetrichttp.WithInsecure(),
-		)
+		}
+		if options.tlsConfig != nil {
+			opts = append(opts, otlpmetrichttp.WithTLSClientConfig(options.tlsConfig))
+		} else if cfg.Endpoint.Scheme == "http" {
+			opts = append(opts, otlpmetrichttp.WithInsecure())
+		}
+		exporter, err = otlpmetrichttp.New(ctx, opts...)
 	default:
 		return nil, nil, fmt.Errorf("unsupported protocol: %s", cfg.Protocol)
 	}
@@ -89,7 +99,8 @@ func Setup(ctx context.Context, cfg Config, serviceName, serviceNamespace, deplo
 }
 
 type setupOptions struct {
-	resource *resource.Resource
+	resource  *resource.Resource
+	tlsConfig *tls.Config
 }
 
 type Option func(*setupOptions)
@@ -97,5 +108,11 @@ type Option func(*setupOptions)
 func WithResource(r *resource.Resource) Option {
 	return func(o *setupOptions) {
 		o.resource = r
+	}
+}
+
+func WithTLSConfig(cfg *tls.Config) Option {
+	return func(o *setupOptions) {
+		o.tlsConfig = cfg
 	}
 }
