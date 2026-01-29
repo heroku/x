@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/http/pprof"
 	"runtime"
@@ -25,7 +26,6 @@ import (
 	"time"
 
 	"github.com/google/gops/agent"
-	"github.com/sirupsen/logrus"
 )
 
 // New inializes a debug server listening on the provided port.
@@ -35,7 +35,7 @@ import (
 //	gops stack localhost:PORT
 //
 // Connect to the pprof server with pprof.port when pprof enabled
-func New(l logrus.FieldLogger, config Config) *Server {
+func New(l *slog.Logger, config Config) *Server {
 	server := &Server{
 		logger: l,
 		addr:   fmt.Sprintf("127.0.0.1:%d", config.Port),
@@ -49,7 +49,7 @@ func New(l logrus.FieldLogger, config Config) *Server {
 
 // Server wraps a gops server for easy use with oklog/group.
 type Server struct {
-	logger logrus.FieldLogger
+	logger *slog.Logger
 	addr   string
 	done   chan struct{}
 	pprof  *PProfServer
@@ -69,7 +69,7 @@ func (s *Server) Run() error {
 		defer wg.Done()
 		gopsErr = s.RunGOPS()
 		if gopsErr != nil {
-			s.logger.WithError(gopsErr).Error("gops server failed")
+			s.logger.Error("gops server failed", slog.Any("error", gopsErr))
 		}
 	}()
 
@@ -79,7 +79,7 @@ func (s *Server) Run() error {
 			defer wg.Done()
 			pprofErr = s.pprof.Run()
 			if pprofErr != nil {
-				s.pprof.logger.WithError(pprofErr).Error("pprof server failed")
+				s.pprof.logger.Error("pprof server failed", slog.Any("error", pprofErr))
 			}
 		}()
 	}
@@ -102,11 +102,7 @@ func (s *Server) Run() error {
 //
 // It implements oklog group's runFn.
 func (s *Server) RunGOPS() error {
-	s.logger.WithFields(logrus.Fields{
-		"at":      "binding",
-		"service": "debug",
-		"addr":    s.addr,
-	}).Info()
+	s.logger.Info("binding", slog.String("service", "debug"), slog.String("addr", s.addr))
 
 	opts := agent.Options{
 		Addr:            s.addr,
@@ -135,14 +131,14 @@ func (s *Server) Stop(_ error) {
 
 // PProfServer wraps a pprof server.
 type PProfServer struct {
-	logger      logrus.FieldLogger
+	logger      *slog.Logger
 	addr        string
 	done        chan struct{}
 	pprofServer *http.Server
 }
 
 // NewPProfServer sets up a pprof server with configurable profiling types and returns a PProfServer instance.
-func NewPProfServer(l logrus.FieldLogger, pprofConfig *PProf) *PProfServer {
+func NewPProfServer(l *slog.Logger, pprofConfig *PProf) *PProfServer {
 
 	runtime.MemProfileRate = pprofConfig.MemProfileRate
 
@@ -154,9 +150,16 @@ func NewPProfServer(l logrus.FieldLogger, pprofConfig *PProf) *PProfServer {
 		runtime.SetBlockProfileRate(pprofConfig.BlockProfileRate)
 	}
 
+	mux := http.NewServeMux()
+	mux.HandleFunc("/debug/pprof/", pprof.Index)
+	mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+
 	httpServer := &http.Server{
 		Addr:              fmt.Sprintf("127.0.0.1:%d", pprofConfig.Port),
-		Handler:           http.HandlerFunc(pprof.Index),
+		Handler:           mux,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 
@@ -174,11 +177,7 @@ func (s *PProfServer) Run() error {
 		return fmt.Errorf("pprofServer is nil")
 	}
 
-	s.logger.WithFields(logrus.Fields{
-		"at":      "binding",
-		"service": "pprof",
-		"addr":    s.addr,
-	}).Info()
+	s.logger.Info("binding", slog.String("service", "pprof"), slog.String("addr", s.addr))
 
 	if err := s.pprofServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		return err
@@ -194,7 +193,7 @@ func (s *PProfServer) Stop(_ error) {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 		if err := s.pprofServer.Shutdown(ctx); err != nil {
-			s.logger.WithError(err).Error("Error shutting down pprof server")
+			s.logger.Error("Error shutting down pprof server", slog.Any("error", err))
 		}
 	}
 	close(s.done)

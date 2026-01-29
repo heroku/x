@@ -1,16 +1,21 @@
 package debug
 
 import (
+	"bytes"
+	"compress/gzip"
+	"io"
+	"log/slog"
 	"net/http"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
-	"github.com/sirupsen/logrus"
+	"github.com/google/pprof/profile"
 )
 
 func TestNewPProfServer(t *testing.T) {
-	logger := logrus.New()
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
 
 	tests := []struct {
 		name                   string
@@ -44,7 +49,6 @@ func TestNewPProfServer(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			server := NewPProfServer(logger, tt.pprofConfig)
 
-			// Check server address
 			if server.addr != tt.expectedAddr {
 				t.Errorf("NewPProfServer() addr = %v, want %v", server.addr, tt.expectedAddr)
 			}
@@ -53,45 +57,99 @@ func TestNewPProfServer(t *testing.T) {
 				t.Errorf("MemProfileRate expected  %v, got  %v", tt.expectedMemProfileRate, runtime.MemProfileRate)
 			}
 
-			// Start the server
 			go func() {
 				if err := server.Run(); err != nil {
 					t.Errorf("NewPProfServer() run error = %v", err)
 				}
 			}()
 
-			// Give the server a moment to start
 			time.Sleep(100 * time.Millisecond)
 
-			// Perform HTTP GET request to the root path
-			url := "http://" + server.addr + "/debug/pprof/"
 			client := &http.Client{}
 
-			t.Run("GET "+url, func(t *testing.T) {
-				req, err := http.NewRequest("GET", url, nil)
+			t.Run("GET index", func(t *testing.T) {
+				resp, err := client.Get("http://" + server.addr + "/debug/pprof/")
 				if err != nil {
-					t.Errorf("http.NewRequest(%s) error = %v", url, err)
+					t.Fatalf("GET index failed: %v", err)
 				}
-
-				resp, err := client.Do(req)
-				if err != nil {
-					t.Errorf("http.Client.Do() error = %v", err)
-				}
+				defer resp.Body.Close()
 
 				if resp.StatusCode != http.StatusOK {
-					t.Errorf("http.Client.Do() status = %v, want %v", resp.StatusCode, http.StatusOK)
+					t.Errorf("status = %v, want %v", resp.StatusCode, http.StatusOK)
 				}
 
-				resp.Body.Close()
+				body, _ := io.ReadAll(resp.Body)
+				if !strings.Contains(string(body), "Types of profiles available") {
+					t.Error("index page missing expected pprof content")
+				}
 			})
 
-			// Stop the server
+			t.Run("GET heap profile", func(t *testing.T) {
+				resp, err := client.Get("http://" + server.addr + "/debug/pprof/heap")
+				if err != nil {
+					t.Fatalf("GET heap failed: %v", err)
+				}
+				defer resp.Body.Close()
+
+				if resp.StatusCode != http.StatusOK {
+					t.Errorf("status = %v, want %v", resp.StatusCode, http.StatusOK)
+				}
+
+				body, _ := io.ReadAll(resp.Body)
+
+				// Verify it's gzipped
+				if len(body) < 2 || body[0] != 0x1f || body[1] != 0x8b {
+					t.Error("heap profile not gzipped")
+				}
+
+				// Verify it's a valid pprof protobuf
+				gz, err := gzip.NewReader(bytes.NewReader(body))
+				if err != nil {
+					t.Fatalf("failed to decompress: %v", err)
+				}
+				defer gz.Close()
+
+				_, err = profile.Parse(gz)
+				if err != nil {
+					t.Errorf("invalid pprof format: %v", err)
+				}
+			})
+
+			t.Run("GET cpu profile", func(t *testing.T) {
+				resp, err := client.Get("http://" + server.addr + "/debug/pprof/profile?seconds=1")
+				if err != nil {
+					t.Fatalf("GET profile failed: %v", err)
+				}
+				defer resp.Body.Close()
+
+				if resp.StatusCode != http.StatusOK {
+					t.Errorf("cpu profile status = %v, want %v", resp.StatusCode, http.StatusOK)
+				}
+
+				body, _ := io.ReadAll(resp.Body)
+
+				// Verify it's gzipped
+				if len(body) < 2 || body[0] != 0x1f || body[1] != 0x8b {
+					t.Error("cpu profile not gzipped")
+				}
+
+				// Verify it's a valid pprof protobuf
+				gz, err := gzip.NewReader(bytes.NewReader(body))
+				if err != nil {
+					t.Fatalf("failed to decompress: %v", err)
+				}
+				defer gz.Close()
+
+				_, err = profile.Parse(gz)
+				if err != nil {
+					t.Errorf("invalid pprof format: %v", err)
+				}
+			})
+
 			server.Stop(nil)
 
-			// Ensure the server is stopped
 			select {
 			case <-server.done:
-				// success
 			case <-time.After(1 * time.Second):
 				t.Fatal("server did not stop in time")
 			}
