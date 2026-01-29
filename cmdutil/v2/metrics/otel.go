@@ -10,6 +10,7 @@ import (
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp"
 	"go.opentelemetry.io/otel/sdk/metric"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/resource"
 	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 	"google.golang.org/grpc/credentials"
@@ -50,6 +51,28 @@ func Setup(ctx context.Context, cfg Config, serviceName, serviceNamespace, deplo
 		res, _ = resource.Merge(res, options.resource)
 	}
 
+	// Default to Delta temporality to match v1 behavior
+	temporality := options.temporalitySelector
+	if temporality == nil {
+		temporality = func(metric.InstrumentKind) metricdata.Temporality {
+			return metricdata.DeltaTemporality
+		}
+	}
+
+	// Default to exponential histogram aggregation to match v1 behavior
+	aggregation := options.aggregationSelector
+	if aggregation == nil {
+		aggregation = func(kind metric.InstrumentKind) metric.Aggregation {
+			if kind == metric.InstrumentKindHistogram {
+				return metric.AggregationBase2ExponentialHistogram{
+					MaxSize:  160,
+					MaxScale: 20,
+				}
+			}
+			return metric.DefaultAggregationSelector(kind)
+		}
+	}
+
 	var exporter metric.Exporter
 	var err error
 
@@ -57,6 +80,8 @@ func Setup(ctx context.Context, cfg Config, serviceName, serviceNamespace, deplo
 	case "grpc":
 		opts := []otlpmetricgrpc.Option{
 			otlpmetricgrpc.WithEndpoint(cfg.Endpoint.Host),
+			otlpmetricgrpc.WithTemporalitySelector(temporality),
+			otlpmetricgrpc.WithAggregationSelector(aggregation),
 		}
 		if options.tlsConfig != nil {
 			opts = append(opts, otlpmetricgrpc.WithTLSCredentials(credentials.NewTLS(options.tlsConfig)))
@@ -65,6 +90,8 @@ func Setup(ctx context.Context, cfg Config, serviceName, serviceNamespace, deplo
 	case "http/protobuf":
 		opts := []otlpmetrichttp.Option{
 			otlpmetrichttp.WithEndpoint(cfg.Endpoint.Host),
+			otlpmetrichttp.WithTemporalitySelector(temporality),
+			otlpmetrichttp.WithAggregationSelector(aggregation),
 		}
 		if options.tlsConfig != nil {
 			opts = append(opts, otlpmetrichttp.WithTLSClientConfig(options.tlsConfig))
@@ -80,9 +107,11 @@ func Setup(ctx context.Context, cfg Config, serviceName, serviceNamespace, deplo
 		return nil, nil, fmt.Errorf("failed to create exporter: %w", err)
 	}
 
+	reader := metric.NewPeriodicReader(exporter, metric.WithInterval(cfg.Interval))
+
 	provider := metric.NewMeterProvider(
 		metric.WithResource(res),
-		metric.WithReader(metric.NewPeriodicReader(exporter, metric.WithInterval(cfg.Interval))),
+		metric.WithReader(reader),
 	)
 
 	if cfg.EnableRuntimeMetrics {
@@ -99,8 +128,10 @@ func Setup(ctx context.Context, cfg Config, serviceName, serviceNamespace, deplo
 }
 
 type setupOptions struct {
-	resource  *resource.Resource
-	tlsConfig *tls.Config
+	resource            *resource.Resource
+	tlsConfig           *tls.Config
+	temporalitySelector metric.TemporalitySelector
+	aggregationSelector metric.AggregationSelector
 }
 
 type Option func(*setupOptions)
@@ -114,5 +145,17 @@ func WithResource(r *resource.Resource) Option {
 func WithTLSConfig(cfg *tls.Config) Option {
 	return func(o *setupOptions) {
 		o.tlsConfig = cfg
+	}
+}
+
+func WithTemporality(selector metric.TemporalitySelector) Option {
+	return func(o *setupOptions) {
+		o.temporalitySelector = selector
+	}
+}
+
+func WithAggregation(selector metric.AggregationSelector) Option {
+	return func(o *setupOptions) {
+		o.aggregationSelector = selector
 	}
 }
