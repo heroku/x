@@ -5,7 +5,6 @@ import (
 
 	"github.com/heroku/x/cmdutil/v2/debug"
 	"github.com/heroku/x/cmdutil/v2/metrics"
-	"github.com/heroku/x/cmdutil/v2/rollbar"
 	"github.com/heroku/x/cmdutil/v2/svclog"
 )
 
@@ -14,7 +13,6 @@ type standardConfig struct {
 	Debug   debug.Config
 	Logger  svclog.Config
 	Metrics metrics.Config
-	Rollbar rollbar.Config
 }
 
 // platformConfig is used by HTTP and captures
