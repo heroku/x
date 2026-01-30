@@ -10,7 +10,7 @@ import (
 
 	"go.opentelemetry.io/otel/metric"
 
-	"github.com/heroku/x/cmdutil"
+	"github.com/heroku/x/cmdutil/v2"
 	"github.com/heroku/x/tickgroup"
 )
 
