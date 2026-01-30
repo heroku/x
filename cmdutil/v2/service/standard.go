@@ -1,21 +1,19 @@
 package service
 
 import (
-	"strings"
+	"context"
+	"log/slog"
 	"syscall"
 
 	"github.com/joeshaw/envdecode"
 	"github.com/oklog/run"
-	"github.com/sirupsen/logrus"
+	"go.opentelemetry.io/otel/sdk/metric"
 
-	"github.com/heroku/x/cmdutil"
-	"github.com/heroku/x/cmdutil/debug"
-	"github.com/heroku/x/cmdutil/metrics"
-	"github.com/heroku/x/cmdutil/rollbar"
-	"github.com/heroku/x/cmdutil/signals"
-	"github.com/heroku/x/cmdutil/svclog"
-	xmetrics "github.com/heroku/x/go-kit/metrics"
-	"github.com/heroku/x/go-kit/metrics/l2met"
+	"github.com/heroku/x/cmdutil/v2"
+	"github.com/heroku/x/cmdutil/v2/debug"
+	"github.com/heroku/x/cmdutil/v2/metrics"
+	"github.com/heroku/x/cmdutil/v2/signals"
+	"github.com/heroku/x/cmdutil/v2/svclog"
 )
 
 // Standard is a standard service.
@@ -24,15 +22,14 @@ type Standard struct {
 
 	App             string
 	Deploy          string
-	Logger          logrus.FieldLogger
-	MetricsProvider xmetrics.Provider
+	Logger          *slog.Logger
+	Meter           *metric.MeterProvider
+	shutdownMetrics func(context.Context) error
 }
 
-// New Standard Service with logging, rollbar, metrics, debugging, common signal
-// handling, and possibly more.
+// New Standard Service with logging, metrics, debugging, and signal handling.
 //
-// If appConfig is non-nil, envdecode.MustStrictDecode will be called on it
-// to ensure that it is processed.
+// If appConfig is non-nil, envdecode.MustStrictDecode will be called on it.
 func New(appConfig interface{}, ofs ...OptionFunc) *Standard {
 	var sc standardConfig
 	envdecode.MustStrictDecode(&sc)
@@ -43,21 +40,9 @@ func New(appConfig interface{}, ofs ...OptionFunc) *Standard {
 
 	logger := svclog.NewLogger(sc.Logger)
 
-	rollbar.Setup(logger, sc.Rollbar)
-
 	var o options
 	for _, of := range ofs {
 		of(&o)
-	}
-
-	if !o.skipMetricsSuffix && sc.Metrics.Prefix != "" {
-		suf := o.customMetricsSuffix
-		if suf == "" {
-			suf = metricsSuffixFromDyno(sc.Logger.Dyno)
-		}
-		if suf != "" {
-			sc.Metrics.Prefix += "." + suf
-		}
 	}
 
 	s := &Standard{
@@ -66,10 +51,21 @@ func New(appConfig interface{}, ofs ...OptionFunc) *Standard {
 		Logger: logger,
 	}
 
-	if !sc.Metrics.OTEL.Enabled || sc.Metrics.L2MetOverrideEnabled {
-		l2met := l2met.New(logger)
-		s.MetricsProvider = l2met
-		s.Add(cmdutil.NewContextServer(l2met.Run))
+	if sc.Metrics.Enabled {
+		mp, shutdown, err := metrics.Setup(
+			context.Background(),
+			sc.Metrics,
+			sc.Logger.AppName,
+			"heroku",
+			sc.Logger.Deploy,
+			sc.Logger.Dyno,
+		)
+		if err != nil {
+			logger.Error("failed to setup metrics", "error", err)
+			panic("failed to setup metrics: " + err.Error())
+		}
+		s.Meter = mp
+		s.shutdownMetrics = shutdown
 	}
 
 	s.Add(debug.New(logger, sc.Debug))
@@ -82,8 +78,12 @@ func New(appConfig interface{}, ofs ...OptionFunc) *Standard {
 func (s *Standard) Add(svs ...cmdutil.Server) {
 	for _, sv := range svs {
 		runWithPanicReport := func() error {
-			defer metrics.ReportPanic(s.MetricsProvider)
-			defer svclog.ReportPanic(s.Logger)
+			defer func() {
+				if r := recover(); r != nil {
+					s.Logger.Error("panic", "panic", r)
+					panic(r)
+				}
+			}()
 			return sv.Run()
 		}
 		s.g.Add(runWithPanicReport, sv.Stop)
@@ -92,66 +92,22 @@ func (s *Standard) Add(svs ...cmdutil.Server) {
 
 // Run runs all standard and Added cmdutil.Servers.
 //
-// If a panic is encountered, it is reported to Rollbar.
-//
-// If the error returned by oklog/run.Run is non-nil, it is logged
-// with s.Logger.Fatal.
+// If the error returned by oklog/run.Run is non-nil, it is logged.
 func (s *Standard) Run() {
 	err := s.g.Run()
 
-	if s.MetricsProvider != nil {
-		s.MetricsProvider.Stop()
+	if s.shutdownMetrics != nil {
+		if shutdownErr := s.shutdownMetrics(context.Background()); shutdownErr != nil {
+			s.Logger.Error("failed to shutdown metrics", "error", shutdownErr)
+		}
 	}
 
 	if err != nil {
-		s.Logger.WithError(err).Fatal()
+		s.Logger.Error("service error", "error", err)
 	}
 }
 
-type options struct {
-	customMetricsSuffix     string
-	skipMetricsSuffix       bool
-	enableOpenCensusTracing bool
-}
+type options struct{}
 
 // OptionFunc is a function that modifies internal service options.
 type OptionFunc func(*options)
-
-// SkipMetricsSuffix prevents the Service from suffixing the process type to
-// metric names recorded by the MetricsProvider. The default suffix is
-// determined from $DYNO.
-func SkipMetricsSuffix() OptionFunc {
-	return func(o *options) {
-		o.skipMetricsSuffix = true
-	}
-}
-
-// CustomMetricsSuffix to be added to metrics recorded by the MetricsProvider
-// instead of inferring it from $DYNO.
-func CustomMetricsSuffix(s string) OptionFunc {
-	return func(o *options) {
-		o.customMetricsSuffix = s
-	}
-}
-
-// EnableOpenCensusTracing on the Service by registering and starting an open
-// census agent exporter.
-func EnableOpenCensusTracing() OptionFunc {
-	return func(o *options) {
-		o.enableOpenCensusTracing = true
-	}
-}
-
-// metricsSuffixFromDyno determines a metrics suffix from the process part of
-// $DYNO. If $DYNO indicates a "web" process, the suffix is "server". If $DYNO
-// is empty, so is the suffix.
-func metricsSuffixFromDyno(dyno string) string {
-	if dyno == "" {
-		return dyno
-	}
-	parts := strings.SplitN(dyno, ".", 2)
-	if parts[0] == "web" {
-		parts[0] = "server" // TODO[freeformz]: Document why this is server
-	}
-	return parts[0]
-}
