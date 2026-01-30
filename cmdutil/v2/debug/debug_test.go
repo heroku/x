@@ -3,6 +3,7 @@ package debug
 import (
 	"bytes"
 	"compress/gzip"
+	"crypto/sha256"
 	"io"
 	"log/slog"
 	"net/http"
@@ -102,21 +103,54 @@ func TestNewPProfServer(t *testing.T) {
 					t.Error("heap profile not gzipped")
 				}
 
-				// Verify it's a valid pprof protobuf
+				// Parse and inspect the heap profile
 				gz, err := gzip.NewReader(bytes.NewReader(body))
 				if err != nil {
 					t.Fatalf("failed to decompress: %v", err)
 				}
 				defer gz.Close()
 
-				_, err = profile.Parse(gz)
+				p, err := profile.Parse(gz)
 				if err != nil {
-					t.Errorf("invalid pprof format: %v", err)
+					t.Fatalf("invalid pprof format: %v", err)
+				}
+
+				// Heap profile contains memory allocation data
+				t.Logf("Heap profile: %d samples, %d locations", len(p.Sample), len(p.Location))
+				for _, st := range p.SampleType {
+					t.Logf("  Sample type: %s/%s", st.Type, st.Unit)
+				}
+				
+				// Heap profiles have sample types like:
+				// - alloc_objects/count (number of allocations)
+				// - alloc_space/bytes (bytes allocated)
+				// - inuse_objects/count (currently allocated objects)
+				// - inuse_space/bytes (currently allocated bytes)
+				if len(p.SampleType) == 0 {
+					t.Error("heap profile has no sample types")
 				}
 			})
 
 			t.Run("GET cpu profile", func(t *testing.T) {
+				// Start CPU-intensive work to generate samples
+				done := make(chan struct{})
+				go func() {
+					data := []byte("benchmark data for cpu profiling")
+					for {
+						select {
+						case <-done:
+							return
+						default:
+							// CPU-intensive crypto work
+							hash := sha256.Sum256(data)
+							data = hash[:]
+						}
+					}
+				}()
+
 				resp, err := client.Get("http://" + server.addr + "/debug/pprof/profile?seconds=1")
+				close(done)
+				
 				if err != nil {
 					t.Fatalf("GET profile failed: %v", err)
 				}
@@ -133,16 +167,35 @@ func TestNewPProfServer(t *testing.T) {
 					t.Error("cpu profile not gzipped")
 				}
 
-				// Verify it's a valid pprof protobuf
+				// Parse and inspect the CPU profile
 				gz, err := gzip.NewReader(bytes.NewReader(body))
 				if err != nil {
 					t.Fatalf("failed to decompress: %v", err)
 				}
 				defer gz.Close()
 
-				_, err = profile.Parse(gz)
+				p, err := profile.Parse(gz)
 				if err != nil {
-					t.Errorf("invalid pprof format: %v", err)
+					t.Fatalf("invalid pprof format: %v", err)
+				}
+
+				// CPU profile contains execution time samples
+				t.Logf("CPU profile: %d samples, %d locations", len(p.Sample), len(p.Location))
+				for _, st := range p.SampleType {
+					t.Logf("  Sample type: %s/%s", st.Type, st.Unit)
+				}
+				t.Logf("Duration: %v ns", p.DurationNanos)
+				
+				// CPU profiles have sample types like:
+				// - samples/count (number of samples taken)
+				// - cpu/nanoseconds (CPU time in nanoseconds)
+				if len(p.SampleType) == 0 {
+					t.Error("cpu profile has no sample types")
+				}
+				
+				// Should have captured samples from crypto work
+				if len(p.Sample) > 0 {
+					t.Logf("Captured %d CPU samples", len(p.Sample))
 				}
 			})
 
