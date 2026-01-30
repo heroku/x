@@ -6,13 +6,16 @@ import (
 	"strings"
 
 	"google.golang.org/grpc"
-
-	"github.com/heroku/x/grpc/grpcserver"
 )
+
+// GRPCStarter is implemented by gRPC services that can register themselves with a grpc.Server.
+type GRPCStarter interface {
+	Start(srv *grpc.Server) error
+}
 
 // GRPCHandler returns an http.Handler that serves gRPC requests.
 // Non-gRPC requests receive 404.
-func GRPCHandler(l *slog.Logger, server grpcserver.Starter) http.Handler {
+func GRPCHandler(l *slog.Logger, server GRPCStarter) http.Handler {
 	srv := grpc.NewServer()
 	if err := server.Start(srv); err != nil {
 		l.Error("failed to start grpc server", slog.Any("error", err))
@@ -31,7 +34,7 @@ func GRPCHandler(l *slog.Logger, server grpcserver.Starter) http.Handler {
 // WithGRPC wraps an HTTP handler to also serve gRPC requests on the same port.
 // gRPC requests (HTTP/2 with application/grpc content-type) are handled by the
 // gRPC server, all other requests go to the HTTP handler.
-func WithGRPC(httpHandler http.Handler, l *slog.Logger, server grpcserver.Starter) http.Handler {
+func WithGRPC(httpHandler http.Handler, l *slog.Logger, server GRPCStarter) http.Handler {
 	srv := grpc.NewServer()
 	if err := server.Start(srv); err != nil {
 		l.Error("failed to start grpc server", slog.Any("error", err))

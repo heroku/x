@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/heroku/x/cmdutil/service"
+	"github.com/heroku/x/cmdutil/v2/service"
 )
 
 func ExampleWithHTTPServerHook() {
@@ -22,7 +22,7 @@ func ExampleWithHTTPServerHook() {
 		s.ReadTimeout = 10 * time.Second
 	}
 
-	svc.Add(service.HTTP(svc.Logger, svc.MetricsProvider, handler,
+	svc.Add(service.HTTP(svc.Logger, handler,
 		service.WithHTTPServerHook(configureHTTP),
 	))
 
