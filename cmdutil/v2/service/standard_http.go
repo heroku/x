@@ -3,16 +3,15 @@ package service
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net"
 	"net/http"
 	"time"
 
 	"github.com/joeshaw/envdecode"
-	"github.com/sirupsen/logrus"
 
-	"github.com/heroku/x/cmdutil"
-	"github.com/heroku/x/cmdutil/https"
-	"github.com/heroku/x/go-kit/metrics"
+	"github.com/heroku/x/cmdutil/v2"
+	"github.com/heroku/x/cmdutil/v2/https"
 )
 
 type httpConfig struct {
@@ -22,7 +21,7 @@ type httpConfig struct {
 
 // HTTP returns a standard HTTP server for the provided handler. Port and timeout
 // config are inferred from the environment.
-func HTTP(l logrus.FieldLogger, m metrics.Provider, h http.Handler, opts ...func(*httpOptions)) cmdutil.Server {
+func HTTP(l *slog.Logger, h http.Handler, opts ...func(*httpOptions)) cmdutil.Server {
 	var cfg httpConfig
 	envdecode.MustDecode(&cfg)
 
@@ -86,7 +85,7 @@ func SkipEnforceHTTPS() func(*httpOptions) {
 }
 
 // WithHTTPServerHook allows services to provide a function to
-// adjust settings on any HTTP server before after the defaults are
+// adjust settings on any HTTP server after the defaults are
 // applied but before the server is started.
 func WithHTTPServerHook(fn func(*http.Server)) func(*httpOptions) {
 	return func(o *httpOptions) {
@@ -100,13 +99,10 @@ var listenHook chan net.Listener
 
 // standardServer adapts an http.Server to a cmdutil.Server. The server is expected
 // to be run behind a router and does not terminate TLS.
-func standardServer(l logrus.FieldLogger, srv *http.Server) cmdutil.Server {
+func standardServer(l *slog.Logger, srv *http.Server) cmdutil.Server {
 	return cmdutil.ServerFuncs{
 		RunFunc: func() error {
-			l.WithFields(logrus.Fields{
-				"at":   "binding",
-				"addr": srv.Addr,
-			}).Info()
+			l.Info("binding", "addr", srv.Addr)
 
 			ln, err := net.Listen("tcp", srv.Addr)
 			if err != nil {
@@ -124,13 +120,13 @@ func standardServer(l logrus.FieldLogger, srv *http.Server) cmdutil.Server {
 	}
 }
 
-func gracefulShutdown(l logrus.FieldLogger, s *http.Server) {
+func gracefulShutdown(l *slog.Logger, s *http.Server) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	l.WithField("at", "graceful-shutdown").Info()
+	l.Info("graceful shutdown")
 	if err := s.Shutdown(ctx); err != nil {
-		l.WithField("at", "graceful-shutdown").WithError(err).Warn()
+		l.Warn("graceful shutdown failed", "error", err)
 		s.Close()
 	}
 }

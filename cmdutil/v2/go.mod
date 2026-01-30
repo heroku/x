@@ -3,16 +3,12 @@ module github.com/heroku/x/cmdutil/v2
 go 1.25.1
 
 require (
-	github.com/armon/go-proxyproto v0.0.0-20190211145416-68259f75880e
 	github.com/gomodule/redigo v1.8.9
 	github.com/google/gops v0.3.22
-	github.com/heroku/rollrus v0.2.0
 	github.com/heroku/x v0.5.2
 	github.com/joeshaw/envdecode v0.0.0-20200121155833-099f1fc765bd
 	github.com/oklog/run v1.1.0
 	github.com/pkg/errors v0.9.1
-	github.com/sirupsen/logrus v1.6.0
-	github.com/unrolled/secure v1.0.1
 	github.com/urfave/cli v1.21.0
 	go.opentelemetry.io/contrib/instrumentation/runtime v0.45.0
 	go.opentelemetry.io/otel v1.38.0
@@ -20,8 +16,15 @@ require (
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetrichttp v1.27.0
 	go.opentelemetry.io/otel/sdk v1.36.0
 	go.opentelemetry.io/otel/sdk/metric v1.36.0
-	golang.org/x/crypto v0.35.0
 	google.golang.org/grpc v1.64.0
+)
+
+require (
+	github.com/armon/go-proxyproto v0.0.0-20190211145416-68259f75880e // indirect
+	github.com/heroku/rollrus v0.2.0 // indirect
+	github.com/sirupsen/logrus v1.6.0 // indirect
+	github.com/unrolled/secure v1.0.1 // indirect
+	golang.org/x/crypto v0.35.0 // indirect
 )
 
 require (

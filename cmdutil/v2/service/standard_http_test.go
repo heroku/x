@@ -1,15 +1,13 @@
 package service
 
 import (
-	"bufio"
 	"io"
 	"net"
 	"net/http"
 	"os"
 	"testing"
 
-	"github.com/heroku/x/go-kit/metrics/testmetrics"
-	"github.com/heroku/x/testing/testlog"
+	"github.com/heroku/x/testing/testlog/v2"
 )
 
 func TestStandardHTTPServer(t *testing.T) {
@@ -55,64 +53,6 @@ func TestStandardHTTPServer(t *testing.T) {
 	<-done
 }
 
-func TestBypassHTTPServer(t *testing.T) {
-	l, _ := testlog.New()
-	//nolint: gosec
-	srv := &http.Server{
-		Handler: http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-			if _, err := io.WriteString(w, "OK"); err != nil {
-				t.Error(err)
-			}
-		}),
-		Addr: "127.0.0.1:0",
-	}
-
-	listenHook = make(chan net.Listener)
-	defer func() { listenHook = nil }()
-
-	s := bypassServer(l, srv)
-
-	done := make(chan struct{})
-	go func() {
-		if err := s.Run(); err != nil {
-			t.Log(err)
-		}
-		close(done)
-	}()
-
-	addr := (<-listenHook).Addr().String()
-	conn, err := net.Dial("tcp", addr)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer conn.Close()
-
-	if _, err = io.WriteString(conn, "PROXY TCP4 127.0.0.1 127.0.0.1 44444 55555\n"); err != nil {
-		t.Fatal(err)
-	}
-
-	req, _ := http.NewRequest("GET", "http://"+addr, nil)
-	if err := req.Write(conn); err != nil {
-		t.Fatal(err)
-	}
-
-	r := bufio.NewReader(conn)
-	res, err := http.ReadResponse(r, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer res.Body.Close()
-
-	data, _ := io.ReadAll(res.Body)
-	if string(data) != "OK" {
-		t.Fatalf("want OK got %v", string(data))
-	}
-
-	s.Stop(nil)
-
-	<-done
-}
-
 func TestHTTPServerConfiguration(t *testing.T) {
 	os.Setenv("PORT", "1234")
 	os.Setenv("ADDITIONAL_PORT", "4567")
@@ -127,10 +67,10 @@ func TestHTTPServerConfiguration(t *testing.T) {
 	}
 
 	l, _ := testlog.New()
-	p := testmetrics.NewProvider(t)
-	HTTP(l, p, nil, WithHTTPServerHook(config))
+	HTTP(l, nil, WithHTTPServerHook(config))
 
 	if len(configuredServers) != 2 {
 		t.Fatalf("expected 2 servers to be configured, got %v", configuredServers)
 	}
 }
+

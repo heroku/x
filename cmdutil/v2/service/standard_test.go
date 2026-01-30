@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/heroku/x/cmdutil/service"
+	"github.com/heroku/x/cmdutil/v2/service"
 )
 
 func TestNewNoConfig(t *testing.T) {
@@ -15,10 +15,6 @@ func TestNewNoConfig(t *testing.T) {
 
 	if s.Logger == nil {
 		t.Fatal("standard logger not configured")
-	}
-
-	if s.MetricsProvider == nil {
-		t.Fatal("standard metrics provider not configured")
 	}
 }
 
@@ -35,10 +31,6 @@ func TestNewCustomConfig(t *testing.T) {
 
 	if s.Logger == nil {
 		t.Fatal("standard logger not configured")
-	}
-
-	if s.MetricsProvider == nil {
-		t.Fatal("standard metrics provider not configured")
 	}
 
 	if cfg.Val != time.Minute {
