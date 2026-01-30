@@ -2,20 +2,18 @@ package https
 
 import (
 	"net/http"
-
-	"github.com/unrolled/secure"
 )
 
-// RedirectHandler takes an http.Handler and returns a secured form of it.
+// RedirectHandler returns a handler that redirects HTTP requests to HTTPS
+// and sets the Strict-Transport-Security header.
 func RedirectHandler(h http.Handler) http.Handler {
-	return secure.New(secure.Options{
-		SSLRedirect: true,
-		SSLProxyHeaders: map[string]string{
-			"X-Forwarded-Proto": "https",
-		},
-
-		// Set the Strict-Transport-Security HTTP header's max-age to 31536000 (1 year)
-		// see https://security.herokai.com/security_reviews/243
-		STSSeconds: 31536000,
-	}).Handler(h)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("X-Forwarded-Proto") != "https" {
+			target := "https://" + r.Host + r.RequestURI
+			http.Redirect(w, r, target, http.StatusMovedPermanently)
+			return
+		}
+		w.Header().Set("Strict-Transport-Security", "max-age=31536000")
+		h.ServeHTTP(w, r)
+	})
 }
