@@ -61,7 +61,7 @@ func New(appConfig interface{}, ofs ...OptionFunc) *Standard {
 			sc.Logger.Dyno,
 		)
 		if err != nil {
-			logger.Error("failed to setup metrics", "error", err)
+			logger.Error("failed to setup metrics", slog.Any("error", err))
 			panic("failed to setup metrics: " + err.Error())
 		}
 		s.Meter = mp
@@ -98,12 +98,12 @@ func (s *Standard) Run() {
 
 	if s.shutdownMetrics != nil {
 		if shutdownErr := s.shutdownMetrics(context.Background()); shutdownErr != nil {
-			s.Logger.Error("failed to shutdown metrics", "error", shutdownErr)
+			s.Logger.Error("failed to shutdown metrics", slog.Any("error", shutdownErr))
 		}
 	}
 
 	if err != nil {
-		s.Logger.Error("service error", "error", err)
+		s.Logger.Error("service error", slog.Any("error", err))
 	}
 }
 

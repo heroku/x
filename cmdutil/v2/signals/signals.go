@@ -40,7 +40,7 @@ func NewServer(logger *slog.Logger, signals ...os.Signal) cmdutil.Server {
 			signal.Notify(ch, signals...)
 			sig := <-ch
 			if sig != nil {
-				logger.Info("received signal", "signal", sig)
+				logger.Info("received signal", slog.Any("signal", sig))
 			}
 			return nil
 		},
