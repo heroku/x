@@ -2,6 +2,7 @@
 package testlog
 
 import (
+	"bytes"
 	"context"
 	"log/slog"
 	"strings"
@@ -18,30 +19,7 @@ type Hook struct {
 // New creates a slog.Logger that captures log records in a Hook.
 func New() (*slog.Logger, *Hook) {
 	h := &Hook{}
-	return slog.New(h), h
-}
-
-// Enabled implements slog.Handler.
-func (h *Hook) Enabled(context.Context, slog.Level) bool {
-	return true
-}
-
-// Handle implements slog.Handler.
-func (h *Hook) Handle(_ context.Context, r slog.Record) error {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-	h.records = append(h.records, r.Clone())
-	return nil
-}
-
-// WithAttrs implements slog.Handler.
-func (h *Hook) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return h
-}
-
-// WithGroup implements slog.Handler.
-func (h *Hook) WithGroup(name string) slog.Handler {
-	return h
+	return slog.New(&handler{hook: h}), h
 }
 
 // Entries returns all captured log records.
@@ -69,24 +47,19 @@ func (h *Hook) Reset() {
 	h.records = nil
 }
 
-// String returns a string representation of all log records.
+// String returns a string representation of all log records, rendered through
+// slog.TextHandler so the output matches standard slog formatting. Values
+// containing spaces or special characters will be quoted by slog (e.g.
+// msg="hello world"). Assertions via CheckContained should match the quoted
+// form.
 func (h *Hook) String() string {
 	entries := h.Entries()
-	var sb strings.Builder
-	for i, r := range entries {
-		if i > 0 {
-			sb.WriteByte(' ')
-		}
-		sb.WriteString(r.Message)
-		r.Attrs(func(a slog.Attr) bool {
-			sb.WriteByte(' ')
-			sb.WriteString(a.Key)
-			sb.WriteByte('=')
-			sb.WriteString(a.Value.String())
-			return true
-		})
+	var buf bytes.Buffer
+	th := slog.NewTextHandler(&buf, nil)
+	for _, r := range entries {
+		_ = th.Handle(context.Background(), r)
 	}
-	return sb.String()
+	return strings.TrimSpace(buf.String())
 }
 
 // CheckContained verifies at least one of the strings appears in logs.
@@ -126,5 +99,53 @@ func (h *Hook) CheckAllContained(tb testing.TB, strs ...string) {
 		if !strings.Contains(s, str) {
 			tb.Fatalf("got entries: `%v` expected to find: `%v`", s, strs)
 		}
+	}
+}
+
+// handler implements slog.Handler, storing records in a shared Hook
+// while carrying pre-set attrs and group context.
+type handler struct {
+	hook  *Hook
+	attrs []slog.Attr
+	group string
+}
+
+func (h *handler) Enabled(context.Context, slog.Level) bool { return true }
+
+func (h *handler) Handle(_ context.Context, r slog.Record) error {
+	if len(h.attrs) > 0 {
+		r.AddAttrs(h.attrs...)
+	}
+	h.hook.mu.Lock()
+	defer h.hook.mu.Unlock()
+	h.hook.records = append(h.hook.records, r.Clone())
+	return nil
+}
+
+func (h *handler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	if h.group != "" {
+		grouped := make([]any, len(attrs))
+		for i, a := range attrs {
+			grouped[i] = a
+		}
+		return &handler{
+			hook:  h.hook,
+			attrs: append(append([]slog.Attr{}, h.attrs...), slog.Group(h.group, grouped...)),
+		}
+	}
+	return &handler{
+		hook:  h.hook,
+		attrs: append(append([]slog.Attr{}, h.attrs...), attrs...),
+	}
+}
+
+func (h *handler) WithGroup(name string) slog.Handler {
+	if name == "" {
+		return h
+	}
+	return &handler{
+		hook:  h.hook,
+		attrs: append([]slog.Attr{}, h.attrs...),
+		group: name,
 	}
 }

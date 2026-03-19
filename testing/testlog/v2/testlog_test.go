@@ -33,6 +33,24 @@ func TestHook(t *testing.T) {
 	}
 }
 
+func TestWithAttrs(t *testing.T) {
+	logger, hook := New()
+
+	child := logger.With("app", "myapp", "deploy", "prod")
+	child.Info("hello")
+
+	hook.CheckAllContained(t, "app=myapp", "deploy=prod", "hello")
+}
+
+func TestWithGroup(t *testing.T) {
+	logger, hook := New()
+
+	child := logger.WithGroup("req").With("method", "GET")
+	child.Info("handled")
+
+	hook.CheckAllContained(t, "req.method=GET", "handled")
+}
+
 func TestCheckMethods(t *testing.T) {
 	logger, hook := New()
 
