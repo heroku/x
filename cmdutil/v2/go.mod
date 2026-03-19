@@ -1,6 +1,6 @@
 module github.com/heroku/x/cmdutil/v2
 
-go 1.25.1
+go 1.24.0
 
 require (
 	github.com/gomodule/redigo v1.8.9
