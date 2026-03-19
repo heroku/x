@@ -11,7 +11,6 @@ import (
 	"github.com/joeshaw/envdecode"
 
 	"github.com/heroku/x/cmdutil/v2"
-	"github.com/heroku/x/cmdutil/v2/https"
 )
 
 type httpConfig struct {
@@ -31,7 +30,7 @@ func HTTP(l *slog.Logger, h http.Handler, opts ...func(*httpOptions)) cmdutil.Se
 	}
 
 	if !o.skipEnforceHTTPS {
-		h = https.RedirectHandler(h)
+		h = redirectHandler(h)
 	}
 
 	var srvs []cmdutil.Server
@@ -129,4 +128,17 @@ func gracefulShutdown(l *slog.Logger, s *http.Server) {
 		l.Warn("graceful shutdown failed", "error", err)
 		s.Close()
 	}
+}
+
+// redirectHandler returns a handler that redirects HTTP requests to HTTPS
+// and sets the Strict-Transport-Security header.
+func redirectHandler(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("X-Forwarded-Proto") != "https" {
+			http.Redirect(w, r, "https://"+r.Host+r.RequestURI, http.StatusMovedPermanently)
+			return
+		}
+		w.Header().Set("Strict-Transport-Security", "max-age=31536000")
+		h.ServeHTTP(w, r)
+	})
 }

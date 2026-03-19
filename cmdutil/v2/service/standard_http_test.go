@@ -4,6 +4,8 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"os"
 	"testing"
 
@@ -74,3 +76,63 @@ func TestHTTPServerConfiguration(t *testing.T) {
 	}
 }
 
+
+func TestRedirectHandler(t *testing.T) {
+	server := httptest.NewServer(redirectHandler(nil))
+	defer server.Close()
+	client := &http.Client{
+		CheckRedirect: func(*http.Request, []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+
+	serverURL, err := url.Parse(server.URL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	serverURL.Scheme = "https"
+	serverURL.Path = "/"
+
+	tests := []struct {
+		name    string
+		url     string
+		wantURL *url.URL
+	}{
+		{
+			name:    "url without path",
+			url:     server.URL,
+			wantURL: serverURL,
+		},
+		{
+			name:    "url with path",
+			url:     server.URL + "/some/path",
+			wantURL: serverURL.ResolveReference(&url.URL{Path: "/some/path"}),
+		},
+		{
+			name:    "url with path and query",
+			url:     server.URL + "/some/path?a=b&b=c",
+			wantURL: serverURL.ResolveReference(&url.URL{Path: "/some/path", RawQuery: "a=b&b=c"}),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			resp, err := client.Get(test.url)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if resp.StatusCode != http.StatusMovedPermanently {
+				t.Fatalf("got %d but want %d", resp.StatusCode, http.StatusMovedPermanently)
+			}
+
+			loc, err := resp.Location()
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if loc.String() != test.wantURL.String() {
+				t.Fatalf("got redirect URL: %s want %s", loc, test.wantURL)
+			}
+		})
+	}
+}
