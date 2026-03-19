@@ -30,7 +30,7 @@ type Standard struct {
 // New Standard Service with logging, metrics, debugging, and signal handling.
 //
 // If appConfig is non-nil, envdecode.MustStrictDecode will be called on it.
-func New(appConfig interface{}, ofs ...OptionFunc) *Standard {
+func New(appConfig interface{}) *Standard {
 	var sc standardConfig
 	envdecode.MustStrictDecode(&sc)
 
@@ -39,11 +39,6 @@ func New(appConfig interface{}, ofs ...OptionFunc) *Standard {
 	}
 
 	logger := svclog.NewLogger(sc.Logger)
-
-	var o options
-	for _, of := range ofs {
-		of(&o)
-	}
 
 	s := &Standard{
 		App:    sc.Logger.AppName,
@@ -106,8 +101,3 @@ func (s *Standard) Run() {
 		s.Logger.Error("service error", slog.Any("error", err))
 	}
 }
-
-type options struct{}
-
-// OptionFunc is a function that modifies internal service options.
-type OptionFunc func(*options)

@@ -20,19 +20,6 @@ type Server interface {
 	Stop(error)
 }
 
-// ensure ServerFunc implements Server
-var _ Server = ServerFunc(func() error { return nil })
-
-// ServerFunc adapts a function to the Server interface. This is useful to adapt
-// a closure to being a Server.
-type ServerFunc func() error
-
-// Run the function, returning any errors.
-func (fn ServerFunc) Run() error { return fn() }
-
-// Stop is a noop for gradual compatibility with oklog run.Group.
-func (fn ServerFunc) Stop(error) {}
-
 // ensure ServerFuncs implements Server
 var _ Server = ServerFuncs{}
 
