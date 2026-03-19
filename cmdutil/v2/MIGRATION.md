@@ -304,5 +304,4 @@ func main() {
 ## Getting Help
 
 - Review the [README](README.md) for usage examples
-- Check the [implementation plan](IMPLEMENTATION_PLAN.md) for design decisions
 - Run [benchmarks](benchmarks/README.md) to verify performance improvements
