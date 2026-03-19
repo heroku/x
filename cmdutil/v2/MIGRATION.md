@@ -70,6 +70,29 @@ logger.Error("failed", slog.Any("error", err))
 logger.Info("processing", "user_id", id)
 ```
 
+### Vendored Dependencies Requiring logrus
+
+If vendored deps require `logrus.FieldLogger`, use the `slogrus` bridge:
+
+```go
+import "github.com/heroku/x/slogrus"
+
+svc := service.New(&cfg)
+
+// Own code uses slog directly
+svc.Logger.Info("starting", slog.String("version", "2.0"))
+
+// Vendored deps get the bridge
+bridge := slogrus.New(svc.Logger)
+legacyComponent := NewComponent(bridge) // accepts logrus.FieldLogger
+```
+
+The bridge is temporary. Use it only at boundaries where vendored deps require
+`logrus.FieldLogger`, and plan to upgrade those deps to accept `*slog.Logger`
+directly. Direct bridge calls (`Info`, `Error`, etc.) run at native slog speed,
+but `WithField`/`WithFields` are ~17% slower than native logrus due to dual-pipeline
+overhead. Once a dependency accepts `*slog.Logger`, drop the bridge for that call site.
+
 ## Metrics Changes
 
 ### Metrics are Now Opt-In
@@ -179,6 +202,14 @@ TLS termination and router bypass features have been removed. Use a proxy (Envoy
 // v2
 // Removed - use external proxy for TLS
 ```
+
+### redispool, hypercmd, spaceca
+
+These packages have been removed from v2:
+
+- `redispool` — set up your own Redis pool directly with `gomodule/redigo`
+- `hypercmd` — vendor the ~50 lines if you need `urfave/cli` v1 hyper commands
+- `spaceca` — use `heroku/x/tlsconfig` directly for space CA certificates
 
 ## Testing Changes
 
