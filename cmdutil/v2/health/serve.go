@@ -19,7 +19,10 @@ import (
 func NewTCPServer(logger *slog.Logger, meter metric.Meter, cfg Config) cmdutil.Server {
 	logger.Info("binding", slog.String("service", "healthcheck"), slog.Int("port", cfg.Port))
 
-	counter, _ := meter.Int64Counter("health")
+	counter, err := meter.Int64Counter("health")
+	if err != nil {
+		logger.Error("failed to create health counter", slog.Any("error", err))
+	}
 
 	return &tcpServer{
 		logger:  logger,
@@ -78,7 +81,10 @@ func NewTickingServer(logger *slog.Logger, meter metric.Meter, cfg Config) cmdut
 		slog.String("service", "healthcheck-worker"),
 		slog.Int("interval", cfg.MetricInterval))
 
-	counter, _ := meter.Int64Counter("health")
+	counter, err := meter.Int64Counter("health")
+	if err != nil {
+		logger.Error("failed to create health counter", slog.Any("error", err))
+	}
 
 	return cmdutil.NewContextServer(func(ctx context.Context) error {
 		g := tickgroup.New(ctx)
