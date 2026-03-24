@@ -1,6 +1,8 @@
 module github.com/heroku/x
 
-go 1.24.0
+go 1.25.0
+
+toolchain go1.25.6
 
 require (
 	github.com/armon/go-proxyproto v0.0.0-20190211145416-68259f75880e
