@@ -90,6 +90,10 @@ func (c *testHealthClient) Watch(context.Context, *healthpb.HealthCheckRequest, 
 	return &testHealthWatchClient{}, nil
 }
 
+func (c *testHealthClient) List(ctx context.Context, in *healthpb.HealthListRequest, opts ...grpc.CallOption) (*healthpb.HealthListResponse, error) {
+	return &healthpb.HealthListResponse{}, nil
+}
+
 func TestStreamInterceptor(t *testing.T) {
 	stream := &testStream{
 		ctx: context.Background(),
