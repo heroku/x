@@ -81,7 +81,7 @@ func New(ctx context.Context, serviceName string, opts ...Option) (xmetrics.Prov
 	cfg := &config{
 		ctx:             ctx,
 		collectPeriod:   DefaultReaderInterval,
-		serviceResource: resource.Default(), // this fetches from env by default and pre-populates some fields.
+		serviceResource: nil,
 	}
 	defaultOpts := []Option{
 		WithServiceStandard(serviceName),
@@ -94,6 +94,11 @@ func New(ctx context.Context, serviceName string, opts ...Option) (xmetrics.Prov
 		if err := opt(cfg); err != nil {
 			return nil, fmt.Errorf("failed to apply options: %w", err)
 		}
+	}
+
+	// If no resource was provided, use the default
+	if cfg.serviceResource == nil {
+		cfg.serviceResource = resource.Default()
 	}
 
 	p := Provider{
