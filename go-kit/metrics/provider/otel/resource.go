@@ -127,12 +127,6 @@ func WithEnvironmentStandard(env string) Option {
 // duplicate attributes will be overwritten.
 func WithResource(res *resource.Resource) Option {
 	return func(cfg *config) error {
-		// If no base resource exists yet, use the provided resource directly
-		if cfg.serviceResource == nil {
-			cfg.serviceResource = res
-			return nil
-		}
-
 		merged, err := resource.Merge(cfg.serviceResource, res)
 		if err != nil {
 			return fmt.Errorf("failed to merge resources: %w", err)
