@@ -50,7 +50,8 @@ precommit: lint test coverage
 
 .PHONY: lint
 lint: ## Runs golangci-lint.
-	docker run --rm -v $$(pwd):/app -w /app golangci/golangci-lint:$(GOLANGCI_LINT_VERSION) golangci-lint run -v
+	GOBIN=$(TOOLS_BIN) GOTOOLCHAIN=local go install github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
+	$(TOOLS_BIN)/golangci-lint run -v
 
 .PHONY: test
 test: ## Runs go test. Override defaults with GOTEST_OPT
