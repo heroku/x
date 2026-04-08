@@ -104,8 +104,7 @@ func EnvironmentConv(stage string) []attribute.KeyValue {
 // WithOpenTelemetryStandardService returns an Option that configures service
 // attributes according to open-telemetry semconv conventions.
 func WithOpenTelemetryStandardService(name, namespace, instanceID string) Option {
-	return WithResource(resource.NewWithAttributes(
-		semconv.SchemaURL,
+	return WithResource(resource.NewSchemaless(
 		SemConv(name, namespace, instanceID)...,
 	))
 }
@@ -141,5 +140,5 @@ func WithResource(res *resource.Resource) Option {
 // WithAttributes initializes a serviceNameResource with attributes.
 // This is a deprecated function provided for convenence.
 func WithAttributes(attributes ...attribute.KeyValue) Option {
-	return WithResource(resource.NewWithAttributes(semconv.SchemaURL, attributes...))
+	return WithResource(resource.NewSchemaless(attributes...))
 }
