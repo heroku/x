@@ -1,4 +1,5 @@
 # See https://github.com/golangci/golangci-lint#config-file
+version: "2"
 run:
   issues-exit-code: 1 #Default
   tests: true #Default
@@ -6,9 +7,7 @@ run:
 linters:
   enable:
     - misspell
-    - goimports
     - revive
-    - stylecheck
     - unconvert
     - dupl
     - gosec
@@ -22,6 +21,10 @@ linters:
     - prealloc
     - unparam
     - errcheck
+
+formatters:
+  enable:
+    - goimports
 
 issues:
   exclude-rules:
