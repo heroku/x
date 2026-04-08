@@ -86,6 +86,10 @@ func (c *testHealthClient) Check(context.Context, *healthpb.HealthCheckRequest, 
 	return &healthpb.HealthCheckResponse{Status: status}, nil
 }
 
+func (c *testHealthClient) List(context.Context, *healthpb.HealthListRequest, ...grpc.CallOption) (*healthpb.HealthListResponse, error) {
+	return &healthpb.HealthListResponse{}, nil
+}
+
 func (c *testHealthClient) Watch(context.Context, *healthpb.HealthCheckRequest, ...grpc.CallOption) (healthpb.Health_WatchClient, error) {
 	return &testHealthWatchClient{}, nil
 }

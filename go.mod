@@ -1,6 +1,6 @@
 module github.com/heroku/x
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/armon/go-proxyproto v0.0.0-20190211145416-68259f75880e
@@ -40,9 +40,9 @@ require (
 	golang.org/x/sync v0.18.0
 	golang.org/x/text v0.31.0
 	golang.org/x/time v0.0.0-20181108054448-85acf8d2951c
-	google.golang.org/grpc v1.64.0
+	google.golang.org/grpc v1.73.0
 	google.golang.org/grpc/examples v0.0.0-20210916203835-567da6b86340
-	google.golang.org/protobuf v1.34.1
+	google.golang.org/protobuf v1.36.6
 	gopkg.in/go-jose/go-jose.v2 v2.6.3
 )
 
@@ -64,9 +64,9 @@ require (
 	go.opentelemetry.io/otel/trace v1.38.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.2.0 // indirect
 	golang.org/x/net v0.47.0 // indirect
-	golang.org/x/oauth2 v0.27.0 // indirect
+	golang.org/x/oauth2 v0.28.0 // indirect
 	golang.org/x/sys v0.38.0 // indirect
 	google.golang.org/genproto v0.0.0-20231012201019-e917dd12ba7a // indirect
-	google.golang.org/genproto/googleapis/api v0.0.0-20240520151616-dc85e6b867a5 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240515191416-fc5f0ca64291 // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20250324211829-b45e905df463 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250324211829-b45e905df463 // indirect
 )
