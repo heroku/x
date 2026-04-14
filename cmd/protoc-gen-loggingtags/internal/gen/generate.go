@@ -142,7 +142,7 @@ func toCamelCase(str string) string {
 		return unicode.IsSpace(c) || unicode.IsPunct(c)
 	}
 	s := strings.FieldsFunc(str, split)
-	cc := make([]string, len(s))
+	cc := make([]string, 0, len(s))
 
 	caser := cases.Title(language.AmericanEnglish)
 

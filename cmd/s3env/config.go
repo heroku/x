@@ -64,7 +64,7 @@ var configSetCmd = &cobra.Command{
 			displayErr(err)
 		}
 
-		var keys []string
+		keys := make([]string, 0, len(vars))
 		for k, v := range vars {
 			keys = append(keys, k)
 			s3vars[k] = v

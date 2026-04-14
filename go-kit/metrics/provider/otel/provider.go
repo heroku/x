@@ -89,7 +89,7 @@ func New(ctx context.Context, serviceName string, opts ...Option) (xmetrics.Prov
 		collectPeriod:   DefaultReaderInterval,
 		serviceResource: schemalessBase,
 	}
-	defaultOpts := []Option{
+	defaultOpts := []Option{ //nolint:prealloc // composite literal clarity over prealloc
 		WithServiceStandard(serviceName),
 		DefaultAggregationSelector(),
 		DefaultEndpointExporter(),
