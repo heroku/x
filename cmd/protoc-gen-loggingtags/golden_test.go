@@ -30,7 +30,7 @@ message T {
 `))
 
 func TestGenerate(t *testing.T) {
-	type testCase struct { // nolint: maligned
+	type testCase struct {
 		name       string
 		ImportPath string
 		Annotate   bool

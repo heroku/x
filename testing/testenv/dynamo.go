@@ -20,6 +20,7 @@ func NewDynamoService(t *testing.T) *dynamodb.DynamoDB {
 	}
 
 	config := &aws.Config{
+		//nolint:gosec // fake credentials for local DynamoDB testing
 		Credentials: credentials.NewStaticCredentialsFromCreds(credentials.Value{
 			AccessKeyID:     "AKAAAAAAAAABBBBBBBBB",
 			SecretAccessKey: "t+GuXOHmzo1joFaJeu/abcdefghijklmabcdefghi",
