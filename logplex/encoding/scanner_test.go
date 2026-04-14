@@ -235,7 +235,7 @@ func TestScannerCustomOpts(t *testing.T) {
 }
 
 func isCause(cause error, err error) bool {
-	return !(errors.Cause(err) == cause)
+	return errors.Cause(err) != cause
 }
 
 func testSplitOnSplat() bufio.SplitFunc {
