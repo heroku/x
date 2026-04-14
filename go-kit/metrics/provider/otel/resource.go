@@ -68,7 +68,7 @@ func HoneycombDataset(val string) attribute.KeyValue {
 
 // MetricsDestinations appends attributes for each destination in the provided list.
 func MetricsDestinations(destinations []string) []attribute.KeyValue {
-	attrs := []attribute.KeyValue{}
+	attrs := make([]attribute.KeyValue, 0, len(destinations))
 
 	for _, md := range destinations {
 		attrs = append(attrs, attribute.String(md, MetricDestinationVal))

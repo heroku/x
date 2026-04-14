@@ -32,7 +32,7 @@ func MustProvider(ctx context.Context, logger logrus.FieldLogger, cfg Config, se
 		attrs = append(attrs, otel.HoneycombDataset(cfg.Honeycomb.MetricsDataset))
 	}
 
-	allOpts := []otel.Option{
+	allOpts := []otel.Option{ //nolint:prealloc // composite literal clarity over prealloc
 		// ensure we have service.id, service.namespace, and service.instance.id attributes
 		otel.WithOpenTelemetryStandardService(service, serviceNamespace, serviceInstanceID),
 

@@ -30,7 +30,7 @@ therefore all signals are properly delegated.`,
 
 		env := merge(s3vars, os.Environ())
 
-		var keys []string
+		keys := make([]string, 0, len(s3vars))
 		for k := range s3vars {
 			keys = append(keys, k)
 		}

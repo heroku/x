@@ -176,7 +176,7 @@ func (o *options) streamInterceptors() []grpc.StreamServerInterceptor {
 }
 
 func (o *options) serverOptions() []grpc.ServerOption {
-	opts := []grpc.ServerOption{
+	opts := []grpc.ServerOption{ //nolint:prealloc // composite literal clarity over prealloc
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(o.unaryInterceptors()...)),
 		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(o.streamInterceptors()...)),
 	}

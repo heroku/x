@@ -43,7 +43,7 @@ func Header(h http.Header) http.Header {
 	scrubbedHeader := http.Header{}
 	for k, v := range h {
 		if strings.ToLower(k) == authHeaderLowerCase {
-			scrubbedValues := []string{}
+			scrubbedValues := make([]string, 0, len(v))
 			for _, auth := range v {
 				substrs := strings.SplitN(auth, " ", 2)
 				scrubbed := scrubbedValue

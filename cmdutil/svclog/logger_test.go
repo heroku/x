@@ -157,14 +157,14 @@ func TestLossyLogger(t *testing.T) {
 	go func() {
 		defer close(done)
 
-		for i := 0; i < emitAmount; i++ {
+		for range emitAmount {
 			sampler.Printf("message")
 		}
 	}()
 
 	<-timer.C
 	// we give 10% wiggle room in this test because we don't need the sample logger to be perfectly serialized
-	if want, got := expectedLimit, len(output.allCalls()); !((got >= want-1) && (got <= want+1)) {
+	if want, got := expectedLimit, len(output.allCalls()); got < want-1 || got > want+1 {
 		t.Fatalf("want %v, got %v", want, got)
 	}
 
