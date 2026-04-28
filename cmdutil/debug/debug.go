@@ -154,9 +154,22 @@ func NewPProfServer(l logrus.FieldLogger, pprofConfig *PProf) *PProfServer {
 		runtime.SetBlockProfileRate(pprofConfig.BlockProfileRate)
 	}
 
+	// Register every stdlib pprof handler on a private mux. Using only
+	// http.HandlerFunc(pprof.Index) serves the snapshot profiles (heap,
+	// goroutine, mutex, block, allocs, threadcreate) but returns 404 for
+	// /debug/pprof/{profile,trace,cmdline,symbol} because those are
+	// separate handlers in net/http/pprof — Index only dispatches to
+	// pprof.Lookup. Wiring them explicitly makes CPU profiling work.
+	mux := http.NewServeMux()
+	mux.HandleFunc("/debug/pprof/", pprof.Index)
+	mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+
 	httpServer := &http.Server{
 		Addr:              fmt.Sprintf("127.0.0.1:%d", pprofConfig.Port),
-		Handler:           http.HandlerFunc(pprof.Index),
+		Handler:           mux,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 

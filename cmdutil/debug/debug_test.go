@@ -85,6 +85,28 @@ func TestNewPProfServer(t *testing.T) {
 				resp.Body.Close()
 			})
 
+			// /debug/pprof/{profile,cmdline,symbol,trace} are handled by
+			// separate funcs in net/http/pprof — Index alone returns 404
+			// for them. Verify each is wired so CPU profiling works.
+			extraPaths := []string{
+				"/debug/pprof/profile?seconds=1",
+				"/debug/pprof/cmdline",
+				"/debug/pprof/symbol",
+			}
+			for _, p := range extraPaths {
+				extURL := "http://" + server.addr + p
+				t.Run("GET "+extURL, func(t *testing.T) {
+					resp, err := client.Get(extURL)
+					if err != nil {
+						t.Fatalf("client.Get(%s) error = %v", extURL, err)
+					}
+					defer resp.Body.Close()
+					if resp.StatusCode != http.StatusOK {
+						t.Errorf("status = %v, want %v", resp.StatusCode, http.StatusOK)
+					}
+				})
+			}
+
 			// Stop the server
 			server.Stop(nil)
 
