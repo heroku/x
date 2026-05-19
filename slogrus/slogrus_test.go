@@ -94,7 +94,7 @@ func TestLevelMapping(t *testing.T) {
 	}
 }
 
-func TestConcurrency(t *testing.T) {
+func TestConcurrency(_ *testing.T) {
 	l, _ := newTestSlog()
 	b := New(l)
 

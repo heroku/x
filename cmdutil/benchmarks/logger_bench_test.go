@@ -11,10 +11,10 @@ import (
 func BenchmarkLogrusStructured(b *testing.B) {
 	logger := logrus.New()
 	logger.Out = io.Discard
-	
+
 	b.ResetTimer()
 	b.ReportAllocs()
-	
+
 	for i := 0; i < b.N; i++ {
 		logger.WithFields(logrus.Fields{
 			"method": "GET",
@@ -29,10 +29,10 @@ func BenchmarkLogrusStructured(b *testing.B) {
 func BenchmarkLogrusSimple(b *testing.B) {
 	logger := logrus.New()
 	logger.Out = io.Discard
-	
+
 	b.ResetTimer()
 	b.ReportAllocs()
-	
+
 	for i := 0; i < b.N; i++ {
 		logger.Info("simple message")
 	}
@@ -46,10 +46,10 @@ func BenchmarkLogrusWithContext(b *testing.B) {
 		"app":    "myapp",
 		"deploy": "production",
 	})
-	
+
 	b.ResetTimer()
 	b.ReportAllocs()
-	
+
 	for i := 0; i < b.N; i++ {
 		contextLogger.WithField("status", 200).Info("request")
 	}
@@ -59,7 +59,7 @@ func BenchmarkLogrusWithContext(b *testing.B) {
 func BenchmarkLogrusConcurrent(b *testing.B) {
 	logger := logrus.New()
 	logger.Out = io.Discard
-	
+
 	b.ResetTimer()
 	b.ReportAllocs()
 	b.RunParallel(func(pb *testing.PB) {
