@@ -23,6 +23,8 @@ github.com/grpc-ecosystem/grpc-gateway/v2 v2.20.0 h1:bkypFPDjIYGfCYD5mRBvpqxfYX1
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.20.0/go.mod h1:P+Lt/0by1T8bfcF3z737NnSbmxQAppXMRziHUxPOC8k=
 github.com/heroku/x v0.5.2 h1:B3g+m78yQk70Mhe1MsrHICgDJwJMZNVDkaQtLhsSA/U=
 github.com/heroku/x v0.5.2/go.mod h1:B025iaZU9I0gPJSsBYmipizkS5TKgX9NWEx8IQQYTuI=
+github.com/heroku/x/testing/testlog/v2 v2.0.0-20260319223950-a672bc2d1e06 h1:SviML9m/hzgXgswU+Vk6qpEFrZGLKaKXIRotujDZf9s=
+github.com/heroku/x/testing/testlog/v2 v2.0.0-20260319223950-a672bc2d1e06/go.mod h1:ghvC+M+8U3HK8MGNl5EIg8t9HdJSIGR1ty4l5Akp5tE=
 github.com/joeshaw/envdecode v0.0.0-20200121155833-099f1fc765bd h1:nIzoSW6OhhppWLm4yqBwZsKJlAayUu5FGozhrF3ETSM=
 github.com/joeshaw/envdecode v0.0.0-20200121155833-099f1fc765bd/go.mod h1:MEQrHur0g8VplbLOv5vXmDzacSaH9Z7XhcgsSh1xciU=
 github.com/keybase/go-ps v0.0.0-20190827175125-91aafc93ba19/go.mod h1:hY+WOq6m2FpbvyrI93sMaypsttvaIL5nhVR92dTMUcQ=
