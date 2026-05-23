@@ -10,6 +10,8 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/resource"
 
+	semconv "go.opentelemetry.io/otel/semconv/v1.37.0"
+
 	xmetrics "github.com/heroku/x/go-kit/metrics"
 )
 
@@ -78,10 +80,14 @@ type exporterFactory func(*config) (metric.Exporter, error)
 // New returns a new, unstarted Provider. Use its Start() method to start
 // and establish a connection with its exporter's collector agent.
 func New(ctx context.Context, serviceName string, opts ...Option) (xmetrics.Provider, error) {
+	// Start with environment detection but strip the schema to avoid conflicts
+	base := resource.Default()
+	schemalessBase := resource.NewSchemaless(base.Attributes()...)
+
 	cfg := &config{
 		ctx:             ctx,
 		collectPeriod:   DefaultReaderInterval,
-		serviceResource: resource.Default(), // this fetches from env by default and pre-populates some fields.
+		serviceResource: schemalessBase,
 	}
 	defaultOpts := []Option{
 		WithServiceStandard(serviceName),
@@ -94,6 +100,14 @@ func New(ctx context.Context, serviceName string, opts ...Option) (xmetrics.Prov
 		if err := opt(cfg); err != nil {
 			return nil, fmt.Errorf("failed to apply options: %w", err)
 		}
+	}
+
+	// If no schema was provided by user, add library's default schema
+	if cfg.serviceResource.SchemaURL() == "" {
+		cfg.serviceResource = resource.NewWithAttributes(
+			semconv.SchemaURL,
+			cfg.serviceResource.Attributes()...,
+		)
 	}
 
 	p := Provider{
