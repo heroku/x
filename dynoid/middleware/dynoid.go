@@ -49,7 +49,7 @@ func Authorize(audience string, callback dynoid.IssuerCallback) func(http.Handle
 func AuthorizeSameSpace(audience string) func(http.Handler) http.Handler {
 	return callbackHandler(audience, func(token *dynoid.Token) dynoid.IssuerCallback {
 		return func(issuer string) error {
-			if issuer != token.IDToken.Issuer {
+			if issuer != token.Issuer {
 				return &dynoid.UntrustedIssuerError{Issuer: issuer}
 			}
 
@@ -62,7 +62,7 @@ func AuthorizeSameSpace(audience string) func(http.Handler) http.Handler {
 // aren't from one of the given spaces.
 func AuthorizeSpaces(audience string, spaces ...string) func(http.Handler) http.Handler {
 	return callbackHandler(audience, func(token *dynoid.Token) dynoid.IssuerCallback {
-		u, err := url.Parse(token.IDToken.Issuer)
+		u, err := url.Parse(token.Issuer)
 		if err != nil {
 			panic(fmt.Sprintf("failed to parse issuer (%v)", err))
 		}
