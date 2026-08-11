@@ -152,6 +152,7 @@ func Strict(config *tls.Config) {
 func SFAllowed(config *tls.Config) {
 	config.CipherSuites = SFCiphers
 	config.MinVersion = tls.VersionTLS12
+	config.SessionTicketsDisabled = true
 }
 
 // New returns a TLS configuration tuned for performance and security based on
