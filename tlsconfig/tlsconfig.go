@@ -159,8 +159,9 @@ func SFAllowed(config *tls.Config) {
 // suites) for callers to layer policy on via Modern, Strict, or SFAllowed.
 func New() *tls.Config {
 	return &tls.Config{
-		MinVersion:   tls.VersionTLS12,
-		CipherSuites: ModernCiphers,
+		MinVersion:             tls.VersionTLS12,
+		CipherSuites:           ModernCiphers,
+		SessionTicketsDisabled: true,
 		// CurvePreferences left unset so Go negotiates its default curves,
 		// including the X25519MLKEM768 post-quantum hybrid.
 	}
