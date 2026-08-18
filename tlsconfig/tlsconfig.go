@@ -155,22 +155,15 @@ func SFAllowed(config *tls.Config) {
 	config.SessionTicketsDisabled = true
 }
 
-// New returns a TLS configuration tuned for performance and security based on
-// the recommendations in:
-// https://blog.gopheracademy.com/advent-2016/exposing-go-on-the-internet/
-//
-// AES128 & SHA256 preferred over AES256 & SHA384:
-// https://github.com/ssllabs/research/wiki/SSL-and-TLS-Deployment-Best-Practices#31-avoid-too-much-security
+// New returns a secure baseline TLS config (TLS 1.2 min, forward-secret AEAD
+// suites) for callers to layer policy on via Modern, Strict, or SFAllowed.
 func New() *tls.Config {
 	return &tls.Config{
-		PreferServerCipherSuites: true,
-		// Only use curves that have assembly implementations.
-		CurvePreferences: []tls.CurveID{
-			tls.X25519,
-			tls.CurveP256,
-		},
-		MinVersion:   tls.VersionTLS12,
-		CipherSuites: ModernCiphers,
+		MinVersion:             tls.VersionTLS12,
+		CipherSuites:           ModernCiphers,
+		SessionTicketsDisabled: true,
+		// CurvePreferences left unset so Go negotiates its default curves,
+		// including the X25519MLKEM768 post-quantum hybrid.
 	}
 }
 
