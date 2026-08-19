@@ -127,6 +127,7 @@ func (s *Subject) String() string {
 // Token contains all of the token information stored by Heroku when it's issued
 type Token struct {
 	IDToken *oidc.IDToken `json:"-"`
+	Issuer  string        `json:"issuer"`
 	SpaceID string        `json:"space_id"`
 	Subject *Subject      `json:"subject"`
 }
@@ -181,16 +182,19 @@ func ReadLocal(audience string) (string, error) {
 }
 
 // ReadLocalToken reads the local machines token for the given audience and
-// parses it
-func ReadLocalToken(ctx context.Context, audience string) (*Token, error) {
+// parses it.
+//
+// The token's signature is not verified: it was issued to this dyno by the
+// Heroku platform and verifying it would require an extra round trip to the
+// OIDC provider on every call. Callers that need a verified token should use
+// [Verifier.Verify] instead.
+func ReadLocalToken(_ context.Context, audience string) (*Token, error) {
 	rawToken, err := ReadLocal(audience)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read token (%w)", err)
 	}
 
-	verifier := NewWithCallback(audience, func(string) error { return nil })
-
-	return verifier.Verify(ctx, rawToken)
+	return parseToken(rawToken)
 }
 
 // AllowHerokuSpace verifies that the issuer is from Heroku for the given host
@@ -248,16 +252,16 @@ func (v *Verifier) Verify(ctx context.Context, rawIDToken string) (*Token, error
 		return nil, ErrMustCheckIssuer
 	}
 
-	issuer, err := parseIssuer(rawIDToken)
+	parsed, err := parseToken(rawIDToken)
 	if err != nil {
 		return nil, err
 	}
 
-	if err = v.IssuerCallback(issuer); err != nil {
+	if err = v.IssuerCallback(parsed.Issuer); err != nil {
 		return nil, err
 	}
 
-	provider, err := v.provider(ctx, issuer)
+	provider, err := v.provider(ctx, parsed.Issuer)
 	if err != nil {
 		return nil, err
 	}
@@ -276,6 +280,7 @@ func (v *Verifier) Verify(ctx context.Context, rawIDToken string) (*Token, error
 
 	return &Token{
 		IDToken: token,
+		Issuer:  token.Issuer,
 		SpaceID: path.Base(token.Issuer),
 		Subject: &s,
 	}, nil
@@ -302,31 +307,45 @@ func (v *Verifier) provider(ctx context.Context, issuer string) (*oidc.Provider,
 	return provider, nil
 }
 
-func parseIssuer(p string) (string, error) {
-	parts := strings.Split(p, ".")
+// parseToken decodes the JWT payload without verifying its signature. It
+// returns enough information to identify the issuer/space and the subject the
+// token was minted for.
+func parseToken(rawIDToken string) (*Token, error) {
+	parts := strings.Split(rawIDToken, ".")
 	if len(parts) != 3 {
-		return "", &MalformedTokenError{
+		return nil, &MalformedTokenError{
 			err: fmt.Errorf("expected 3 parts got %d", len(parts)),
 		}
 	}
 
 	payload, err := base64.RawURLEncoding.DecodeString(parts[1])
 	if err != nil {
-		return "", &MalformedTokenError{
+		return nil, &MalformedTokenError{
 			err: fmt.Errorf("unable to decode token: %w", err),
 		}
 	}
 
-	v := struct {
-		Issuer string `json:"iss"`
+	claims := struct {
+		Issuer  string `json:"iss"`
+		Subject string `json:"sub"`
 	}{}
 
-	err = json.Unmarshal(payload, &v)
-	if err != nil {
-		return "", &MalformedTokenError{
+	if err := json.Unmarshal(payload, &claims); err != nil {
+		return nil, &MalformedTokenError{
 			err: fmt.Errorf("unable to unmarshal token: %w", err),
 		}
 	}
 
-	return v.Issuer, nil
+	var subject Subject
+	if err := subject.UnmarshalText([]byte(claims.Subject)); err != nil {
+		return nil, &MalformedTokenError{
+			err: fmt.Errorf("failed to parse subject: %w", err),
+		}
+	}
+
+	return &Token{
+		Issuer:  claims.Issuer,
+		SpaceID: path.Base(claims.Issuer),
+		Subject: &subject,
+	}, nil
 }
