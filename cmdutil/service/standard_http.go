@@ -127,7 +127,7 @@ func SkipEnforceHTTPS() func(*httpOptions) {
 }
 
 // WithHTTPServerHook allows services to provide a function to
-// adjust settings on any HTTP server before after the defaults are
+// adjust settings on any HTTP server after the defaults are
 // applied but before the server is started.
 func WithHTTPServerHook(fn func(*http.Server)) func(*httpOptions) {
 	return func(o *httpOptions) {
