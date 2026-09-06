@@ -207,7 +207,7 @@ func AllowHerokuSpace(herokuHost string, spaceIDs ...string) IssuerCallback {
 	}
 }
 
-// A Verifier verifies a raw token with it's oids issuer and uses the
+// A Verifier verifies a raw token with its OIDC issuer and uses the
 // IssuerCallback to ensure it's from a trusted source.
 type Verifier struct {
 	IssuerCallback IssuerCallback

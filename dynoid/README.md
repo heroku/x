@@ -296,7 +296,7 @@ func (e *UntrustedIssuerError) Error() string
 <a name="Verifier"></a>
 ## type [Verifier](<https://github.com/heroku/x/blob/master/dynoid/dynoid.go#L212-L219>)
 
-A Verifier verifies a raw token with it's oids issuer and uses the IssuerCallback to ensure it's from a trusted source.
+A Verifier verifies a raw token with its OIDC issuer and uses the IssuerCallback to ensure it's from a trusted source.
 
 ```go
 type Verifier struct {

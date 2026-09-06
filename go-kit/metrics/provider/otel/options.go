@@ -101,12 +101,12 @@ func WithExplicitAggregation() Option {
 	return WithAggregationSelector(ExplicitAggregationSelector)
 }
 
-// Deprecated: WithExponentialHistograms is deprecated use WithExponentialAggregation instead.
+// Deprecated: WithExponentialHistograms is deprecated; use WithExponentialAggregation instead.
 func WithExponentialHistograms() Option {
 	return WithExponentialAggregation()
 }
 
-// Deprecated: WithExplicitHistograms is deprecated use WithExplicitAggregation instead.
+// Deprecated: WithExplicitHistograms is deprecated; use WithExplicitAggregation instead.
 func WithExplicitHistograms() Option {
 	return WithExplicitAggregation()
 }

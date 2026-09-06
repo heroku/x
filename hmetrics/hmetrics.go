@@ -67,7 +67,7 @@ func (e HerokuMetricsURLUnset) Fatal() bool {
 	return true
 }
 
-// ErrHandler funcations are used to provide custom processing/handling of
+// ErrHandler functions are used to provide custom processing/handling of
 // errors encountered during the collection or reporting of metrics to Heroku.
 type ErrHandler func(err error) error
 
@@ -79,7 +79,7 @@ var (
 // Report go metrics to the endpoint until the context is canceled.
 //
 // Only one call to the ErrHandler will happen at a time. Metrics can be dropped
-// or delayed if a call to ErrHandler takes longer than the reprting interval.
+// or delayed if a call to ErrHandler takes longer than the reporting interval.
 // Processing of metrics continues if the ErrHandler returns nil, but aborts if
 // the ErrHandler itself returns an error. It is safe to pass a nil ErrHandler.
 //
