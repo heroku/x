@@ -68,6 +68,7 @@ import "github.com/heroku/x/dynoid"
   - [func New\(audience string\) \*Verifier](<#New>)
   - [func NewWithCallback\(audience string, callback IssuerCallback\) \*Verifier](<#NewWithCallback>)
   - [func \(v \*Verifier\) Verify\(ctx context.Context, rawIDToken string\) \(\*Token, error\)](<#Verifier.Verify>)
+  - [func \(v \*Verifier\) VerifyIDToken\(ctx context.Context, rawIDToken string\) \(\*oidc.IDToken, error\)](<#Verifier.VerifyIDToken>)
 
 
 ## Variables
@@ -380,6 +381,15 @@ func (v *Verifier) Verify(ctx context.Context, rawIDToken string) (*Token, error
 ```
 
 Verify validates the given token with the OIDC provider and validates it against the IssuerCallback
+
+<a name="Verifier.VerifyIDToken"></a>
+### func \(\*Verifier\) [VerifyIDToken](<https://github.com/heroku/x/blob/master/dynoid/dynoid.go#L269>)
+
+```go
+func (v *Verifier) VerifyIDToken(ctx context.Context, rawIDToken string) (*oidc.IDToken, error)
+```
+
+VerifyIDToken validates the given token like Verify \(issuer callback, signature, audience and expiry\) but does not require the subject to be a dyno subject, and returns the verified ID token as is. Use it for tokens whose subject is not an app and dyno, such as service tokens, and read any further claims with IDToken.Claims.
 
 # dynoidtest
 

@@ -244,6 +244,33 @@ func (v *Verifier) Verify(ctx context.Context, rawIDToken string) (*Token, error
 		return New("").Verify(ctx, rawIDToken)
 	}
 
+	token, err := v.VerifyIDToken(ctx, rawIDToken)
+	if err != nil {
+		return nil, err
+	}
+
+	var s Subject
+	if err := s.UnmarshalText([]byte(token.Subject)); err != nil {
+		return nil, fmt.Errorf("failed to parse subject (%w)", err)
+	}
+
+	return &Token{
+		IDToken: token,
+		SpaceID: path.Base(token.Issuer),
+		Subject: &s,
+	}, nil
+}
+
+// VerifyIDToken validates the given token like Verify (issuer callback,
+// signature, audience and expiry) but does not require the subject to be a
+// dyno subject, and returns the verified ID token as is. Use it for tokens
+// whose subject is not an app and dyno, such as service tokens, and read any
+// further claims with IDToken.Claims.
+func (v *Verifier) VerifyIDToken(ctx context.Context, rawIDToken string) (*oidc.IDToken, error) {
+	if v == nil {
+		return New("").VerifyIDToken(ctx, rawIDToken)
+	}
+
 	if v.IssuerCallback == nil {
 		return nil, ErrMustCheckIssuer
 	}
@@ -262,23 +289,12 @@ func (v *Verifier) Verify(ctx context.Context, rawIDToken string) (*Token, error
 		return nil, err
 	}
 
-	verifier := provider.Verifier(v.config)
-
-	token, err := verifier.Verify(ctx, rawIDToken)
+	token, err := provider.Verifier(v.config).Verify(ctx, rawIDToken)
 	if err != nil {
 		return nil, fmt.Errorf("failed to verify token (%w)", err)
 	}
 
-	var s Subject
-	if err := s.UnmarshalText([]byte(token.Subject)); err != nil {
-		return nil, fmt.Errorf("failed to parse subject (%w)", err)
-	}
-
-	return &Token{
-		IDToken: token,
-		SpaceID: path.Base(token.Issuer),
-		Subject: &s,
-	}, nil
+	return token, nil
 }
 
 func (v *Verifier) provider(ctx context.Context, issuer string) (*oidc.Provider, error) {
