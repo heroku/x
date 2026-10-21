@@ -31,6 +31,7 @@ type config struct {
 	aggregationSelector  metric.AggregationSelector
 	exporterFactory      exporterFactory
 	enableRuntimeMetrics bool
+	enableSchedLatency   bool
 }
 
 // Provider initializes a global otlp meter provider that can collect metrics and
@@ -144,14 +145,19 @@ func New(ctx context.Context, serviceName string, opts ...Option) (xmetrics.Prov
 
 // Start starts the provider's controller and exporter.
 func (p *Provider) Start() error {
-	var err error
 	if p.cfg.enableRuntimeMetrics {
-		err = runtime.Start(
+		err := runtime.Start(
 			runtime.WithMeterProvider(p.meterProvider),
 			runtime.WithMinimumReadMemStatsInterval(p.cfg.collectPeriod),
 		)
+		if err != nil {
+			return err
+		}
 	}
-	return err
+	if p.cfg.enableSchedLatency {
+		return registerSchedulerLatency(p.meterProvider.Meter(schedScopeName), readSchedLatencies)
+	}
+	return nil
 }
 
 // Stop shuts down the provider's controller and exporter.

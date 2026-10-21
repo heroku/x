@@ -201,3 +201,16 @@ func WithRuntimeInstrumentation(b bool) Option {
 		return nil
 	}
 }
+
+// WithSchedulerLatencyMetrics enables the Go scheduler latency gauges
+// process.runtime.go.sched.latency.p50, .p99 and .max (unit s). They report how
+// long goroutines waited runnable before running, taken from the runtime's
+// /sched/latencies:seconds histogram over each collection interval. Values are
+// histogram bucket upper bounds. It is independent of WithRuntimeInstrumentation
+// and disabled by default.
+func WithSchedulerLatencyMetrics(b bool) Option {
+	return func(c *config) error {
+		c.enableSchedLatency = b
+		return nil
+	}
+}
